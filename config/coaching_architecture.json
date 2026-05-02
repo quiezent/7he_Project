@@ -1,0 +1,82 @@
+{
+  "mission": {
+    "primary": "Coach Clayton from experienced MTB rider toward expert MTB performance using Garmin evidence, subjective hand response, and coaching judgment.",
+    "secondary": "Continuously improve the local evidence stack so training, recovery, nutrition, and return-to-trail decisions become more reliable."
+  },
+  "stack_path": {
+    "principle": "More is not better; better is better.",
+    "chosen_path": "Use one coach-facing decision packet that promotes fresh, validated, inspectable evidence and demotes weak or redundant model output.",
+    "model_promotion_rule": "A model can influence training only when validation beats a simple baseline and the target matches the coaching decision."
+  },
+  "decision_loop": [
+    "Sync Garmin wellness, training status, and activities.",
+    "Normalize 24/7 recovery signals, activity load, modality load, and training-status features.",
+    "Combine evidence with medical gates, modality overrides, symptoms, and goal phase.",
+    "Generate deterministic plan proposal and human daily brief.",
+    "Coach interprets the evidence and makes the final training/nutrition call.",
+    "Log subjective hand response and next-morning outcome when Garmin cannot see the signal."
+  ],
+  "coaching_pillars": {
+    "return_to_outdoor_reentry": [
+      "Low-consequence outdoor ride exposure",
+      "Grip/braking tolerance",
+      "Gym primer loading",
+      "Next-morning symptom history",
+      "No stacked first-load days"
+    ],
+    "base_rebuild": [
+      "Aerobic durability",
+      "Repeatable weekly rhythm",
+      "Strength consistency",
+      "Nutrition adequacy",
+      "Stable sleep and HRV trend"
+    ],
+    "mtb_specificity": [
+      "Trail handling under fatigue",
+      "Cornering speed and exits",
+      "Braking/grip endurance",
+      "Technical climbing and descending repeatability",
+      "Progressive exposure to consequence"
+    ],
+    "performance_build": [
+      "Threshold durability",
+      "VO2 max capacity",
+      "Anaerobic repeatability",
+      "Strength-power transfer",
+      "Load-focus balance"
+    ],
+    "expert_specific_work": [
+      "Aggressive technical terrain",
+      "Heavy landings and impacts",
+      "Jumps and drops",
+      "Wheel slide comfort",
+      "Speed, creativity, and precision under fatigue"
+    ]
+  },
+  "evidence_priorities": [
+    "Same-day Garmin wellness freshness",
+    "Sleep score, sleep duration, sleep stress, and sleep stages",
+    "Overnight HRV relative to baseline",
+    "Resting HR trend",
+    "Body Battery wake/current/charge/drain",
+    "Daily stress, respiration, SpO2, steps, calories, and intensity minutes",
+    "Activity training load, HR zones, aerobic/anaerobic effects, and power metrics",
+    "Training status, ACWR, VO2 max, load focus, and heat acclimation",
+    "Subjective pain, swelling, grip tolerance, and next-morning response"
+  ],
+  "artifact_contract": {
+    "current_state": "Single merged state for coaching.",
+    "readiness_features": "Transparent normalized feature layer before readiness scoring.",
+    "wellness_trends": "30-day Fenix recovery and daily-life trend layer.",
+    "training_status_current": "Garmin training status, ACWR, load focus, VO2 max, and acclimation.",
+    "activity_summary_index": "Redacted per-activity index without names or file paths.",
+    "modality_load_rollups": "7/14/28/42-day load by training modality.",
+    "body_battery_model_report": "Small interpretable decision tree for wake Body Battery patterns.",
+    "training_response_model_report": "Bounded decision tree for next-day Garmin-derived response/readiness.",
+    "coach_packet": "Coach-facing evidence triage: trusted evidence, cautions, experimental models, ignored outputs, and today's call.",
+    "predictive_modeling_plan": "Modeling data layers, label definitions, caveats, and next candidate models.",
+    "injury_return": "Post-clearance trail/gym/hand exposure ledger.",
+    "today_plan": "Deterministic proposal for model interpretation.",
+    "daily_brief": "Human-readable coaching handoff."
+  }
+}
