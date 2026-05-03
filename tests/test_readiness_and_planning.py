@@ -77,6 +77,20 @@ def test_all_cleared_green_reentry_gets_outdoor_mtb_plan(tmp_path):
     assert "daily_protein" in plan["nutrition"]
 
 
+def test_sunday_sabbath_blocks_planned_exercise(tmp_path):
+    load_context(tmp_path)
+    write_wellness(tmp_path, "2026-05-03", sleepScore=90, hrvStatus="balanced", bodyBattery=80)
+
+    plan = build_today_plan(tmp_path, "2026-05-03")
+
+    assert plan["session"]["type"] == "scheduled_rest"
+    assert plan["session"]["duration_min"] == 0
+    assert plan["gym"]["status"] == "skip"
+    assert plan["nutrition"]["during_session_carbs"] == "none"
+    assert plan["decision_inputs"]["scheduled_rest"]["label"] == "Sabbath"
+    assert any("sabbath" in item.lower() for item in plan["guardrails"])
+
+
 def test_uncleared_trail_gate_blocks_outdoor_plan(tmp_path):
     context = load_context(tmp_path)
     set_clearance(context, "trail", "pending", "2026-04-29", "test")
@@ -110,8 +124,8 @@ def test_modality_override_blocks_trail_plan(tmp_path):
 
 def test_reentry_mtb_cap_blocks_more_mtb_exposure(tmp_path):
     load_context(tmp_path)
-    write_wellness(tmp_path, "2026-05-03", sleepScore=90, hrvStatus="balanced", bodyBattery=80)
-    for idx, day in enumerate(("2026-05-03", "2026-05-02", "2026-05-01"), start=1):
+    write_wellness(tmp_path, "2026-05-04", sleepScore=90, hrvStatus="balanced", bodyBattery=80)
+    for idx, day in enumerate(("2026-05-04", "2026-05-03", "2026-05-02"), start=1):
         write_json(
             tmp_path / "activities" / f"mtb_{idx}.json",
             {
@@ -123,7 +137,7 @@ def test_reentry_mtb_cap_blocks_more_mtb_exposure(tmp_path):
             },
         )
 
-    plan = build_today_plan(tmp_path, "2026-05-03")
+    plan = build_today_plan(tmp_path, "2026-05-04")
 
     assert plan["session"]["type"] == "indoor_bike"
     assert any("exposure cap" in item.lower() for item in plan["guardrails"])

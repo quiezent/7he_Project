@@ -11,7 +11,7 @@
   "decision_loop": [
     "Sync Garmin wellness, training status, and activities.",
     "Normalize 24/7 recovery signals, activity load, modality load, and training-status features.",
-    "Combine evidence with medical gates, modality overrides, symptoms, and goal phase.",
+    "Combine evidence with medical gates, scheduled rest days, modality overrides, symptoms, and goal phase.",
     "Generate deterministic plan proposal and human daily brief.",
     "Coach interprets the evidence and makes the final training/nutrition call.",
     "Log subjective hand response and next-morning outcome when Garmin cannot see the signal."
@@ -63,6 +63,14 @@
     "Activity training load, HR zones, aerobic/anaerobic effects, and power metrics",
     "Training status, ACWR, VO2 max, load focus, and heat acclimation",
     "Subjective pain, swelling, grip tolerance, and next-morning response"
+  ],
+  "standing_constraints": [
+    {
+      "label": "Sabbath",
+      "weekday": 6,
+      "status": "hard_rest",
+      "rule": "No planned exercise on Sunday regardless of readiness."
+    }
   ],
   "artifact_contract": {
     "current_state": "Single merged state for coaching.",

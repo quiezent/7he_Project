@@ -10,6 +10,7 @@
 - The `2026-04-21` review is historical now.
 - Current phase is `return_to_outdoor_reentry` through the first controlled post-clearance block.
 - Clearance opens the door; progression still depends on symptoms, load response, Garmin freshness, and next-morning hand response.
+- Sunday is Clayton's Sabbath hard-rest day: no planned exercise regardless of readiness.
 
 ## Quick Start
 - Install runtime dependencies:
@@ -138,6 +139,7 @@ Blank template fields are ignored.
 - Code answers: what data exists, what changed, what is stale, what rules are triggered.
 - Coach answers: what Clayton should actually do today and why.
 - The stack should warn on stale or missing Garmin data before confident hard-session guidance.
+- Scheduled Sabbath rest overrides workout selection; the plan should become rest, not a training option.
 - Active medical modality overrides can block a modality even when gates are otherwise cleared.
 - First-block re-entry exposure caps are enforced before adding more outdoor MTB.
 - Wake Body Battery and current Body Battery are separate signals; current Body Battery is time-of-day sensitive.

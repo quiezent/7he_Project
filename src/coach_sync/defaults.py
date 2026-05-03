@@ -107,6 +107,14 @@ def default_athlete_context() -> dict:
         "training_rules": {
             "stale_data_warning_days": 1,
             "acute_chronic_load_spike_ratio": 1.5,
+            "weekly_rest_days": [
+                {
+                    "weekday": 6,
+                    "label": "Sabbath",
+                    "status": "hard_rest",
+                    "reason": "Clayton treats Sunday as Sabbath; no planned exercise.",
+                }
+            ],
             "first_14_day_reentry": {
                 "max_outdoor_mtb_days_per_7d": 3,
                 "avoid_stack": "Do not combine first hard outdoor ride, heavy gym, and big technical exposure on the same day.",
@@ -139,4 +147,3 @@ def default_athlete_context() -> dict:
 
 def clone_default_context() -> dict:
     return deepcopy(default_athlete_context())
-

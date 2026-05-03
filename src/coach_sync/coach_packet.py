@@ -80,7 +80,7 @@ def _body_battery_model_use(model: dict) -> tuple[str, str]:
     return "exploratory_only", "Useful for inspection, but not enough validated signal to steer training."
 
 
-def _build_trusted_evidence(state: dict) -> list[dict]:
+def _build_trusted_evidence(state: dict, plan: dict) -> list[dict]:
     freshness = state.get("data_freshness") or {}
     activity_freshness = freshness.get("activity_data") or {}
     readiness = state.get("readiness") or {}
@@ -90,8 +90,21 @@ def _build_trusted_evidence(state: dict) -> list[dict]:
     rollups = state.get("modality_load_rollups") or {}
     baselines = state.get("historical_baselines") or {}
     injury_return = state.get("injury_return") or {}
+    scheduled_rest = (plan.get("decision_inputs") or {}).get("scheduled_rest")
 
-    trusted = [
+    trusted = []
+    if scheduled_rest:
+        trusted.append(
+            _signal(
+                "Scheduled rest",
+                scheduled_rest.get("status") or "active",
+                scheduled_rest,
+                "hard_daily_constraint",
+                scheduled_rest.get("reason") or "Scheduled rest day is active.",
+            )
+        )
+
+    trusted.extend([
         _signal(
             "Garmin wellness freshness",
             freshness.get("status") or "unknown",
@@ -183,7 +196,7 @@ def _build_trusted_evidence(state: dict) -> list[dict]:
             "reentry_cap_and_response_context",
             "Track outdoor, gym, grip, and next-morning response before expanding MTB load.",
         ),
-    ]
+    ])
     return trusted
 
 
@@ -330,7 +343,9 @@ def _today_decision(state: dict, plan: dict, cautions: list[dict]) -> dict:
     phase = (state.get("phase") or {}).get("name")
     readiness = state.get("readiness") or {}
     confidence = _coach_confidence(state)
-    if readiness.get("readiness_level") == "red":
+    if session.get("type") == "scheduled_rest":
+        stance = "sabbath_rest"
+    elif readiness.get("readiness_level") == "red":
         stance = "downshift"
     elif phase == "return_to_outdoor_reentry":
         stance = "controlled_reentry"
@@ -440,7 +455,7 @@ def build_coach_packet(
         },
         "today_call": _today_decision(state, plan, cautions),
         "evidence": {
-            "trusted": _build_trusted_evidence(state),
+            "trusted": _build_trusted_evidence(state, plan),
             "cautions": cautions,
             "experimental": experimental,
             "ignored_for_decision": ignored,

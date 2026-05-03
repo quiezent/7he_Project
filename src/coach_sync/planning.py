@@ -15,7 +15,9 @@ def _nutrition_block(context: dict, session_intensity: str, duration_min: int) -
     carb_ranges = nutrition.get("carb_g_per_kg", {})
     protein_range = nutrition.get("protein_g_per_kg", [1.6, 2.2])
     carbs = carb_ranges.get(session_intensity, carb_ranges.get("easy", [2.0, 4.0]))
-    if duration_min < 60:
+    if duration_min <= 0:
+        during = None
+    elif duration_min < 60:
         during = nutrition.get("during_session_carbs_g_per_hour", {}).get("under_60_min", [0, 20])
     elif duration_min <= 120:
         during = nutrition.get("during_session_carbs_g_per_hour", {}).get("60_to_120_min", [30, 60])
@@ -27,7 +29,9 @@ def _nutrition_block(context: dict, session_intensity: str, duration_min: int) -
         if body_weight is None
         else f"{round(protein_range[0] * body_weight)}-{round(protein_range[1] * body_weight)} g",
         "daily_carbs": f"{carbs[0]}-{carbs[1]} g/kg",
-        "during_session_carbs": f"{during[0]}-{during[1]} g/hour",
+        "during_session_carbs": "none"
+        if during is None
+        else f"{during[0]}-{during[1]} g/hour",
         "hydration": "Start hydrated; add electrolytes if the session is hot, long, or sweat-heavy.",
         "recovery": "Eat protein plus carbs within 2 hours when the ride or gym session is meaningful.",
     }
@@ -55,6 +59,22 @@ def _red_plan(state: dict) -> dict:
         "details": [
             "Keep the day easy: walk, mobility, or a short recovery spin.",
             "No hard intervals, heavy gripping, hard braking practice, or heavy gym loading.",
+        ],
+    }
+
+
+def _scheduled_rest_plan(rule: dict) -> dict:
+    label = rule.get("label") or "Scheduled rest"
+    reason = rule.get("reason") or "Scheduled no-exercise day."
+    return {
+        "title": f"{label} rest day",
+        "type": "scheduled_rest",
+        "duration_min": 0,
+        "intensity": "recovery",
+        "details": [
+            reason,
+            "No ride, gym, intervals, strength loading, or planned training today.",
+            "Normal life, worship, family time, meals, and easy unwinding are enough.",
         ],
     }
 
@@ -155,7 +175,21 @@ def _blocked_modalities(state: dict, aliases: set[str]) -> list[dict]:
     return blocked
 
 
-def _gym_block(state: dict) -> dict:
+def _scheduled_rest_rule(context: dict, target_date: date) -> dict | None:
+    for rule in context.get("training_rules", {}).get("weekly_rest_days", []):
+        if int(rule.get("weekday", -1)) == target_date.weekday():
+            return rule
+    return None
+
+
+def _gym_block(state: dict, scheduled_rest: dict | None = None) -> dict:
+    if scheduled_rest:
+        return {
+            "status": "skip",
+            "details": [
+                f"{scheduled_rest.get('label', 'Scheduled rest')} is a no-exercise day."
+            ],
+        }
     if not state.get("clearance", {}).get("gates", {}).get("loading", {}).get("status") == "cleared":
         return {"status": "blocked", "details": ["Loading gate is not cleared."]}
     blocked = _blocked_modalities(state, {"gym", "loading", "strength", "strength_training"})
@@ -195,6 +229,7 @@ def build_today_plan(
     full_context = load_context(root)
     tz = full_context.get("athlete", {}).get("timezone", DEFAULT_TIMEZONE)
     target_date = parse_date(for_date) or parse_date(state.get("date")) or today_local(tz)
+    scheduled_rest = _scheduled_rest_rule(full_context, target_date)
     readiness = state.get("readiness", {})
     level = readiness.get("readiness_level")
     hard_guidance = readiness.get("hard_session_guidance")
@@ -214,7 +249,9 @@ def build_today_plan(
         for flag in state.get("injury_return", {}).get("flags", [])
     )
 
-    if not all_cleared:
+    if scheduled_rest:
+        session = _scheduled_rest_plan(scheduled_rest)
+    elif not all_cleared:
         session = _blocked_plan(state)
     elif trail_blocked:
         session = _indoor_reentry_plan(
@@ -247,6 +284,11 @@ def build_today_plan(
         "Dr. Teh's clearance opens outdoor biking, gym, and normal activity; progression still follows symptom and load response.",
         "Downshift tomorrow if pain, swelling, inflammation, reduced grip tolerance, or poor next-morning response appears.",
     ]
+    if scheduled_rest:
+        guardrails.insert(
+            0,
+            f"{scheduled_rest.get('label', 'Scheduled rest')} is a hard rest constraint: no planned exercise today.",
+        )
     if stale:
         guardrails.insert(
             0,
@@ -270,7 +312,7 @@ def build_today_plan(
         "generated_at": iso_now(tz),
         "coaching_status": "proposal_for_llm_coach",
         "session": session,
-        "gym": _gym_block(state),
+        "gym": _gym_block(state, scheduled_rest=scheduled_rest),
         "nutrition": nutrition,
         "guardrails": guardrails,
         "decision_inputs": {
@@ -280,6 +322,7 @@ def build_today_plan(
             "hard_session_guidance": hard_guidance,
             "data_freshness": state.get("data_freshness"),
             "clearance_all_cleared": all_cleared,
+            "scheduled_rest": scheduled_rest,
         },
     }
     write_json(snapshots_dir(root) / "today_plan.json", plan)

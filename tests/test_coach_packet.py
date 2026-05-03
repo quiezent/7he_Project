@@ -55,3 +55,14 @@ def test_coach_packet_cli_command(tmp_path, capsys):
 
     assert code == 0
     assert payload["artifacts"]["json"] == "snapshots/coach_packet.json"
+
+
+def test_coach_packet_promotes_sabbath_constraint(tmp_path):
+    load_context(tmp_path)
+    _write_green_wellness(tmp_path, "2026-05-03")
+
+    packet = build_coach_packet(tmp_path, "2026-05-03")
+
+    assert packet["today_call"]["stance"] == "sabbath_rest"
+    assert packet["today_call"]["session"]["type"] == "scheduled_rest"
+    assert packet["evidence"]["trusted"][0]["name"] == "Scheduled rest"
