@@ -80,6 +80,10 @@ def _fetch_live(root: str | Path | None, wellness_days: int, activity_limit: int
             _safe_call("get_stats", client.get_stats, day),
             _safe_call("get_user_summary", client.get_user_summary, day),
         ]
+        if hasattr(client, "get_body_battery"):
+            payloads.append(_safe_call("get_body_battery", client.get_body_battery, day, day))
+        if hasattr(client, "get_body_battery_events"):
+            payloads.append(_safe_call("get_body_battery_events", client.get_body_battery_events, day))
         for method_name in ("get_sleep_data", "get_hrv_data", "get_body_composition"):
             method = getattr(client, method_name, None)
             if method:

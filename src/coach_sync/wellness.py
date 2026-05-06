@@ -38,6 +38,38 @@ def _hours(seconds: Any) -> float | None:
     return round(value / 3600, 2) if value is not None else None
 
 
+def _body_battery_from_endpoint(payload: Any, target_date: str | None) -> dict:
+    if not isinstance(payload, list):
+        return {}
+    selected = None
+    for row in payload:
+        if not isinstance(row, dict):
+            continue
+        if target_date is None or row.get("date") == target_date:
+            selected = row
+    if not selected:
+        return {}
+    values = selected.get("bodyBatteryValuesArray") or []
+    latest_time = None
+    latest_value = None
+    for item in values:
+        if not isinstance(item, (list, tuple)) or len(item) < 2:
+            continue
+        value = as_number(item[1])
+        if value is None:
+            continue
+        latest_time = item[0]
+        latest_value = value
+    return {
+        "current": latest_value,
+        "charge": as_number(selected.get("charged")),
+        "drain": as_number(selected.get("drained")),
+        "latest_timestamp": latest_time,
+        "start_time_local": selected.get("startTimestampLocal"),
+        "end_time_local": selected.get("endTimestampLocal"),
+    }
+
+
 def normalize_wellness_payload(snapshot: dict) -> dict:
     labels = _payloads_by_label(snapshot)
     stats = labels.get("get_stats") or labels.get("get_user_summary") or {}
@@ -49,6 +81,9 @@ def normalize_wellness_payload(snapshot: dict) -> dict:
     sleep_scores = sleep_dto.get("sleepScores") or {}
 
     raw_date = snapshot.get("date") or stats.get("calendarDate") or sleep_dto.get("calendarDate")
+    body_battery = _body_battery_from_endpoint(labels.get("get_body_battery"), raw_date)
+    body_battery_current = body_battery.get("current")
+    body_battery_source = "get_body_battery" if body_battery_current is not None else "daily_summary"
     sleep_seconds = as_number(sleep_dto.get("sleepTimeSeconds"))
     awake_seconds = as_number(sleep_dto.get("awakeSleepSeconds")) or 0
     time_in_bed = sleep_seconds + awake_seconds if sleep_seconds is not None else None
@@ -79,9 +114,19 @@ def normalize_wellness_payload(snapshot: dict) -> dict:
         "medium_stress_min": _minutes(stats.get("mediumStressDuration")),
         "high_stress_min": _minutes(stats.get("highStressDuration")),
         "body_battery_wake": as_number(stats.get("bodyBatteryAtWakeTime")),
-        "body_battery_current": as_number(stats.get("bodyBatteryMostRecentValue")),
-        "body_battery_charge": as_number(stats.get("bodyBatteryChargedValue")),
-        "body_battery_drain": as_number(stats.get("bodyBatteryDrainedValue")),
+        "body_battery_current": body_battery_current
+        if body_battery_current is not None
+        else as_number(stats.get("bodyBatteryMostRecentValue")),
+        "body_battery_charge": body_battery.get("charge")
+        if body_battery.get("charge") is not None
+        else as_number(stats.get("bodyBatteryChargedValue")),
+        "body_battery_drain": body_battery.get("drain")
+        if body_battery.get("drain") is not None
+        else as_number(stats.get("bodyBatteryDrainedValue")),
+        "body_battery_source": body_battery_source,
+        "body_battery_latest_timestamp": body_battery.get("latest_timestamp"),
+        "body_battery_start_time_local": body_battery.get("start_time_local"),
+        "body_battery_end_time_local": body_battery.get("end_time_local"),
         "sleep_score": as_number(_nested(sleep_scores, "overall", "value")),
         "sleep_quality": _nested(sleep_scores, "overall", "qualifierKey"),
         "sleep_hours": _hours(sleep_seconds),

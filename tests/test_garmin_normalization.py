@@ -51,6 +51,54 @@ def test_wellness_normalizes_nested_sleep_body_battery_and_hrv(tmp_path):
     assert (tmp_path / "snapshots" / "readiness_features_2026-04-30.json").exists()
 
 
+def test_wellness_prefers_dedicated_body_battery_endpoint(tmp_path):
+    write_json(
+        tmp_path / "snapshots" / "garmin_wellness_2026-05-06.json",
+        {
+            "date": "2026-05-06",
+            "payloads": [
+                {
+                    "label": "get_stats",
+                    "ok": True,
+                    "data": {
+                        "calendarDate": "2026-05-06",
+                        "bodyBatteryMostRecentValue": 33,
+                        "bodyBatteryChargedValue": 28,
+                        "bodyBatteryDrainedValue": 0,
+                        "averageStressLevel": 11,
+                    },
+                },
+                {
+                    "label": "get_body_battery",
+                    "ok": True,
+                    "data": [
+                        {
+                            "date": "2026-05-06",
+                            "charged": 63,
+                            "drained": 18,
+                            "startTimestampLocal": "2026-05-06T00:00:00.0",
+                            "endTimestampLocal": "2026-05-06T10:05:00.0",
+                            "bodyBatteryValuesArray": [
+                                [1778019840000, 68],
+                                [1778021280000, 67],
+                                [1778031360000, 50],
+                            ],
+                        }
+                    ],
+                },
+            ],
+        },
+    )
+
+    trends = build_wellness_trends(tmp_path, "2026-05-06")
+
+    assert trends["latest"]["body_battery_current"] == 50
+    assert trends["latest"]["body_battery_charge"] == 63
+    assert trends["latest"]["body_battery_drain"] == 18
+    assert trends["latest"]["body_battery_source"] == "get_body_battery"
+    assert trends["latest"]["body_battery_end_time_local"] == "2026-05-06T10:05:00.0"
+
+
 def test_activity_load_uses_activity_training_load_and_excludes_motorsport(tmp_path):
     write_json(
         tmp_path / "activities" / "ride.json",
