@@ -1,0 +1,100 @@
+{
+  "status": "active_experimental",
+  "principle": "Use ML as interpretable evidence for coaching, never as an autonomous prescription engine.",
+  "data_layers": {
+    "long_history_activity": {
+      "coverage": "2021-06-18 through current sync",
+      "best_use": [
+        "MTB and indoor training baselines",
+        "peak 7/28-day windows",
+        "productive vs risky block labels",
+        "modality displacement detection",
+        "return-to-trail destination context"
+      ]
+    },
+    "historical_wellness": {
+      "coverage": "partial, currently 2021-07-01 to 2022-03-27 plus modern 2026",
+      "best_use": [
+        "sleep, stress, resting HR, current Body Battery trends",
+        "broad next-day response labels where enough signals exist"
+      ],
+      "limitation": "Old wellness lacks modern HRV and wake Body Battery fields."
+    },
+    "modern_complete_wellness": {
+      "coverage": "2026-03-19 onward in current data",
+      "best_use": [
+        "wake Body Battery model",
+        "HRV-aware readiness",
+        "modern response tracking"
+      ]
+    }
+  },
+  "label_definitions": {
+    "worked_productive_mtb_base": {
+      "description": "Sustainable MTB durability block",
+      "criteria": [
+        "28-day MTB sessions >= 12",
+        "28-day MTB duration >= 30 h",
+        "Z4/Z5 share <= 8%",
+        "next-28-day load retention >= 0.65"
+      ]
+    },
+    "worked_mixed_mtb_indoor_build": {
+      "description": "Productive mixed MTB/indoor build",
+      "criteria": [
+        "10-13 MTB sessions in 28 days",
+        "9-18 indoor sessions in 28 days",
+        "total duration >= 30 h",
+        "low Z4/Z5 density",
+        "next-28-day load retention >= 0.6"
+      ]
+    },
+    "didnt_work_intensity_compression": {
+      "description": "High intensity density that tends not to repeat",
+      "criteria": [
+        "Z3+ share >= 40% or Z4/Z5 share >= 20%",
+        "load per hour > 100",
+        "next-28-day retention < 0.6 strengthens label confidence"
+      ]
+    },
+    "didnt_work_modality_displacement": {
+      "description": "High load without MTB/gym specificity",
+      "criteria": [
+        "high total load",
+        "zero MTB or very low MTB",
+        "zero or low gym",
+        "elliptical/indoor substitution dominates"
+      ]
+    },
+    "watch_load_spike_after_lull": {
+      "description": "Ramp risk after lower-load period",
+      "criteria": [
+        "7-day load ratio > 2.0 over prior 28-day weekly average"
+      ]
+    }
+  },
+  "current_models": {
+    "body_battery_decision_tree": {
+      "artifact": "snapshots/body_battery_model_report.json",
+      "target": "wake Body Battery >= 70",
+      "status": "useful_explainable_modern_only"
+    },
+    "training_response_predictor": {
+      "artifact": "snapshots/training_response_model_report.json",
+      "target": "next-day Garmin-derived response/readiness",
+      "status": "experimental_until_validation_beats_baseline"
+    },
+    "execution_risk_overlay": {
+      "artifact": "snapshots/predictive_session_plan.json",
+      "target": "whether the written prescription is likely to become longer or harder than planned",
+      "status": "active_from_10_date_backtest"
+    }
+  },
+  "next_models": [
+    "28-day block label classifier using historical activity windows",
+    "MTB load-ramp scorer using exposure count, load ramp, heat, and self-evaluation",
+    "modality displacement detector for engine maintenance vs MTB readiness",
+    "session-response model once subjective skill-quality, fueling, heat, and RPE outcomes accumulate",
+    "larger execution-adherence model split by indoor bike, MTB durability, MTB skill, elliptical, gym, and rest"
+  ]
+}

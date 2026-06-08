@@ -1,0 +1,10 @@
+{
+  "date": "2026-06-02",
+  "ride_purpose": "Bukit Dinding / Melawati mixed uplift and self-pedaled Enduro ride; Zeb Ultimate setup shakedown.",
+  "trail_condition": "Weather threatened rain; actual wetness not explicitly logged.",
+  "skill_quality": "Felt strong overall. A bit of arm pump on descents. Zeb setup was good.",
+  "lap_context": "Laps 2, 5, and 7 were uplift/access laps, so Garmin elevation/load should be interpreted as mixed uplift/self-pedaled rather than pure self-pedaled enduro.",
+  "bike_setup": "RockShox Zeb Ultimate likely needs 1 click more rebound damping and 1 click less low-speed compression damping at next Bukit Dinding session.",
+  "next_session_hint": "Likely next Bukit Dinding session Saturday 2026-06-06.",
+  "notes": "Use this ride as a mixed access Enduro/Zeb setup reference. Arm pump remains a limiter to monitor before increasing DH pace or descent count."
+}

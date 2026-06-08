@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "clayton-mtb-coach-sync"
+version = "0.1.0"
+description = "CLI-first Garmin evidence and MTB coaching artifact stack for Clayton."
+requires-python = ">=3.11"
+dependencies = [
+  "garminconnect>=0.2.40,<0.3",
+  "fitparse>=1.2.0,<2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
