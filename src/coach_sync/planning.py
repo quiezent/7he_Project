@@ -9,6 +9,24 @@ from .state import build_current_state
 from .time_utils import DEFAULT_TIMEZONE, iso_now, parse_date, today_local
 
 
+SESSION_CONTRACT_FIELDS = [
+    "purpose",
+    "dose",
+    "adaptation_hypothesis",
+    "execution_rules",
+    "expected_result",
+    "stop_rules",
+    "post_session_review_fields",
+]
+
+TRAINABLE_SESSION_TYPES = {
+    "bike_quality",
+    "endurance_data_limited",
+    "endurance_skills",
+    "outdoor_bike_optional",
+}
+
+
 def _nutrition_block(context: dict, session_intensity: str, duration_min: int) -> dict:
     nutrition = context.get("nutrition", {})
     athlete = context.get("athlete", {})
@@ -72,6 +90,144 @@ def _scheduled_rest_plan(rule: dict) -> dict:
             "Normal life, worship, family time, meals, and easy unwinding are enough.",
         ],
     }
+
+
+def _default_stop_rules() -> list[str]:
+    return [
+        "End technical work if braking timing gets lazy or line choice becomes reactive.",
+        "End intensity if HR drift or RPE turns controlled work into survival.",
+        "Downshift immediately if rain, traffic, heat, or trail consequence exceeds the session purpose.",
+    ]
+
+
+def _review_fields() -> list[str]:
+    return [
+        "actual_duration_min",
+        "actual_training_load",
+        "actual_rpe",
+        "workout_feel",
+        "next_morning_response",
+        "fueling_carbs_g_per_hour",
+        "fluid_ml_per_hour",
+        "sodium_mg_per_hour",
+        "technical_quality_notes",
+        "late_session_skill_fade",
+    ]
+
+
+def _contract_for_session(session: dict) -> dict:
+    session_type = session.get("type")
+    duration = int(session.get("duration_min") or 0)
+    intensity = session.get("intensity") or "easy"
+
+    if session_type == "bike_quality":
+        return {
+            "purpose": "Rebuild bike-specific engine quality without using stale FTP as the prescription anchor.",
+            "dose": {
+                "duration_min": duration,
+                "intensity": intensity,
+                "completion": "Controlled quality work is complete when the final interval is repeatable, not barely survived.",
+                "cap": "Keep the session inside the written duration and skip extra work.",
+            },
+            "adaptation_hypothesis": (
+                "A controlled bike-quality dose should rebuild torque, threshold durability, and repeatable power while still allowing the next key trail session to stay sharp."
+            ),
+            "execution_rules": [
+                "Warm up thoroughly before any hard work.",
+                "Use current RPE and HR response rather than historical 222 W P20 assumptions.",
+                "Keep cadence, posture, and breathing controlled through the final work block.",
+            ],
+            "expected_result": {
+                "garmin_load": "meaningful but controlled bike-specific load",
+                "rpe": "hard but repeatable",
+                "next_day": "no poor recovery signal and no loss of trail-quality readiness",
+            },
+            "stop_rules": _default_stop_rules(),
+            "post_session_review_fields": _review_fields(),
+        }
+    if session_type == "endurance_skills":
+        return {
+            "purpose": "Maintain aerobic bike continuity while touching MTB skills without creating a hard-session recovery cost.",
+            "dose": {
+                "duration_min": duration,
+                "intensity": intensity,
+                "completion": "Z2 ride plus a few clean technique touches, finished with form still crisp.",
+                "cap": "No chasing segment time, extra descents, or late intensity creep.",
+            },
+            "adaptation_hypothesis": (
+                "Low-cost skill touches under aerobic load should support continuity and technical confidence while preserving capacity for the next key session."
+            ),
+            "execution_rules": [
+                "Keep skill work low consequence and repeat only clean reps.",
+                "Use full recovery between technique touches.",
+                "Let precision, not speed, decide whether another rep is useful.",
+            ],
+            "expected_result": {
+                "garmin_load": "moderate aerobic load",
+                "rpe": "moderate, never race-like",
+                "next_day": "ready for normal training with no late-ride skill collapse",
+            },
+            "stop_rules": _default_stop_rules(),
+            "post_session_review_fields": _review_fields(),
+        }
+    if session_type == "endurance_data_limited":
+        return {
+            "purpose": "Preserve aerobic and bike-specific continuity while deferring hard work because evidence confidence is limited.",
+            "dose": {
+                "duration_min": duration,
+                "intensity": intensity,
+                "completion": "Aerobic work only, finished fresh enough that missing data did not hide a hard session.",
+                "cap": "No intervals, race efforts, or durability extension.",
+            },
+            "adaptation_hypothesis": (
+                "A capped aerobic ride should keep the bike rhythm alive without making an unverified recovery or load state worse."
+            ),
+            "execution_rules": [
+                "Ride by RPE if Garmin evidence is stale or incomplete.",
+                "Keep breathing conversational and form smooth.",
+                "Treat the next Garmin sync as the final gate for future hard work.",
+            ],
+            "expected_result": {
+                "garmin_load": "low-to-moderate aerobic load",
+                "rpe": "easy to moderate",
+                "next_day": "no avoidable recovery penalty from a low-confidence day",
+            },
+            "stop_rules": _default_stop_rules(),
+            "post_session_review_fields": _review_fields(),
+        }
+    return {
+        "purpose": "Protect bike-specific continuity without adding meaningful recovery debt.",
+        "dose": {
+            "duration_min": duration,
+            "intensity": intensity,
+            "completion": "Easy spin or low-consequence ride completed within the cap.",
+            "cap": "Stay Z1-Z2 / RPE 2-4 and stop before the ride becomes training density.",
+        },
+        "adaptation_hypothesis": (
+            "An easy bike touch should support the weekly continuity floor while leaving freshness for higher-value MTB or structured sessions."
+        ),
+        "execution_rules": [
+            "Use low-consequence terrain or the indoor trainer.",
+            "Avoid climbs, descents, or group dynamics that turn the ride hard.",
+            "Finish with better freshness than you started with.",
+        ],
+        "expected_result": {
+            "garmin_load": "low",
+            "rpe": "easy",
+            "next_day": "same or better readiness, with no skill-quality penalty",
+        },
+        "stop_rules": _default_stop_rules(),
+        "post_session_review_fields": _review_fields(),
+    }
+
+
+def _with_session_contract(session: dict) -> dict:
+    if session.get("type") not in TRAINABLE_SESSION_TYPES:
+        return session
+    contracted = {**session, **_contract_for_session(session)}
+    contracted["schema_version"] = 3
+    contracted["contract_fields"] = list(SESSION_CONTRACT_FIELDS)
+    return contracted
 
 
 def _yellow_base_plan(state: dict) -> dict:
@@ -185,6 +341,7 @@ def build_today_plan(
         session = _green_base_plan(state)
         if session.get("intensity") == "hard" and hard_confidence_limited:
             session = _data_limited_base_plan(state)
+    session = _with_session_contract(session)
 
     nutrition_context = {
         **full_context,

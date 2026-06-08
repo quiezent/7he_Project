@@ -10,7 +10,7 @@ from .evidence import as_number
 from .io import read_json, write_json, write_text
 from .load_model import build_activity_summary_index
 from .paths import snapshots_dir
-from .planning import build_today_plan
+from .planning import SESSION_CONTRACT_FIELDS, build_today_plan
 from .state import build_current_state
 from .time_utils import DEFAULT_TIMEZONE, iso_now, parse_date, today_local
 from .training_predictor import (
@@ -407,7 +407,7 @@ def _session_expectation(plan: dict) -> dict:
             categories["other"] = 1
     load_low = training_load * 0.7
     load_high = training_load * 1.35
-    return {
+    expected = {
         "title": session.get("title"),
         "type": session_type,
         "intensity": intensity,
@@ -426,6 +426,14 @@ def _session_expectation(plan: dict) -> dict:
             "Trail heat, stops, technical terrain, wrist-HR error, and group riding can move actual Garmin load away from this estimate.",
         ],
     }
+    for field in SESSION_CONTRACT_FIELDS:
+        if field in session:
+            expected[field] = session[field]
+    if session.get("schema_version"):
+        expected["schema_version"] = session.get("schema_version")
+    if session.get("contract_fields"):
+        expected["contract_fields"] = session.get("contract_fields")
+    return expected
 
 
 def _simulate_activity_day(activity_by_day: dict[str, dict], target: date, expected: dict) -> dict[str, dict]:

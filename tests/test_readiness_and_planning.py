@@ -1,6 +1,6 @@
 from coach_sync.context import load_context, save_context
 from coach_sync.io import write_json
-from coach_sync.planning import build_today_plan
+from coach_sync.planning import SESSION_CONTRACT_FIELDS, build_today_plan
 from coach_sync.readiness import build_readiness
 from coach_sync.wellness import build_wellness_trends
 
@@ -115,6 +115,67 @@ def test_base_phase_green_day_gets_trainable_plan(tmp_path):
     assert plan["decision_inputs"]["phase"] == "base_rebuild"
     assert plan["session"]["type"] in {"endurance_skills", "bike_quality"}
     assert "daily_protein" in plan["nutrition"]
+
+
+def _green_state(day: str, hard_confidence: str = "normal") -> dict:
+    return {
+        "date": day,
+        "athlete": {},
+        "phase": {"name": "base_rebuild"},
+        "readiness": {
+            "readiness_level": "green",
+            "readiness_score": 85,
+            "hard_session_guidance": "allow",
+        },
+        "data_freshness": {
+            "status": "current",
+            "hard_session_confidence": hard_confidence,
+            "hard_session_limiters": ["Recent activity data is missing."]
+            if hard_confidence == "limited"
+            else [],
+        },
+    }
+
+
+def _yellow_state(day: str) -> dict:
+    state = _green_state(day)
+    state["readiness"] = {
+        "readiness_level": "yellow",
+        "readiness_score": 65,
+        "hard_session_guidance": "caution",
+    }
+    return state
+
+
+def _assert_schema_v3_contract(session: dict) -> None:
+    assert session["schema_version"] == 3
+    assert session["contract_fields"] == SESSION_CONTRACT_FIELDS
+    for field in SESSION_CONTRACT_FIELDS:
+        assert session.get(field), field
+    assert isinstance(session["dose"], dict)
+    assert isinstance(session["execution_rules"], list)
+    assert isinstance(session["stop_rules"], list)
+    assert isinstance(session["post_session_review_fields"], list)
+
+
+def test_trainable_today_plan_sessions_include_schema_v3_contract(tmp_path):
+    load_context(tmp_path)
+
+    yellow = build_today_plan(tmp_path, "2026-04-29", state=_yellow_state("2026-04-29"))
+    green_skills = build_today_plan(tmp_path, "2026-04-29", state=_green_state("2026-04-29"))
+    green_quality = build_today_plan(tmp_path, "2026-04-30", state=_green_state("2026-04-30"))
+    data_limited = build_today_plan(
+        tmp_path,
+        "2026-04-30",
+        state=_green_state("2026-04-30", hard_confidence="limited"),
+    )
+
+    assert yellow["session"]["type"] == "outdoor_bike_optional"
+    assert green_skills["session"]["type"] == "endurance_skills"
+    assert green_quality["session"]["type"] == "bike_quality"
+    assert data_limited["session"]["type"] == "endurance_data_limited"
+    for plan in (yellow, green_skills, green_quality, data_limited):
+        _assert_schema_v3_contract(plan["session"])
 
 
 def test_sunday_sabbath_blocks_planned_exercise(tmp_path):

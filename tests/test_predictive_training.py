@@ -2,6 +2,7 @@ from datetime import date, timedelta
 
 from coach_sync.context import load_context
 from coach_sync.io import read_json, write_json
+from coach_sync.planning import SESSION_CONTRACT_FIELDS
 from coach_sync.predictive_training import (
     build_predictive_prescription,
     build_predictive_review,
@@ -97,6 +98,8 @@ def test_predictive_training_builds_prescription_and_latest_review(tmp_path):
     prediction = artifact["today_prescription"]["prediction"]
     assert prediction["status"] in {"ok", "caution"}
     assert prediction["expected_session"]["expected_training_load"] is not None
+    for field in SESSION_CONTRACT_FIELDS:
+        assert prediction["expected_session"].get(field), field
     assert prediction["expected_next_day_response"]["leaf_samples"] >= 0
     assert prediction["coaching_adjusted_next_day_response"]["score"] is not None
     assert artifact["latest_review"]["comparison"]["adherence_status"] in {
