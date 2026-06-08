@@ -9,6 +9,7 @@ from .evidence import as_number, dated_snapshot_files
 from .io import read_json, write_json
 from .paths import snapshots_dir
 from .time_utils import DEFAULT_TIMEZONE, iso_now, parse_date, today_local
+from .wellness_verification import verify_wellness_payload
 
 
 def _payloads_by_label(snapshot: dict) -> dict[str, Any]:
@@ -36,6 +37,51 @@ def _minutes(seconds: Any) -> float | None:
 def _hours(seconds: Any) -> float | None:
     value = as_number(seconds)
     return round(value / 3600, 2) if value is not None else None
+
+
+def _mass_kg(value: Any) -> float | None:
+    raw = as_number(value)
+    if raw is None:
+        return None
+    # Garmin Index body-composition mass values arrive in grams.
+    kg = raw / 1000 if raw > 300 else raw
+    return round(kg, 2)
+
+
+def _pct(value: Any) -> float | None:
+    raw = as_number(value)
+    return round(raw, 1) if raw is not None else None
+
+
+def _body_composition(body_comp: dict | None) -> dict:
+    body_comp = body_comp or {}
+    rows = [
+        item
+        for item in body_comp.get("dateWeightList", [])
+        if isinstance(item, dict)
+    ]
+    latest_sample = rows[-1] if rows else {}
+    total = body_comp.get("totalAverage") if isinstance(body_comp.get("totalAverage"), dict) else {}
+
+    def pick(key: str) -> Any:
+        value = total.get(key)
+        return value if value is not None else latest_sample.get(key)
+
+    weight_g = as_number(pick("weight"))
+    return {
+        "body_weight": weight_g,
+        "body_weight_kg": _mass_kg(weight_g),
+        "bmi": as_number(pick("bmi")),
+        "body_fat_pct": _pct(pick("bodyFat")),
+        "body_water_pct": _pct(pick("bodyWater")),
+        "muscle_mass_kg": _mass_kg(pick("muscleMass")),
+        "bone_mass_kg": _mass_kg(pick("boneMass")),
+        "metabolic_age": as_number(pick("metabolicAge")),
+        "physique_rating": as_number(pick("physiqueRating")),
+        "visceral_fat": as_number(pick("visceralFat")),
+        "body_composition_source": latest_sample.get("sourceType"),
+        "body_composition_sample_time_gmt": latest_sample.get("timestampGMT"),
+    }
 
 
 def _body_battery_from_endpoint(payload: Any, target_date: str | None) -> dict:
@@ -82,6 +128,8 @@ def normalize_wellness_payload(snapshot: dict) -> dict:
 
     raw_date = snapshot.get("date") or stats.get("calendarDate") or sleep_dto.get("calendarDate")
     body_battery = _body_battery_from_endpoint(labels.get("get_body_battery"), raw_date)
+    verification = verify_wellness_payload(snapshot, raw_date, DEFAULT_TIMEZONE)
+    body_battery_interpretation = verification.get("body_battery_interpretation") or {}
     body_battery_current = body_battery.get("current")
     body_battery_source = "get_body_battery" if body_battery_current is not None else "daily_summary"
     sleep_seconds = as_number(sleep_dto.get("sleepTimeSeconds"))
@@ -94,8 +142,9 @@ def normalize_wellness_payload(snapshot: dict) -> dict:
     )
     moderate = as_number(stats.get("moderateIntensityMinutes")) or 0
     vigorous = as_number(stats.get("vigorousIntensityMinutes")) or 0
+    composition = _body_composition(body_comp)
 
-    return {
+    row = {
         "date": raw_date,
         "available_payloads": sorted(labels),
         "steps": as_number(stats.get("totalSteps")),
@@ -127,6 +176,17 @@ def normalize_wellness_payload(snapshot: dict) -> dict:
         "body_battery_latest_timestamp": body_battery.get("latest_timestamp"),
         "body_battery_start_time_local": body_battery.get("start_time_local"),
         "body_battery_end_time_local": body_battery.get("end_time_local"),
+        "body_battery_verified_morning_anchor": as_number(
+            body_battery_interpretation.get("recommended_morning_anchor")
+        ),
+        "body_battery_verified_anchor_source": body_battery_interpretation.get(
+            "recommended_anchor_source"
+        ),
+        "body_battery_post_wake_recharge": (
+            body_battery_interpretation.get("post_wake_recharge") or {}
+        ).get("detected"),
+        "body_battery_verification_status": verification.get("verification_status"),
+        "body_battery_verification_confidence": verification.get("confidence"),
         "sleep_score": as_number(_nested(sleep_scores, "overall", "value")),
         "sleep_quality": _nested(sleep_scores, "overall", "qualifierKey"),
         "sleep_hours": _hours(sleep_seconds),
@@ -151,8 +211,9 @@ def normalize_wellness_payload(snapshot: dict) -> dict:
         "vigorous_intensity_min": vigorous,
         "weighted_intensity_min": moderate + 2 * vigorous,
         "intensity_goal_min": as_number(stats.get("intensityMinutesGoal")),
-        "body_weight": as_number(_nested(body_comp, "totalAverage", "weight")),
     }
+    row.update(composition)
+    return row
 
 
 def normalize_wellness_snapshot(path: Path) -> dict:
@@ -195,6 +256,32 @@ def _trend(rows: list[dict], key: str, days: int = 7) -> dict:
     return {"current_avg": current_avg, "previous_avg": previous_avg, "delta": delta}
 
 
+def _latest_body_composition(rows: list[dict], target: date) -> dict | None:
+    for row in reversed(rows):
+        body_weight_kg = as_number(row.get("body_weight_kg"))
+        if body_weight_kg is None:
+            continue
+        row_date = parse_date(row.get("date"))
+        if not row_date:
+            continue
+        return {
+            "date": row_date.isoformat(),
+            "age_days": (target - row_date).days,
+            "body_weight_kg": body_weight_kg,
+            "bmi": as_number(row.get("bmi")),
+            "body_fat_pct": as_number(row.get("body_fat_pct")),
+            "body_water_pct": as_number(row.get("body_water_pct")),
+            "muscle_mass_kg": as_number(row.get("muscle_mass_kg")),
+            "bone_mass_kg": as_number(row.get("bone_mass_kg")),
+            "metabolic_age": as_number(row.get("metabolic_age")),
+            "physique_rating": as_number(row.get("physique_rating")),
+            "visceral_fat": as_number(row.get("visceral_fat")),
+            "source": row.get("body_composition_source") or "garmin_body_composition",
+            "sample_time_gmt": row.get("body_composition_sample_time_gmt"),
+        }
+    return None
+
+
 def build_wellness_trends(
     root: str | Path | None = None,
     for_date: str | date | None = None,
@@ -204,6 +291,7 @@ def build_wellness_trends(
     rows = [row for row in rows if parse_date(row.get("date")) and parse_date(row.get("date")) <= target]
     latest = rows[-1] if rows else None
     last_7 = rows[-7:]
+    latest_composition = _latest_body_composition(rows, target)
     flags = []
     if latest:
         if (latest.get("body_battery_current") or 100) < 35:
@@ -218,12 +306,20 @@ def build_wellness_trends(
         hrv_status = str(latest.get("hrv_status") or "").lower()
         if any(term in hrv_status for term in ("low", "poor", "unbalanced")):
             flags.append({"type": "hrv_status", "message": f"HRV status is {latest.get('hrv_status')}."})
+    if latest_composition and latest_composition.get("age_days", 0) > 14:
+        flags.append(
+            {
+                "type": "body_composition_stale",
+                "message": f"Latest Garmin scale body-composition sample is {latest_composition['age_days']} day(s) old.",
+            }
+        )
 
     trends = {
         "date": target.isoformat(),
         "generated_at": iso_now(DEFAULT_TIMEZONE),
         "days_available": len(rows),
         "latest": latest,
+        "latest_body_composition": latest_composition,
         "last_7": {
             "avg_sleep_score": _avg(last_7, "sleep_score"),
             "avg_sleep_hours": _avg(last_7, "sleep_hours"),
@@ -231,6 +327,7 @@ def build_wellness_trends(
             "avg_overnight_hrv": _avg(last_7, "overnight_hrv"),
             "avg_stress": _avg(last_7, "avg_stress"),
             "avg_body_battery_wake": _avg(last_7, "body_battery_wake"),
+            "avg_body_weight_kg": _avg(last_7, "body_weight_kg"),
             "weighted_intensity_min": _sum(last_7, "weighted_intensity_min"),
             "steps": _sum(last_7, "steps"),
         },
@@ -241,6 +338,7 @@ def build_wellness_trends(
             "overnight_hrv": _trend(rows, "overnight_hrv"),
             "avg_stress": _trend(rows, "avg_stress"),
             "body_battery_wake": _trend(rows, "body_battery_wake"),
+            "body_weight_kg": _trend(rows, "body_weight_kg"),
         },
         "flags": flags,
     }

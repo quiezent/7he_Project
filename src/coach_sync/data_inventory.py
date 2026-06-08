@@ -30,9 +30,8 @@ def build_data_inventory(root: str | Path | None = None) -> dict:
             "Body Battery wake/current/charge/drain",
             "daily stress, respiration, SpO2, steps, calories, and intensity minutes",
             "activity training load, HR zones, aerobic/anaerobic effects, and cycling power",
-            "subjective hand symptoms and next-morning grip response",
+            "subjective trail-skill, fueling, heat, and next-morning response",
         ],
     }
     write_json(snapshots_dir(root) / "garmin_data_inventory.json", inventory)
     return inventory
-

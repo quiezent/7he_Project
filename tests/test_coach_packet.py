@@ -1,5 +1,6 @@
 import json
 
+import coach_sync.coach_packet as coach_packet_module
 from coach_sync.cli import main
 from coach_sync.coach_packet import build_coach_packet
 from coach_sync.context import load_context
@@ -35,7 +36,7 @@ def test_coach_packet_writes_decision_surface_and_triages_models(tmp_path):
 
     assert packet["artifact_type"] == "coach_decision_packet"
     assert packet["stack_path"]["chosen_path"] == "evidence_triage_over_more_models"
-    assert packet["today_call"]["session"]["type"] == "outdoor_mtb"
+    assert packet["today_call"]["session"]["type"] == "endurance_skills"
     assert any(item["name"] == "Readiness" for item in packet["evidence"]["trusted"])
     assert any(
         item["name"] == "Next-day training response tree"
@@ -66,3 +67,51 @@ def test_coach_packet_promotes_sabbath_constraint(tmp_path):
     assert packet["today_call"]["stance"] == "sabbath_rest"
     assert packet["today_call"]["session"]["type"] == "scheduled_rest"
     assert packet["evidence"]["trusted"][0]["name"] == "Scheduled rest"
+
+
+def test_coach_packet_reuses_same_date_state_and_plan_artifacts(tmp_path, monkeypatch):
+    load_context(tmp_path)
+    write_json(
+        tmp_path / "snapshots" / "current_state.json",
+        {
+            "date": "2026-06-08",
+            "readiness": {
+                "readiness_level": "yellow",
+                "readiness_score": 65,
+                "confidence": "medium",
+                "hard_session_guidance": "caution",
+                "reasons": [],
+            },
+            "data_freshness": {
+                "status": "current",
+                "message": "Garmin wellness data is current.",
+                "activity_data": {
+                    "status": "current",
+                    "message": "Recent activity data is available.",
+                },
+            },
+            "phase": {"name": "base_rebuild", "reason": "test"},
+        },
+    )
+    write_json(
+        tmp_path / "snapshots" / "today_plan.json",
+        {
+            "date": "2026-06-08",
+            "session": {
+                "title": "Easy bike continuity",
+                "type": "outdoor_bike_optional",
+                "duration_min": 45,
+                "intensity": "easy",
+            },
+        },
+    )
+
+    def fail_rebuild(*_args, **_kwargs):
+        raise AssertionError("coach packet should reuse same-date artifacts")
+
+    monkeypatch.setattr(coach_packet_module, "build_current_state", fail_rebuild)
+
+    packet = build_coach_packet(tmp_path, "2026-06-08")
+
+    assert packet["date"] == "2026-06-08"
+    assert packet["today_call"]["session"]["title"] == "Easy bike continuity"

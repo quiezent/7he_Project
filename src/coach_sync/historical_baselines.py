@@ -112,10 +112,9 @@ def build_historical_baselines(
             "peak_7_day": _best_windows(pre_injury_mtb, 7),
             "peak_28_day": _best_windows(pre_injury_mtb, 28),
         },
-        "current_reentry_reference": {
-            "message": "Use historical MTB windows as destination context, not as immediate post-clearance targets.",
+        "historical_mtb_reference": {
+            "message": "Use historical MTB windows as destination context, not as immediate targets.",
         },
     }
     write_json(snapshots_dir(root) / "historical_activity_baselines.json", artifact)
     return artifact
-

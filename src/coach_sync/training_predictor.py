@@ -92,7 +92,10 @@ def _sleep_score_proxy(row: dict) -> float:
 
 
 def _body_battery_anchor(row: dict) -> float:
+    verified = as_number(row.get("body_battery_verified_morning_anchor"))
     wake = as_number(row.get("body_battery_wake"))
+    if verified is not None and (wake is None or verified >= wake):
+        return verified
     if wake is not None:
         return wake
     current = as_number(row.get("body_battery_current"))
@@ -764,7 +767,7 @@ def build_training_predictor(
     today_prediction = _prediction_for_date(tree, root, target, rows)
     caveats = [
         "This is a small personal model trained only on local Garmin-derived artifacts.",
-        "Targets are derived from next-day wellness, not direct MTB performance, pain, swelling, or medical status.",
+        "Targets are derived from next-day wellness, not direct MTB performance or technical skill quality.",
         "A same-day prediction can change after the day is complete and Garmin sync catches later training or recovery data.",
         "The tree is intentionally shallow and bounded for inspectability; use it as one coaching signal, not an authority.",
     ]

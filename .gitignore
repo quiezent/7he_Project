@@ -6,13 +6,16 @@ __pycache__/
 venv/
 env/
 .env
+.codex-remote-attachments/
 
-# Local/private Garmin and health data
+# Raw Garmin, derived artifacts, and transient local notes
 activities/
 archive/
 snapshots/
 input/daily_checkin.md
-config/athlete_context.json
+
+# In this private repo, config/athlete_context.json and
+# input/feedback_*.json are durable coaching memory and may be backed up.
 
 # Raw export formats that should stay local unless deliberately sanitized
 *.fit

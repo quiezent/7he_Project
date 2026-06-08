@@ -4,7 +4,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from .io import write_json, write_text
+from .io import read_json, write_json, write_text
 from .paths import snapshots_dir
 from .planning import build_today_plan
 from .state import build_current_state
@@ -80,16 +80,18 @@ def _body_battery_model_use(model: dict) -> tuple[str, str]:
     return "exploratory_only", "Useful for inspection, but not enough validated signal to steer training."
 
 
-def _build_trusted_evidence(state: dict, plan: dict) -> list[dict]:
+def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = None) -> list[dict]:
     freshness = state.get("data_freshness") or {}
     activity_freshness = freshness.get("activity_data") or {}
     readiness = state.get("readiness") or {}
-    clearance = state.get("clearance") or {}
     phase = state.get("phase") or {}
     training_status = state.get("training_status_current") or {}
     rollups = state.get("modality_load_rollups") or {}
     baselines = state.get("historical_baselines") or {}
-    injury_return = state.get("injury_return") or {}
+    gear_audit = state.get("gear_audit") or {}
+    device_audit = state.get("device_audit") or {}
+    self_evaluation = state.get("self_evaluation") or {}
+    predictive = read_json(snapshots_dir(root) / "predictive_training.json", {})
     scheduled_rest = (plan.get("decision_inputs") or {}).get("scheduled_rest")
 
     trusted = []
@@ -126,18 +128,6 @@ def _build_trusted_evidence(state: dict, plan: dict) -> list[dict]:
             activity_freshness.get("message") or "No Garmin activity freshness message is available.",
         ),
         _signal(
-            "Medical clearance",
-            "cleared" if clearance.get("all_cleared") else "not_all_cleared",
-            {
-                gate: row.get("status")
-                for gate, row in (clearance.get("gates") or {}).items()
-            },
-            "modality_gate",
-            "Dr. Teh clearance opens cardio, grip, loading, trail, and normal activity."
-            if clearance.get("all_cleared")
-            else "One or more medical gates are not cleared.",
-        ),
-        _signal(
             "Readiness",
             readiness.get("readiness_level") or "unknown",
             {
@@ -152,11 +142,10 @@ def _build_trusted_evidence(state: dict, plan: dict) -> list[dict]:
             "Current phase",
             phase.get("name") or "unknown",
             {
-                "days_since_full_clearance": phase.get("days_since_full_clearance"),
                 "reason": phase.get("reason"),
             },
             "progression_stage",
-            "The first post-clearance block prioritizes exposure quality over performance load.",
+            "Use the current phase to scale bike specificity, intensity, and durability work.",
         ),
         _signal(
             "Training status",
@@ -182,19 +171,59 @@ def _build_trusted_evidence(state: dict, plan: dict) -> list[dict]:
             "available" if baselines.get("pre_injury_mtb_baseline") else "missing",
             baselines.get("pre_injury_mtb_baseline"),
             "long_range_target_context",
-            "Pre-injury MTB history is useful for direction, not an immediate re-entry target.",
+            "Historical MTB volume is useful for direction, not an immediate target.",
         ),
         _signal(
-            "Return-to-outdoor ledger",
-            "tracked",
+            "Activity gear audit",
+            "flagged" if gear_audit.get("flags") else "clear",
             {
-                "full_clearance_date": injury_return.get("full_clearance_date"),
-                "reentry_window_end": injury_return.get("reentry_window_end"),
-                "post_clearance_exposures": len(injury_return.get("post_clearance_exposures") or []),
-                "mtb_exposures_last_7_days": injury_return.get("mtb_exposures_last_7_days"),
+                "checked_activities": gear_audit.get("checked_activities"),
+                "mtb_checked": gear_audit.get("mtb_checked"),
+                "recent_mtb_gear": gear_audit.get("recent_mtb_gear"),
             },
-            "reentry_cap_and_response_context",
-            "Track outdoor, gym, grip, and next-morning response before expanding MTB load.",
+            "power_source_and_bike_context",
+            "Use Garmin Gear to distinguish Stumpjumper, Enduro, hardtail, and trainer-related activity context.",
+        ),
+        _signal(
+            "Activity device audit",
+            "flagged" if device_audit.get("flags") else "clear",
+            {
+                "checked_activities": device_audit.get("checked_activities"),
+                "mtb_checked": device_audit.get("mtb_checked"),
+                "recent_mtb_devices": device_audit.get("recent_mtb_devices"),
+            },
+            "heart_rate_source_confidence",
+            "Use Devices & Apps to distinguish chest-strap HR from wrist optical HR before trusting trail HR/load.",
+        ),
+        _signal(
+            "Post-activity self evaluation",
+            "available" if self_evaluation.get("evaluated_activities") else "missing",
+            {
+                "checked_activities": self_evaluation.get("checked_activities"),
+                "evaluated_activities": self_evaluation.get("evaluated_activities"),
+                "recent_self_evaluations": self_evaluation.get("recent_self_evaluations"),
+            },
+            "subjective_session_response",
+            "Use Garmin self-evaluation feel and RPE to interpret whether load was costly, sustainable, or misleading.",
+        ),
+        _signal(
+            "Predictive training twin",
+            (
+                predictive.get("today_prescription", {})
+                .get("model_confidence", {})
+                .get("status")
+                or "missing"
+            ),
+            {
+                "today_prediction": (
+                    predictive.get("today_prescription", {}).get("prediction") if predictive else None
+                ),
+                "latest_review": (
+                    predictive.get("latest_review", {}).get("comparison") if predictive else None
+                ),
+            },
+            "pre_session_expectation_and_post_session_calibration",
+            "Store an expected session response before training, then compare the actual session and next-day Garmin response afterward.",
         ),
     ])
     return trusted
@@ -230,36 +259,22 @@ def _build_cautions(state: dict) -> list[dict]:
                 "message": flag.get("message"),
             }
         )
-    injury_return = state.get("injury_return") or {}
-    for flag in injury_return.get("flags") or []:
+    for flag in (state.get("gear_audit") or {}).get("flags") or []:
         cautions.append(
             {
-                "source": "injury_return",
+                "source": "gear_audit",
                 "type": flag.get("type"),
-                "severity": "yellow",
+                "severity": flag.get("severity") or "yellow",
                 "message": flag.get("message"),
             }
         )
-    for override in state.get("active_modality_overrides") or []:
+    for flag in (state.get("device_audit") or {}).get("flags") or []:
         cautions.append(
             {
-                "source": "modality_override",
-                "type": override.get("status"),
-                "severity": "red" if override.get("status") == "blocked" else "yellow",
-                "message": override.get("reason"),
-            }
-        )
-    phase = state.get("phase") or {}
-    if (
-        phase.get("name") == "return_to_outdoor_reentry"
-        and (injury_return.get("mtb_exposures_last_7_days") or 0) == 0
-    ):
-        cautions.append(
-            {
-                "source": "injury_return",
-                "type": "no_post_clearance_mtb_yet",
-                "severity": "yellow",
-                "message": "No post-clearance MTB exposure is logged yet; first trail ride should stay low consequence.",
+                "source": "device_audit",
+                "type": flag.get("type"),
+                "severity": flag.get("severity") or "yellow",
+                "message": flag.get("message"),
             }
         )
     return cautions
@@ -347,8 +362,6 @@ def _today_decision(state: dict, plan: dict, cautions: list[dict]) -> dict:
         stance = "sabbath_rest"
     elif readiness.get("readiness_level") == "red":
         stance = "downshift"
-    elif phase == "return_to_outdoor_reentry":
-        stance = "controlled_reentry"
     elif session.get("intensity") == "hard":
         stance = "quality_allowed"
     else:
@@ -371,15 +384,27 @@ def _today_decision(state: dict, plan: dict, cautions: list[dict]) -> dict:
 
 def _next_data_needed(state: dict) -> list[str]:
     needed = [
-        "Log pain, swelling, inflammation, grip tolerance, and next-morning response after the first outdoor MTB ride.",
         "Keep live Garmin wellness and activity sync current before hard-session decisions.",
-        "Use post-clearance outdoor rides to label what the Fenix cannot see: confidence, braking comfort, and hand response.",
+        "Label what the Fenix cannot see: ride purpose, trail condition, confidence, braking comfort, skill quality, fueling, and heat feel.",
     ]
     if not (state.get("body_battery_model") or {}).get("samples"):
         needed.append("Collect more modern wellness rows before trusting Body Battery modeling.")
     if (state.get("training_predictor") or {}).get("validation", {}).get("utility") != "useful":
         needed.append("Treat the training response model as experimental until validation beats a simple baseline.")
+    if not (state.get("gear_audit") or {}).get("checked_activities"):
+        needed.append("Sync activity Gear metadata so bike source and trainer/source mismatches can be audited.")
+    if not (state.get("device_audit") or {}).get("checked_activities"):
+        needed.append("Sync activity Devices & Apps metadata so HR source confidence can be audited.")
+    if not (state.get("self_evaluation") or {}).get("evaluated_activities"):
+        needed.append("Log Garmin post-activity self evaluation after key rides so RPE and feel can calibrate load.")
     return needed
+
+
+def _same_date_artifact(root: str | Path | None, filename: str, target: date) -> dict | None:
+    payload = read_json(snapshots_dir(root) / filename, {})
+    if isinstance(payload, dict) and parse_date(payload.get("date")) == target:
+        return payload
+    return None
 
 
 def _packet_text(packet: dict) -> str:
@@ -439,8 +464,12 @@ def build_coach_packet(
     plan: dict | None = None,
 ) -> dict:
     target = parse_date(for_date) or parse_date((state or {}).get("date")) or today_local(DEFAULT_TIMEZONE)
-    state = state or build_current_state(root, target)
-    plan = plan or build_today_plan(root, target, state=state)
+    if state is None:
+        state = _same_date_artifact(root, "current_state.json", target) or build_current_state(root, target)
+    if plan is None:
+        plan = _same_date_artifact(root, "today_plan.json", target) or build_today_plan(
+            root, target, state=state
+        )
 
     cautions = _build_cautions(state)
     experimental, ignored = _build_experimental_evidence(state)
@@ -455,7 +484,7 @@ def build_coach_packet(
         },
         "today_call": _today_decision(state, plan, cautions),
         "evidence": {
-            "trusted": _build_trusted_evidence(state, plan),
+            "trusted": _build_trusted_evidence(state, plan, root),
             "cautions": cautions,
             "experimental": experimental,
             "ignored_for_decision": ignored,

@@ -7,7 +7,7 @@ from coach_sync.io import write_json
 from coach_sync.state import build_current_state
 
 
-def test_current_state_writes_training_and_injury_snapshots(tmp_path):
+def test_current_state_writes_training_snapshots(tmp_path):
     load_context(tmp_path)
     write_json(
         tmp_path / "snapshots" / "garmin_wellness_2026-04-29.json",
@@ -16,9 +16,8 @@ def test_current_state_writes_training_and_injury_snapshots(tmp_path):
 
     state = build_current_state(tmp_path, "2026-04-29")
 
-    assert state["clearance"]["all_cleared"] is True
+    assert state["phase"]["name"] == "base_rebuild"
     assert (tmp_path / "snapshots" / "training_load.json").exists()
-    assert (tmp_path / "snapshots" / "injury_return.json").exists()
     assert (tmp_path / "snapshots" / "current_state.json").exists()
 
 

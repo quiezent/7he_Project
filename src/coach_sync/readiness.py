@@ -19,21 +19,14 @@ from .paths import snapshots_dir
 from .training_status import normalize_training_status_payload
 from .time_utils import DEFAULT_TIMEZONE, iso_now, now_local, parse_date, today_local
 from .wellness import normalize_wellness_payload
+from .wellness_verification import build_wellness_verification
 
 
 def _text(value: Any) -> str:
     return "" if value is None else str(value).strip().lower()
 
 
-def _truthy(value: Any) -> bool:
-    if isinstance(value, bool):
-        return value
-    if value is None:
-        return False
-    return _text(value) in {"yes", "true", "present", "1", "worse", "poor", "bad"}
-
-
-def _symptom_value(checkin: dict, *names: str) -> Any:
+def _checkin_value(checkin: dict, *names: str) -> Any:
     for name in names:
         if name in checkin and checkin[name] not in ("", None):
             return checkin[name]
@@ -95,6 +88,7 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
     activities = load_activities(root)
     training = summarize_recent_training(activities, target_date)
     normalized_wellness = normalize_wellness_payload(wellness) if wellness else {}
+    wellness_verification = build_wellness_verification(root, target_date) if wellness else {}
     normalized_training_status = normalize_training_status_payload(
         training_status,
         training_status_date.isoformat() if training_status_date else None,
@@ -152,15 +146,44 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
             find_value(wellness, ("bodyBattery", "body_battery", "bb"))
         )
         body_battery_wake = normalized_wellness.get("body_battery_wake")
+        verified_morning_anchor = normalized_wellness.get("body_battery_verified_morning_anchor")
+        body_battery_anchor_source = normalized_wellness.get("body_battery_verified_anchor_source")
+        body_battery_for_wake_scoring = body_battery_wake
+        if (
+            verified_morning_anchor is not None
+            and (
+                body_battery_for_wake_scoring is None
+                or verified_morning_anchor > body_battery_for_wake_scoring
+            )
+        ):
+            body_battery_for_wake_scoring = verified_morning_anchor
+            if body_battery_anchor_source == "post_wake_recharge_peak":
+                wake_text = f"{body_battery_wake:g}" if body_battery_wake is not None else "missing"
+                reasons.append(
+                    {
+                        "type": "body_battery_verified_recharge",
+                        "severity": "info",
+                        "message": (
+                            "Body Battery rose after Garmin's reported wake value: "
+                            f"{wake_text} -> {verified_morning_anchor:g}. "
+                            "Using the verified morning anchor for readiness scoring."
+                        ),
+                    }
+                )
         is_today = target_date == today_local(tz)
         local_hour = now_local(tz).hour if is_today else None
-        if body_battery_wake is not None and body_battery_wake < 65:
-            score -= 8 if body_battery_wake < 55 else 5
+        if body_battery_for_wake_scoring is not None and body_battery_for_wake_scoring < 65:
+            score -= 8 if body_battery_for_wake_scoring < 55 else 5
+            label = (
+                "Verified morning Body Battery anchor"
+                if body_battery_for_wake_scoring != body_battery_wake
+                else "Wake Body Battery"
+            )
             reasons.append(
                 {
                     "type": "body_battery_wake",
                     "severity": "yellow",
-                    "message": f"Wake Body Battery is modest at {body_battery_wake:g}.",
+                    "message": f"{label} is modest at {body_battery_for_wake_scoring:g}.",
                 }
             )
         use_current_body_battery = is_today or body_battery_wake is None
@@ -223,54 +246,11 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
                 }
             )
 
-    pain = as_number(_symptom_value(checkin, "pain", "finger_pain", "hand_pain"))
-    swelling = _truthy(_symptom_value(checkin, "swelling", "finger_swelling"))
-    inflammation = _truthy(_symptom_value(checkin, "inflammation"))
-    grip = _text(_symptom_value(checkin, "grip_tolerance", "grip"))
     next_morning = _text(
-        _symptom_value(checkin, "next_morning_response", "morning_response", "next_day_response")
+        _checkin_value(checkin, "next_morning_response", "morning_response", "next_day_response")
     )
 
-    if pain is not None:
-        if pain >= 4:
-            score -= 30
-            hard_block = True
-            reasons.append(
-                {
-                    "type": "pain",
-                    "severity": "red",
-                    "message": f"Pain is {pain:g}/10, which blocks hard loading.",
-                }
-            )
-        elif pain > 0:
-            score -= 10
-            reasons.append(
-                {
-                    "type": "pain",
-                    "severity": "yellow",
-                    "message": f"Pain is present at {pain:g}/10.",
-                }
-            )
-    if swelling or inflammation:
-        score -= 25
-        hard_block = True
-        reasons.append(
-            {
-                "type": "tissue_response",
-                "severity": "red",
-                "message": "Swelling or inflammation is present.",
-            }
-        )
-    if grip and any(term in grip for term in ("poor", "limited", "worse", "weak")):
-        score -= 20
-        reasons.append(
-            {
-                "type": "grip",
-                "severity": "yellow",
-                "message": f"Grip tolerance is reported as {grip}.",
-            }
-        )
-    if next_morning and any(term in next_morning for term in ("worse", "poor", "pain", "swelling")):
+    if next_morning and any(term in next_morning for term in ("worse", "poor", "bad", "exhausted", "dead")):
         score -= 20
         reasons.append(
             {
@@ -304,11 +284,7 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
         "confidence": confidence,
         "hard_session_guidance": hard_session_guidance,
         "reasons": reasons,
-        "symptoms": {
-            "pain": pain,
-            "swelling": swelling,
-            "inflammation": inflammation,
-            "grip_tolerance": grip or None,
+        "subjective": {
             "next_morning_response": next_morning or None,
         },
         "evidence": {
@@ -318,6 +294,22 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
             ),
             "checkin_date": checkin.get("date"),
             "recent_training": training,
+            "wellness_verification": {
+                "verification_status": wellness_verification.get("verification_status"),
+                "confidence": wellness_verification.get("confidence"),
+                "recommended_morning_anchor": (
+                    wellness_verification.get("body_battery_interpretation") or {}
+                ).get("recommended_morning_anchor"),
+                "recommended_anchor_source": (
+                    wellness_verification.get("body_battery_interpretation") or {}
+                ).get("recommended_anchor_source"),
+                "post_wake_recharge": (
+                    (
+                        wellness_verification.get("body_battery_interpretation") or {}
+                    ).get("post_wake_recharge")
+                    or {}
+                ).get("detected"),
+            },
         },
     }
     readiness_features = {
@@ -333,6 +325,15 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
             "resting_hr": normalized_wellness.get("resting_hr"),
             "body_battery_wake": normalized_wellness.get("body_battery_wake"),
             "body_battery_current": normalized_wellness.get("body_battery_current"),
+            "body_battery_verified_morning_anchor": normalized_wellness.get(
+                "body_battery_verified_morning_anchor"
+            ),
+            "body_battery_verified_anchor_source": normalized_wellness.get(
+                "body_battery_verified_anchor_source"
+            ),
+            "body_battery_verification_status": normalized_wellness.get(
+                "body_battery_verification_status"
+            ),
             "avg_stress": normalized_wellness.get("avg_stress"),
             "avg_respiration": normalized_wellness.get("avg_respiration"),
             "avg_spo2": normalized_wellness.get("avg_spo2"),
@@ -345,7 +346,7 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
             "flags": normalized_training_status.get("flags"),
         },
         "recent_training": training,
-        "symptoms": artifact["symptoms"],
+        "subjective": artifact["subjective"],
         "score_result": {
             "readiness_score": score,
             "readiness_level": level,

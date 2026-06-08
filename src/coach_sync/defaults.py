@@ -6,20 +6,10 @@ from .time_utils import DEFAULT_TIMEZONE, iso_now
 
 
 SCHEMA_VERSION = 1
-DR_TEH_CLEARANCE_DATE = "2026-04-29"
 
 
 def default_athlete_context() -> dict:
     now = iso_now(DEFAULT_TIMEZONE)
-    clearances = {
-        gate: {
-            "status": "cleared",
-            "date": DR_TEH_CLEARANCE_DATE,
-            "source": "Dr. Teh",
-            "note": "Cleared to resume outdoor biking, gym, and normal activity.",
-        }
-        for gate in ("cardio", "grip", "loading", "trail")
-    }
 
     return {
         "schema_version": SCHEMA_VERSION,
@@ -56,45 +46,24 @@ def default_athlete_context() -> dict:
                 {
                     "label": "left_pinky_fracture",
                     "date": "2025-08",
-                    "note": "MTB volume dropped to zero after July 2025.",
-                },
-                {
-                    "label": "left_pinky_surgery",
-                    "date": "2026-03-10",
-                    "type": "surgery",
-                },
-                {
-                    "label": "dr_teh_green_light",
-                    "date": DR_TEH_CLEARANCE_DATE,
-                    "type": "medical_clearance",
-                    "source": "Dr. Teh",
-                    "note": "Finger cleared for outdoor biking, gym, and normal activity.",
+                    "note": "Historical context only; not used as a current training gate.",
                 },
             ],
-            "clearance_gates": clearances,
-            "modality_overrides": [],
         },
         "goal_progression": {
-            "current_phase": "return_to_outdoor_reentry",
+            "current_phase": "base_rebuild",
             "phase_order": [
-                "protected_recovery",
-                "return_to_outdoor_reentry",
                 "base_rebuild",
                 "mtb_specificity",
                 "performance_build",
                 "expert_specific_work",
             ],
             "phase_rules": {
-                "return_to_outdoor_reentry": {
-                    "minimum_days": 14,
-                    "purpose": "Reintroduce outdoor trail, grip, and gym loading without a load spike.",
-                    "default_bias": "low-consequence outdoor rides, aerobic continuity, gym primer work",
-                },
                 "base_rebuild": {
                     "purpose": "Rebuild aerobic durability, strength rhythm, and weekly repeatability.",
                 },
                 "mtb_specificity": {
-                    "purpose": "Add trail handling under fatigue, braking/grip endurance, and technical repeatability.",
+                    "purpose": "Add trail handling under fatigue, braking endurance, and technical repeatability.",
                 },
                 "performance_build": {
                     "purpose": "Layer threshold, VO2, anaerobic repeatability, and strength-power.",
@@ -115,11 +84,6 @@ def default_athlete_context() -> dict:
                     "reason": "Clayton treats Sunday as Sabbath; no planned exercise.",
                 }
             ],
-            "first_14_day_reentry": {
-                "max_outdoor_mtb_days_per_7d": 3,
-                "avoid_stack": "Do not combine first hard outdoor ride, heavy gym, and big technical exposure on the same day.",
-                "progression_signal": "No next-morning pain, swelling, grip regression, or unusual fatigue.",
-            },
         },
         "nutrition": {
             "protein_g_per_kg": [1.6, 2.2],
@@ -139,7 +103,7 @@ def default_athlete_context() -> dict:
             {
                 "timestamp": now,
                 "type": "context_initialized",
-                "note": "Default rebuild context created with Dr. Teh clearance recorded.",
+                "note": "Default rebuild context created with historical left pinky fracture context only.",
             }
         ],
     }

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 from pathlib import Path
 
-from .context import clearance_summary, load_context
+from .context import load_context
 from .evidence import load_activities, summarize_recent_training
 from .io import read_json, write_json, write_text
 from .paths import snapshots_dir
@@ -37,7 +37,7 @@ def weekly_report(root: str | Path | None = None, days: int = 7) -> dict:
         "training": training,
         "readiness_days": readiness,
         "coach_focus": [
-            "Keep outdoor and gym re-entry controlled until symptoms and load response are boringly stable.",
+            "Keep bike-specific continuity stable before adding more intensity.",
             "Build weekly repeatability before chasing expert-level intensity and impact exposure.",
         ],
     }
@@ -71,7 +71,7 @@ def insight_memo(root: str | Path | None = None, days: int = 28) -> dict:
         "training_load": state.get("training_load"),
         "insights": [
             "The stack is currently strongest when Garmin wellness and activities are synced daily.",
-            "Use subjective check-ins only for what Garmin cannot see: hand symptoms, grip tolerance, and context.",
+            "Use subjective check-ins for what Garmin cannot see: trail condition, skill quality, fueling, heat, and session feel.",
         ],
     }
     write_json(snapshots_dir(root) / "insight_memo.json", memo)
@@ -80,27 +80,18 @@ def insight_memo(root: str | Path | None = None, days: int = 28) -> dict:
 
 def review_block(root: str | Path | None = None, days: int = 14, state: dict | None = None) -> dict:
     state = state or build_current_state(root)
-    context = load_context(root)
-    clearance = clearance_summary(context)
-    clearance_dates = [
-        parse_date(gate.get("date"))
-        for gate in clearance.get("gates", {}).values()
-        if gate.get("status") == "cleared" and gate.get("date")
-    ]
-    clearance_dates = [value for value in clearance_dates if value]
-    full_clearance_date = max(clearance_dates) if clearance_dates else parse_date(state["date"])
-    next_check = full_clearance_date + timedelta(days=days)
+    current_date = parse_date(state["date"]) or today_local(DEFAULT_TIMEZONE)
+    next_check = current_date + timedelta(days=days)
     block = {
         "date": state["date"],
-        "review_type": "post_clearance_reentry",
-        "full_clearance_date": full_clearance_date.isoformat(),
-        "next_reentry_check": next_check.isoformat(),
+        "review_type": "training_response",
+        "next_review_date": next_check.isoformat(),
         "items_to_track": [
-            "Outdoor ride count and terrain consequence",
-            "Gym grip and loading tolerance",
-            "Pain, swelling, inflammation, and next-morning response",
+            "Bike-specific session count and load",
+            "MTB exposure purpose and terrain consequence",
+            "Next-morning wellness and perceived response",
             "Training load ramp versus prior week",
-            "Nutrition support for key rides and gym days",
+            "Nutrition, heat, and skill-quality support for key rides",
         ],
     }
     write_json(snapshots_dir(root) / "review_block.json", block)
@@ -109,8 +100,7 @@ def review_block(root: str | Path | None = None, days: int = 14, state: dict | N
         "\n".join(
             [
                 "Review Block",
-                f"Full clearance: {block['full_clearance_date']}",
-                f"Next re-entry check: {block['next_reentry_check']}",
+                f"Next review: {block['next_review_date']}",
                 "",
                 *[f"- {item}" for item in block["items_to_track"]],
                 "",
@@ -127,10 +117,8 @@ def microcycle_forecast(root: str | Path | None = None, days: int = 24) -> dict:
     entries = []
     for offset in range(days):
         day = start + timedelta(days=offset)
-        if offset < 14:
-            focus = "re-entry aerobic ride / gym primer / symptom tracking"
-        elif offset % 7 in {1, 3}:
-            focus = "structured quality if readiness and symptoms support it"
+        if offset % 7 in {1, 3}:
+            focus = "structured quality if readiness and recent load support it"
         elif offset % 7 == 5:
             focus = "longer aerobic MTB or endurance ride"
         else:

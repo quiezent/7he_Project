@@ -1,73 +1,32 @@
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 
 from .activity_profile import build_activity_profile
 from .body_battery_model import build_body_battery_model
-from .checkin import load_daily_checkin
-from .context import active_modality_overrides, clearance_summary, load_context
+from .context import load_context
+from .device_audit import build_device_audit
 from .evidence import load_activities, load_latest_training_status, load_latest_wellness, summarize_recent_training
+from .gear_audit import build_gear_audit
 from .historical_baselines import build_historical_baselines
 from .io import write_json
 from .load_model import build_modality_load_rollups
 from .paths import snapshots_dir
 from .readiness import build_readiness
+from .self_evaluation import build_self_evaluation_report
 from .training_status import build_training_status_current
 from .training_predictor import build_training_predictor
 from .time_utils import DEFAULT_TIMEZONE, iso_now, parse_date, today_local
 from .wellness import build_wellness_trends
+from .wellness_verification import build_wellness_verification
 
 
-def _clearance_date(clearance: dict) -> date | None:
-    dates = []
-    for gate in clearance.get("gates", {}).values():
-        try:
-            if gate.get("status") == "cleared":
-                dates.append(parse_date(gate.get("date")))
-        except ValueError:
-            continue
-    dates = [value for value in dates if value is not None]
-    return max(dates) if dates else None
-
-
-def _is_mtb_activity(activity: dict) -> bool:
-    return activity.get("category") == "mtb"
-
-
-def determine_phase(context: dict, clearance: dict, target_date: date) -> dict:
-    configured = context.get("goal_progression", {}).get("current_phase", "protected_recovery")
-    if not clearance.get("all_cleared"):
-        return {
-            "name": "protected_recovery",
-            "reason": "One or more medical clearance gates are not cleared.",
-            "days_since_full_clearance": None,
-        }
-
-    full_clearance_date = _clearance_date(clearance)
-    days_since = (target_date - full_clearance_date).days if full_clearance_date else None
-    reentry_days = (
-        context.get("goal_progression", {})
-        .get("phase_rules", {})
-        .get("return_to_outdoor_reentry", {})
-        .get("minimum_days", 14)
-    )
-    if days_since is not None and days_since < reentry_days:
-        return {
-            "name": "return_to_outdoor_reentry",
-            "reason": "All gates are cleared, but this is still the initial outdoor/gym re-entry window.",
-            "days_since_full_clearance": days_since,
-        }
-    if configured == "return_to_outdoor_reentry":
-        return {
-            "name": "base_rebuild",
-            "reason": "Initial re-entry window is complete; defaulting to base rebuild unless context is updated.",
-            "days_since_full_clearance": days_since,
-        }
+def determine_phase(context: dict, target_date: date) -> dict:
+    configured = context.get("goal_progression", {}).get("current_phase", "base_rebuild")
     return {
         "name": configured,
         "reason": "Using configured goal progression phase.",
-        "days_since_full_clearance": days_since,
     }
 
 
@@ -92,89 +51,36 @@ def build_training_load_snapshot(
     return training
 
 
-def build_injury_return_snapshot(
-    root: str | Path | None,
-    context: dict,
-    activities: list[dict],
-    target_date: date,
-    clearance: dict,
-) -> dict:
-    checkin = load_daily_checkin(root, target_date.isoformat())
-    since_date = _clearance_date(clearance) or target_date
-    exposures = []
-    mtb_last_7 = []
-    last_7_start = target_date - timedelta(days=6)
-    for activity in activities:
-        act_date = parse_date(activity.get("date"))
-        if not act_date or act_date < since_date:
-            continue
-        act_type = (activity.get("type") or "").lower()
-        exposure_type = "gym" if "strength" in act_type or "training" in act_type else "ride"
-        if _is_mtb_activity(activity) and last_7_start <= act_date <= target_date:
-            mtb_last_7.append(activity)
-        exposures.append(
-            {
-                "date": activity.get("date"),
-                "type": exposure_type,
-                "activity_type": activity.get("type"),
-                "duration_min": activity.get("duration_min"),
-                "training_load": activity.get("training_load"),
-            }
-        )
-    window_end = since_date + timedelta(days=14)
-    artifact = {
-        "date": target_date.isoformat(),
-        "full_clearance_date": since_date.isoformat(),
-        "reentry_window_end": window_end.isoformat(),
-        "clearance": clearance,
-        "symptoms_today": checkin,
-        "post_clearance_exposures": exposures,
-        "mtb_exposures_last_7_days": len(mtb_last_7),
-        "flags": [],
-    }
-    if target_date <= window_end and len(exposures) >= 5:
-        artifact["flags"].append(
-            {
-                "type": "dense_reentry_exposure",
-                "message": "Five or more ride/gym exposures inside the first 14-day re-entry window.",
-            }
-        )
-    cap = (
-        context.get("training_rules", {})
-        .get("first_14_day_reentry", {})
-        .get("max_outdoor_mtb_days_per_7d", 3)
-    )
-    if target_date <= window_end and len(mtb_last_7) >= cap:
-        artifact["flags"].append(
-            {
-                "type": "reentry_mtb_cap_reached",
-                "message": f"{len(mtb_last_7)} MTB exposures in the last 7 days meets or exceeds the re-entry cap of {cap}.",
-            }
-        )
-    write_json(snapshots_dir(root) / "injury_return.json", artifact)
-    return artifact
-
-
 def build_current_state(root: str | Path | None = None, for_date: str | date | None = None) -> dict:
     context = load_context(root)
     tz = context.get("athlete", {}).get("timezone", DEFAULT_TIMEZONE)
     target_date = parse_date(for_date) or today_local(tz)
     readiness = build_readiness(root, target_date)
     activities = load_activities(root)
-    clearance = clearance_summary(context)
-    phase = determine_phase(context, clearance, target_date)
+    phase = determine_phase(context, target_date)
     wellness_date, wellness = load_latest_wellness(root, target_date)
     training_status_date, training_status = load_latest_training_status(root, target_date)
     training_load = build_training_load_snapshot(root, activities, target_date, context)
-    injury_return = build_injury_return_snapshot(root, context, activities, target_date, clearance)
     wellness_trends = build_wellness_trends(root, target_date)
+    wellness_verification = build_wellness_verification(root, target_date)
     activity_profile = build_activity_profile(root, target_date)
     training_status_current = build_training_status_current(root, target_date.isoformat())
     modality_load_rollups = build_modality_load_rollups(root, target_date)
     body_battery_model = build_body_battery_model(root, target_date)
     historical_baselines = build_historical_baselines(root, target_date)
     training_predictor = build_training_predictor(root, target_date)
-    overrides = active_modality_overrides(context, target_date.isoformat())
+    gear_audit = build_gear_audit(root, target_date)
+    device_audit = build_device_audit(root, target_date)
+    self_evaluation = build_self_evaluation_report(root, target_date)
+    athlete = dict(context.get("athlete", {}))
+    latest_body_composition = wellness_trends.get("latest_body_composition") or {}
+    if athlete.get("body_weight_kg") is None and latest_body_composition.get("body_weight_kg") is not None:
+        athlete["body_weight_kg"] = latest_body_composition.get("body_weight_kg")
+        athlete["body_weight_source"] = {
+            "source": "garmin_body_composition",
+            "date": latest_body_composition.get("date"),
+            "age_days": latest_body_composition.get("age_days"),
+        }
 
     if wellness_date is None:
         freshness = {"status": "missing", "message": "No Garmin wellness data has been synced."}
@@ -236,14 +142,15 @@ def build_current_state(root: str | Path | None = None, for_date: str | date | N
     state = {
         "date": target_date.isoformat(),
         "generated_at": iso_now(tz),
-        "athlete": context.get("athlete", {}),
+        "athlete": athlete,
         "goal": context.get("athlete", {}).get("goal"),
-        "clearance": clearance,
         "phase": phase,
         "readiness": readiness,
         "data_freshness": freshness,
         "training_load": training_load,
         "wellness_trends": wellness_trends,
+        "wellness_verification": wellness_verification,
+        "body_composition": latest_body_composition or None,
         "activity_profile": activity_profile,
         "training_status_current": training_status_current,
         "modality_load_rollups": modality_load_rollups,
@@ -267,8 +174,9 @@ def build_current_state(root: str | Path | None = None, for_date: str | date | N
             "today_prediction": training_predictor.get("today_prediction"),
             "caveats": training_predictor.get("caveats"),
         },
-        "injury_return": injury_return,
-        "active_modality_overrides": overrides,
+        "gear_audit": gear_audit,
+        "device_audit": device_audit,
+        "self_evaluation": self_evaluation,
         "latest_activity": training_load.get("latest_activity"),
         "evidence_sources": {
             "wellness_date": wellness_date.isoformat() if wellness_date else None,

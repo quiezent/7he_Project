@@ -25,7 +25,7 @@
       "best_use": [
         "wake Body Battery model",
         "HRV-aware readiness",
-        "post-clearance response tracking"
+        "modern response tracking"
       ]
     }
   },
@@ -83,13 +83,18 @@
       "artifact": "snapshots/training_response_model_report.json",
       "target": "next-day Garmin-derived response/readiness",
       "status": "experimental_until_validation_beats_baseline"
+    },
+    "execution_risk_overlay": {
+      "artifact": "snapshots/predictive_session_plan.json",
+      "target": "whether the written prescription is likely to become longer or harder than planned",
+      "status": "active_from_10_date_backtest"
     }
   },
   "next_models": [
     "28-day block label classifier using historical activity windows",
-    "MTB re-entry risk scorer using exposure count, load ramp, and symptoms",
+    "MTB load-ramp scorer using exposure count, load ramp, heat, and self-evaluation",
     "modality displacement detector for engine maintenance vs MTB readiness",
-    "session-response model once subjective pain/grip outcomes accumulate"
+    "session-response model once subjective skill-quality, fueling, heat, and RPE outcomes accumulate",
+    "larger execution-adherence model split by indoor bike, MTB durability, MTB skill, elliptical, gym, and rest"
   ]
 }
-

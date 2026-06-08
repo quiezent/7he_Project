@@ -62,11 +62,12 @@ def write_checkin_template(root: str | Path | None = None) -> Path:
     template = """# Daily Check-in
 
 date:
-pain:
-swelling:
-inflammation:
-grip_tolerance:
 next_morning_response:
+ride_purpose:
+trail_condition:
+skill_quality:
+fueling:
+heat_feel:
 notes:
 """
     path.parent.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,579 @@
+{
+  "athlete": {
+    "body_weight_kg": null,
+    "event_focus": {
+      "discipline": "enduro_mtb",
+      "objective": "Rebuild the physical ability to absorb a chill Saturday practice day and still attack race efforts the next day.",
+      "target_demands": {
+        "long_course_reference": {
+          "climb_per_stage_m": 250,
+          "stage_duration_min": [
+            5,
+            8
+          ],
+          "stages": 6,
+          "typical_climb_time_min": 30,
+          "venue": "Bukit Kiara"
+        },
+        "practice_day": "One controlled run of all stages without draining next-day power.",
+        "race_day": "Repeated hard stage efforts after prior-day trail exposure."
+      }
+    },
+    "venue_profiles": {
+      "bukit_kiara": {
+        "aliases": [
+          "Bukit Kiara",
+          "Kiara"
+        ],
+        "garmin_activity_name": "Kuala Lumpur Mountain Biking",
+        "access_model": {
+          "distance_priority": "Nearest of Clayton's three main KL MTB venues.",
+          "training_role": "Default weekly anchor for climb-loop fitness, enduro repeatability, and controlled trail exposure."
+        },
+        "benchmark_events": [
+          {
+            "activity_id": "17443956434",
+            "bike": "S-Works Enduro MY24",
+            "date": "2024-11-03",
+            "description": "Bukit Kiara enduro race benchmark to rebuild back to and surpass.",
+            "event_type": "enduro_race",
+            "summary": {
+              "aerobic_training_effect": 4.6,
+              "anaerobic_training_effect": 3.1,
+              "distance_km": 21.2,
+              "elapsed_duration_min": 278.2,
+              "elevation_gain_m": 915.2,
+              "estimated_loop_loads": [
+                52.8,
+                66.5,
+                56.0,
+                49.0,
+                37.2
+              ],
+              "official_training_load": 283.4,
+              "race_pattern": "Five climb-plus-descent loops plus an exit climb lap.",
+              "moving_duration_min": 115.7
+            }
+          }
+        ],
+        "coaching_rules": [
+          "Use 2024-11-03 as the main Bukit Kiara enduro race benchmark for rebuilding race-repeat fitness.",
+          "Clayton believes current DH pace potential is faster than this benchmark, but current fitness is below benchmark level.",
+          "The primary rebuild gap is sustained climb speed, between-stage recovery, and ability to repeat hard descents after repeated climbs.",
+          "Use the Stumpjumper with power meter for climb-focused Kiara loop training when the goal is fitness: repeat the same climb/descent loop, target climb power/HR/RPE consistency, and cruise the descent.",
+          "Do not use the 2025 finger fracture as a current training gate; retain it only as historical context for why 2025 progression was interrupted.",
+          "Progress Kiara durability from 3 quality loops to 4 and then 5 before simulating full race stress."
+        ]
+      },
+      "putrajaya_challenge_park": {
+        "aliases": [
+          "PCP",
+          "Putrajaya Challenge Park",
+          "Putrajaya"
+        ],
+        "garmin_activity_names": [
+          "Putrajaya Mountain Biking",
+          "Dengkil Mountain Biking"
+        ],
+        "access_model": {
+          "distance_priority": "Furthest of Clayton's three main KL venues.",
+          "training_role": "Planned jump-line/curated-bike-park exposure when logistics allow."
+        },
+        "activity_classes": {
+          "curated_jump_line_dh": {
+            "benchmark_run": {
+              "activity_id": "19295563434",
+              "date": "2025-06-01",
+              "distance_km": 0.585,
+              "elevation_loss_m": 55.3,
+              "event": "PCP DH race run",
+              "time_sec": 91.3
+            },
+            "interpretation": "Short curated DH/jump-line exposure. Use run count, jump timing, pump quality, landing quietness, and arm/leg impact tolerance as the main coaching metrics; Garmin load can overrepresent waiting/access and underrepresent impact quality.",
+            "signature": "About 0.58 km and 1:30-1:40 for the race line, with roughly 55 m elevation loss."
+          },
+          "pcp_practice_session": {
+            "reference_activity_id": "19147794884",
+            "reference_date": "2025-05-17",
+            "summary": "Practice/trail-detail day with 13 laps, 12.3 km, about 409 m up/down, load 237, and multiple short descents."
+          }
+        },
+        "reference_events": [
+          {
+            "activity_id": "19147794884",
+            "date": "2025-05-17",
+            "description": "PCP trail-detail/practice reference on S-Works Enduro MY24."
+          },
+          {
+            "activity_id": "19294959501",
+            "date": "2025-06-01",
+            "description": "PCP DH seeding file; main race-line lap was about 583 m, 1:36.7 elapsed, 55 m descending."
+          },
+          {
+            "activity_id": "19295563434",
+            "date": "2025-06-01",
+            "description": "PCP DH race file; main race-line lap was about 585 m, 1:31.3 elapsed, 55 m descending."
+          }
+        ],
+        "coaching_rules": [
+          "Treat PCP as a jump/scrub/pump/landing-quality venue first and an endurance venue second.",
+          "PCP is a useful impact-tolerance and high-speed timing tool, but it is not a substitute for Kiara climb-repeat fitness.",
+          "Prescribe PCP by number of quality runs and specific skill focus, not by chasing Garmin training load.",
+          "Stop PCP sessions when body position, landing quietness, braking timing, or line accuracy degrades."
+        ]
+      },
+      "bukit_dinding_setapak": {
+        "aliases": [
+          "Bukit Dinding",
+          "Setapak"
+        ],
+        "garmin_activity_name": "Setapak Mountain Biking",
+        "access_model": {
+          "maintenance_reality": "Trails are usually only well maintained for events.",
+          "training_role": "Event/opportunity-based DH venue rather than a routine weekly training anchor."
+        },
+        "activity_classes": {
+          "uplift_or_shuttle_dh_run": {
+            "historical_count": 8,
+            "signature": "Usually 190-225 m descending, near-zero climbing, 4-20 min duration, and 1-3 recorded laps.",
+            "average_training_load": 38.1,
+            "average_elevation_loss_m": 212.7,
+            "average_duration_min": 9.3,
+            "interpretation": "Use descent count, braking quality, grip confidence, upper-body fatigue, and risk exposure as the main limits; Garmin load can understate impact cost when uplift removes climbing."
+          },
+          "self_pedaled_enduro_trail_day": {
+            "historical_count": 7,
+            "signature": "Usually 50-182 min with substantial climbing and descending; examples range about 360-1060 m climbing and 428-1279 m descending.",
+            "average_training_load": 166.5,
+            "average_elevation_gain_m": 609.2,
+            "average_elevation_loss_m": 724.3,
+            "average_duration_min": 134.6,
+            "interpretation": "Treat as a real enduro durability day, not just DH skill. Climbing load, heat, repeated descents, braking fatigue, and late-run skill quality all matter."
+          },
+          "short_enduro_stage_or_practice": {
+            "historical_count": 1,
+            "signature": "Short mixed climbing/descending effort with stage-like intensity.",
+            "interpretation": "Classify by intent and lap notes because Garmin may show a small file with high HR/load."
+          }
+        },
+        "reference_events": [
+          {
+            "date": "2023-03-05",
+            "description": "DH race with uplift; race files were short descending efforts, not a self-pedaled enduro load."
+          },
+          {
+            "date": "2024-07-14",
+            "description": "Wet DH race with uplift; the race-day file was short, but the lead-in included multiple practice and trail efforts."
+          }
+        ],
+        "coaching_rules": [
+          "Ask or infer whether the day is uplift/shuttle DH, self-pedaled enduro, or mixed trails before comparing load.",
+          "For uplift DH, prescribe by number of descents and technical quality rather than total ride duration alone.",
+          "For self-pedaled Bukit Dinding, treat the session like an enduro durability exposure with meaningful aerobic and upper-body cost.",
+          "Do not use race-day Garmin load alone to estimate DH violence; descending impact and braking fatigue are under-represented."
+        ]
+      }
+    },
+    "local_training_assets": {
+      "condo_gym": {
+        "available_equipment": [
+          "mostly dumbbells",
+          "Technogym strength machines",
+          "Technogym cardio machines"
+        ],
+        "coaching_role": "Low-logistics durability support, recovery cardio, and small strength doses that must not compromise key trail days.",
+        "constraints": [
+          "Use gym as support, not a substitute for bike-specific continuity.",
+          "Avoid leg-damaging strength work within 48 hours of key Kiara, PCP, or Dinding sessions."
+        ]
+      },
+      "condo_slope": {
+        "grade_pct": 8,
+        "coaching_role": "Low-logistics bike-specific torque and sprint microdose venue near home.",
+        "session_uses": [
+          "Seated low-cadence torque climbs.",
+          "Short hill sprints with full recovery.",
+          "Technique-focused acceleration without needing a full trail ride."
+        ],
+        "constraints": [
+          "Keep sprint/torque doses small when stacked near PCP jumps or Dinding DH.",
+          "Stop when snap, form, or traction quality drops."
+        ]
+      }
+    },
+    "equipment": {
+      "bikes": {
+        "marin_san_quentin_3": {
+          "aliases": [
+            "Marin SQ3",
+            "hardtail"
+          ],
+          "default_role": "Elite Suito indoor trainer bike.",
+          "maintenance": [
+            {
+              "date": "2026-05-26",
+              "note": "Chain and chainring replacement planned because chain has elongated."
+            }
+          ],
+          "outdoor_role": "Can be taken outdoors when needed."
+        },
+        "specialized_enduro": {
+          "default_role": "Primary enduro bike for feel-based outdoor riding.",
+          "current_fork": {
+            "installed_date": "2026-06-01",
+            "model": "RockShox Zeb Ultimate",
+            "replaced": "RockShox Lyrik Ultimate",
+            "note": "Initial Bukit Dinding ride should be treated as a suspension setup and handling shakedown before chasing speed.",
+            "setup_feedback": [
+              {
+                "date": "2026-06-02",
+                "venue": "Bukit Dinding / Melawati",
+                "ride_context": "Mixed uplift and self-pedaled Enduro ride; laps 2, 5, and 7 were uplift/access laps.",
+                "rider_feedback": "Zeb setup was good with a bit of arm pump on descents.",
+                "next_adjustment_to_test": "Try 1 click more rebound damping and 1 click less low-speed compression damping at the next Bukit Dinding session."
+              }
+            ]
+          },
+          "power_meter_preference": "Do not move the power meter here by default; Clayton prefers to ride the Enduro bike on feel."
+        },
+        "specialized_stumpjumper": {
+          "default_role": "Outdoor trail bike with current power meter.",
+          "preferred_training_use": "Power-meter climb-focused Bukit Kiara loop sessions: focus the workout on repeated climbs and cruise the same descent trail to control risk and isolate aerobic/torque fitness.",
+          "mileage_policy": "Clayton is comfortable putting training mileage on the Stumpjumper.",
+          "trainer_swap_option": "Can replace the Marin SQ3 on the Elite Suito if needed."
+        }
+      },
+      "power_meter_policy": {
+        "default": "Keep the Stumpjumper power meter available for outdoor power validation and selected structured MTB data.",
+        "enduro_bike": "Use feel, RPE, HR, repeat quality, and trail notes rather than power as the primary guide.",
+        "indoor_bike": "Use the Elite Suito as the main controlled indoor power source; compare with the Stumpjumper power meter only when calibration or transfer questions matter.",
+        "marin_sq3": "Move the power meter to the Marin SQ3 only if outdoor hardtail power data becomes strategically useful, not for routine indoor trainer work."
+      },
+      "trainer": {
+        "default_bike": "Marin San Quentin 3",
+        "model": "Elite Suito",
+        "swap_option": "Stumpjumper can replace the Marin SQ3 on the trainer when needed."
+      },
+      "sensors": {
+        "garmin_hrm_strap": {
+          "role": "Preferred HR source for MTB and hard outdoor rides.",
+          "reason": "Fenix wrist optical HR can under-read during trail riding, likely from grip tension, vibration, sweat, and arm pump.",
+          "audit_rule": "If a mountain bike activity has no external HEART_RATE sensor in Devices & Apps, treat HR and Garmin load as lower confidence."
+        }
+      }
+    },
+    "goal": "Progress from experienced MTB rider to expert rider.",
+    "highest_impact_objective": "Build bike-specific continuity first, then enduro repeatability, then expert skill execution under fatigue.",
+    "name": "Clayton",
+    "rider_category": {
+      "current": "experienced",
+      "experienced_definition": "Carries speed through most corners found on trail, including rough, banked, and flat corners. Larger jumps and drops are hit frequently and with precision. Rides hard trails with consistent comfort, confidence, and precision.",
+      "expert_definition": "Upper echelon aggressive trail skill: scrubbing jumps, heavy flat landings at pace, aggressive technical terrain, repeatable speed into and out of challenging corners, and comfort with wheel slides.",
+      "target": "expert"
+    },
+    "sport": "mountain_biking",
+    "timezone": "Asia/Kuala_Lumpur"
+  },
+  "goal_progression": {
+    "current_phase": "base_rebuild",
+    "phase_order": [
+      "base_rebuild",
+      "mtb_specificity",
+      "performance_build",
+      "expert_specific_work"
+    ],
+    "phase_rules": {
+      "base_rebuild": {
+        "highest_impact_focus": [
+          "Protect 3 bike-specific touches per week when life allows.",
+          "Protect 2 MTB exposures per week: one quality/skill day and one durability/enduro-volume day.",
+          "Use one structured indoor tempo/torque session per week, progressing repeatability before raising power.",
+          "Use elliptical as recovery/support only, not as the aerobic backbone of a bike-performance block."
+        ],
+        "purpose": "Rebuild aerobic durability, strength rhythm, and weekly repeatability for enduro practice-plus-race demands."
+      },
+      "expert_specific_work": {
+        "purpose": "Progress speed, creativity, jumps/drops, heavy landings, and aggressive technical riding."
+      },
+      "mtb_specificity": {
+        "purpose": "Add trail handling under fatigue, braking endurance, and enduro stage repeatability."
+      },
+      "performance_build": {
+        "purpose": "Layer threshold, VO2, anaerobic repeatability, and strength-power."
+      }
+    }
+  },
+  "history": [
+    {
+      "note": "Default rebuild context created with historical left pinky fracture context only.",
+      "timestamp": "2026-04-29T23:10:28+08:00",
+      "type": "context_initialized"
+    },
+    {
+      "note": "Sunday is a Sabbath hard-rest day with no planned exercise.",
+      "timestamp": "2026-05-03T07:57:44+08:00",
+      "type": "weekly_rest_day_added"
+    },
+    {
+      "date": "2026-05-13",
+      "label": "sepang_logistics",
+      "timestamp": "2026-05-11T09:54:08+08:00",
+      "type": "logistics"
+    },
+    {
+      "note": "Training focus shifted to enduro repeatability.",
+      "phase": "base_rebuild",
+      "timestamp": "2026-05-16T19:20:36+08:00",
+      "type": "goal_phase_updated"
+    },
+    {
+      "note": "N-of-1 Garmin review found bike-specific continuity is Clayton's highest-yield lever. Maintenance floor is about 2 bike touches/week, rebuild target is 3 bike touches/week, and enduro progression should protect 2 MTB exposures/week before adding extra gym or non-bike aerobic work.",
+      "timestamp": "2026-05-26T19:00:53+08:00",
+      "type": "training_strategy_updated"
+    },
+    {
+      "note": "Predictive training architecture added: store a pre-session digital-twin expectation, then compare actual Garmin load, self-evaluation, and next-day wellness response after sync. Classify execution/adherence before treating a miss as model error or poor adaptation.",
+      "timestamp": "2026-05-29T13:05:00+08:00",
+      "type": "predictive_training_loop_added"
+    },
+    {
+      "note": "Bukit Dinding/Setapak venue profile added. Historical activities split into uplift/shuttle DH runs, self-pedaled enduro/trail days, and short stage/practice efforts; future prescriptions should distinguish access method and trail intent.",
+      "timestamp": "2026-05-31T14:15:00+08:00",
+      "type": "venue_profile_added"
+    },
+    {
+      "note": "Bukit Kiara 2024-11-03 activity 17443956434 identified by Clayton as an enduro race benchmark. Coaching interpretation: current DH pace may now be faster, but fitness and race-repeat climbing/recovery need rebuilding to meet and surpass that benchmark.",
+      "timestamp": "2026-06-05T16:45:00+08:00",
+      "type": "race_benchmark_added"
+    },
+    {
+      "note": "Clayton prefers using the Stumpjumper power-meter bike for Bukit Kiara climb-loop training: focus the climbs, cruise the repeated descent trail, and allow training mileage on the Stumpjumper.",
+      "timestamp": "2026-06-05T16:55:00+08:00",
+      "type": "equipment_training_use_added"
+    },
+    {
+      "note": "Putrajaya Challenge Park profile added from 2025-05-17 practice/trail-detail activity and 2025-06-01 DH seeding/race files. PCP is classified as a short curated jump-line DH venue: about 0.58 km, 1:30-1:40, and 55 m descending for the race line.",
+      "timestamp": "2026-06-05T17:10:00+08:00",
+      "type": "venue_profile_added"
+    }
+  ],
+  "medical": {
+    "history": [
+      {
+        "date": "2025-08",
+        "label": "left_pinky_fracture",
+        "note": "Historical context only; not used as a current training gate."
+      },
+      {
+        "date": "2026-05-13",
+        "label": "sepang_logistics",
+        "type": "logistics"
+      }
+    ]
+  },
+  "nutrition": {
+    "carb_g_per_kg": {
+      "easy": [
+        2.0,
+        4.0
+      ],
+      "hard": [
+        4.0,
+        7.0
+      ],
+      "moderate": [
+        3.0,
+        5.0
+      ],
+      "recovery": [
+        1.5,
+        3.0
+      ]
+    },
+    "during_session_carbs_g_per_hour": {
+      "60_to_120_min": [
+        30,
+        60
+      ],
+      "over_120_min": [
+        60,
+        90
+      ],
+      "under_60_min": [
+        0,
+        20
+      ]
+    },
+    "mtb_heat_fueling_targets": {
+      "basis": "Garmin scale weight 75.76 kg on 2026-05-23; adjust when newer scale data is available.",
+      "over_150_min_or_race_practice": {
+        "carbs_g_per_hour": [
+          60,
+          90
+        ],
+        "fluid_ml_per_hour": [
+          650,
+          1000
+        ],
+        "sodium_mg_per_hour": [
+          800,
+          1200
+        ]
+      },
+      "ride_90_to_150_min": {
+        "carbs_g_per_hour": [
+          45,
+          75
+        ],
+        "fluid_ml_per_hour": [
+          500,
+          900
+        ],
+        "sodium_mg_per_hour": [
+          600,
+          1000
+        ]
+      },
+      "rule": "In Kuala Lumpur heat, fuel skill quality before obvious bonking; late sloppy braking, weak pumping, timid jumps, or poor line choice can be under-fuelling or heat load."
+    },
+    "protein_g_per_kg": [
+      1.6,
+      2.2
+    ]
+  },
+  "training_strategy": {
+    "current_power_policy": {
+      "historical_best_p20_date": "2024-04-24",
+      "historical_best_p20_w": 222,
+      "policy": "Treat 222 W as historical P20, not current FTP. Prescribe current intervals from recent controlled efforts until a fresh clean test is done.",
+      "rebuild_progression": [
+        "3x8 min tempo/torque",
+        "3x10 min tempo/torque",
+        "3x12 min tempo/torque",
+        "then raise watts conservatively"
+      ],
+      "recent_reference": "2026-05-25 indoor tempo: 58 min, NP 133 W, P20 146 W, avg HR 120, max HR 142."
+    },
+    "individual_adaptation_profile": {
+      "core_finding": "Clayton responds best to bike-specific continuity. Total load alone is misleading because elliptical/run/gym can keep load high while cycling power and cycling VO2 fall.",
+      "detraining_pattern": "Fitness dropped when bike-specific load/frequency fell from 2025-12 through 2026-04, despite high elliptical/non-bike load.",
+      "elliptical_role": "Useful for recovery and aerobic continuity, especially HR-capped, but it must not replace weekly bike touches during MTB-performance blocks.",
+      "gym_role": "Useful as a small durability support dose only if it does not reduce Friday/Saturday trail quality or create DOMS before key rides.",
+      "maintenance_floor": {
+        "minimum_bike_touches_per_week": 2,
+        "notes": "The issue is multi-week bike droughts, not Sabbath or normal recovery.",
+        "preferred_rebuild_bike_load_per_week": [
+          250,
+          400
+        ],
+        "preferred_rebuild_bike_touches_per_week": 3
+      }
+    },
+    "limiter_ranking_current": [
+      {
+        "limiter": "Upper-body durability on long descents",
+        "rank": 1
+      },
+      {
+        "limiter": "Heavy braking fatigue",
+        "rank": 2
+      },
+      {
+        "limiter": "Repeated hard efforts after descents",
+        "rank": 3
+      },
+      {
+        "limiter": "Sustained climbing power",
+        "rank": 4
+      },
+      {
+        "limiter": "Repeat 2-5 minute punch power",
+        "rank": 5
+      },
+      {
+        "limiter": "Corner exit acceleration",
+        "rank": 6
+      },
+      {
+        "limiter": "Grip confidence in wet roots/rocks",
+        "rank": 7
+      },
+      {
+        "limiter": "Jump speed/scrub timing",
+        "rank": 8
+      }
+    ],
+    "north_star_metric": "Can Clayton ride the final descent of the day with the same aggression, braking precision, and corner-exit speed as the first one?",
+    "weekly_architecture": {
+      "highest_return_shape": [
+        "One structured indoor bike tempo/torque session.",
+        "One MTB quality/skill exposure.",
+        "One MTB durability/enduro-volume exposure.",
+        "Optional recovery elliptical or short gym support if it does not compromise trail quality."
+      ],
+      "preferred_days": {
+        "friday": "MTB durability/enduro-volume when available.",
+        "monday": "Indoor tempo/torque or easy bike touch.",
+        "saturday": "PCP/jump/skills or second trail exposure; reduce ambition if driving/event load is high.",
+        "sunday": "Sabbath hard rest.",
+        "thursday": "Recovery elliptical or short strength support.",
+        "tuesday": "Rest, mobility, or short strength support.",
+        "wednesday": "MTB quality/skill day when available."
+      },
+      "race_format_proxy": "Because Sunday is Sabbath, simulate enduro back-to-back demands with Friday practice-style exposure plus Saturday attack-style effort."
+    }
+  },
+  "operating_model": {
+    "coach_role": "interpret evidence, resolve conflicts, and make the final coaching call",
+    "nutrition_role": "fuel training, recovery, body composition, and adaptation",
+    "predictive_loop": "Before training, store the expected session load/RPE, raw next-day response, coaching-adjusted strain response, and execution-drift stress test from Clayton's digital twin. After Garmin sync, compare actual load, self-evaluation, and next-day response against the stored expectation; only matched-load sessions calibrate the model, while drifted sessions update execution-risk rules first.",
+    "software_role": "stage evidence, normalize data, apply repeatable safety rules"
+  },
+  "schema_version": 1,
+  "training_rules": {
+    "acute_chronic_load_spike_ratio": 1.5,
+    "bike_specific_continuity": {
+      "downshift_warning": "Do not allow high elliptical/non-bike load to hide a bike-specific drought.",
+      "minimum_bike_touches_per_week": 2,
+      "preferred_rebuild_bike_touches_per_week": 3,
+      "protect_mtb_exposures_per_week": 2
+    },
+    "elliptical_use": {
+      "allowed": "Recovery/support aerobic work, usually HR-capped around 120 bpm.",
+      "not_allowed": "Backbone modality during a bike-performance block unless trail access or logistics require it."
+    },
+    "heart_rate_source_confidence": {
+      "external_hr_required_for": [
+        "MTB intensity analysis",
+        "hard outdoor rides",
+        "race simulation",
+        "heat/load interpretation"
+      ],
+      "rule": "When Devices & Apps does not show an external HEART_RATE sensor on MTB, treat wrist-HR-derived load, zones, and intensity as lower confidence.",
+      "wrist_hr_limitation": "Fenix wrist optical HR may under-read during technical MTB because grip pressure, vibration, sweat, and arm pump reduce optical signal quality."
+    },
+    "strength_training": {
+      "default_dose": "1-2 short support sessions per week, 20-35 min.",
+      "interference_rule": "If gym compromises Friday/Saturday trail quality, reduce volume, load, or placement.",
+      "preferred_movements": [
+        "split squat or lunge",
+        "hip hinge or RDL",
+        "calf raise",
+        "row or pull",
+        "push-up or press",
+        "anti-rotation core",
+        "loaded carry"
+      ]
+    },
+    "stale_data_warning_days": 1,
+    "weekly_rest_days": [
+      {
+        "label": "Sabbath",
+        "reason": "Clayton treats Sunday as Sabbath; no planned exercise.",
+        "status": "hard_rest",
+        "weekday": 6
+      }
+    ]
+  },
+  "updated_at": "2026-05-31T14:15:00+08:00"
+}
