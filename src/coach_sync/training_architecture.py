@@ -127,7 +127,36 @@ def _evidence_summary(profile: dict, hypotheses: dict, audit: dict) -> dict:
 
 def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, target: date) -> dict:
     evidence = _evidence_summary(profile, hypotheses, audit)
+    athlete = context.get("athlete") or {}
     current_phase = (context.get("goal_progression") or {}).get("current_phase", "base_rebuild")
+    coaching_interface = athlete.get("coaching_interface") or {
+        "profile_summary": (
+            "High-agency, high-cognition, performance-driven, technically curious, and already comfortable "
+            "with aggressive MTB risk when it serves progression."
+        ),
+        "best_training_environment": [
+            "clear objective",
+            "constrained drill",
+            "measurable output",
+            "review",
+            "refinement",
+            "repeat",
+        ],
+        "coaching_implications": [
+            "Use direct, specific coaching with the reason for each prescription.",
+            "Challenge weak logic and vague goals without softening the standard.",
+            "Prioritize high-return constraints over broad option lists.",
+            "Tie training decisions to Malaysian trail transfer: wet roots, traction loss, heat, repeated accelerations, braking fatigue, and technical descending under fatigue.",
+            "Treat motivation as present; provide sharper direction, constraint, and feedback instead of generic encouragement.",
+        ],
+        "risk_to_manage": "Curiosity plus aggression plus too many variables can scatter adaptation; keep key sessions constrained enough to learn from them.",
+        "coach_voice_rules": [
+            "Be precise and evidence-backed.",
+            "Call out when a proposed session is not specific to the venue or goal.",
+            "Separate equipment testing, skill acquisition, fitness development, and race simulation so one ride does not pretend to optimize all of them.",
+            "Use honest post-session review to turn intelligence and aggression into repeatable execution.",
+        ],
+    }
     return {
         "date": target.isoformat(),
         "generated_at": iso_now(DEFAULT_TIMEZONE),
@@ -154,6 +183,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                     "Use subjective trail notes to train what Garmin cannot see.",
                 ],
             },
+            "athlete_interface": coaching_interface,
             "operating_loop": [
                 "Diagnose the current limiter from Garmin history plus recent subjective trail evidence.",
                 "Choose the highest-specificity session that fits the week and recovery state.",
@@ -163,10 +193,95 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             ],
             "coaching_standard": "More is not better; more specific, better absorbed, and more repeatable is better.",
         },
+        "stack_governance": {
+            "better_definition": [
+                "Better means a file, artifact, or model changes the coaching call in a way that is fresher, more specific, more inspectable, or better protected by tests.",
+                "A signal is not promoted just because it is available; it must improve the prescription, the stop rules, the review, or the confidence statement.",
+                "The coach packet remains the same-day decision surface; other artifacts explain, audit, or stage evidence for that surface.",
+            ],
+            "workflow_order": [
+                "Garmin/live evidence and curated subjective notes enter raw or input storage.",
+                "Core builders normalize wellness, activities, readiness, training load, gear, devices, self-evaluation, and current state.",
+                "The deterministic plan applies safety rules and the schema v3 session contract.",
+                "The coach packet triages trusted, cautionary, experimental, and ignored evidence.",
+                "The model makes the final coaching call and records predictions/reviews only when they are testable.",
+            ],
+            "tool_tiers": {
+                "decision_surface": [
+                    "snapshots/coach_packet.json",
+                    "snapshots/coach_packet.txt",
+                    "snapshots/current_state.json",
+                    "snapshots/today_plan.json",
+                    "snapshots/daily_brief.txt",
+                ],
+                "core_evidence_builders": [
+                    "readiness",
+                    "state",
+                    "plan",
+                    "brief",
+                    "wellness-trends",
+                    "wellness-verification",
+                    "training-status",
+                    "activity-index",
+                    "modality-rollups",
+                    "gear-audit",
+                    "device-audit",
+                    "self-evaluation",
+                ],
+                "architecture_and_context": [
+                    "training-architecture",
+                    "adaptation-profile",
+                    "training-hypotheses",
+                    "athlete-questions",
+                    "historical-baselines",
+                    "data-quality",
+                    "data-inventory",
+                ],
+                "predictive_and_experimental": [
+                    "body-battery-model",
+                    "training-predictor",
+                    "predictive-training",
+                    "predictive-review",
+                    "predictive-backtest",
+                ],
+                "operational_or_backfill": [
+                    "sync",
+                    "rebuild",
+                    "historical-backfill",
+                    "cleanup-derived",
+                    "log",
+                    "loop-load",
+                    "context",
+                ],
+                "low_authority_reports_or_unconfigured_sources": [
+                    "weekly-report",
+                    "insight-memo",
+                    "review-block",
+                    "forecast",
+                    "local-estimates",
+                    "intraday-trends",
+                    "weather-snapshot",
+                ],
+                "compatibility_wrappers": [
+                    "tools/*.py files are thin wrappers around python -m coach_sync commands and are kept for AGENTS.md, README, and operator ergonomics.",
+                ],
+            },
+            "promotion_rules": [
+                "Promote an artifact when it is current, tested, athlete-specific, and changes readiness, dose, stop rules, fueling, sensor confidence, or post-session review.",
+                "Promote a model only when validation beats a simple baseline and the prediction target matches the coaching decision.",
+                "Keep Garmin load subordinate to trail-specific quality when the venue under-represents impact, such as PCP jump-line sessions or uplift DH.",
+                "Prefer fewer stronger artifacts in the coach packet over broad artifact lists that do not change the recommendation.",
+            ],
+            "deprecation_rules": [
+                "If a tool is a placeholder or unconfigured source, label it low authority until it has real data and a test that proves the output changes a coaching call.",
+                "If two artifacts answer the same question, keep the one closer to the decision surface and retire or merge the weaker one.",
+                "Do not delete raw evidence, compatibility wrappers, or tests simply to reduce file count; remove only stale behavior after the workflow has a safer replacement.",
+            ],
+        },
         "athlete_model": {
             "current_phase": current_phase,
-            "current_category": ((context.get("athlete") or {}).get("rider_category") or {}).get("current"),
-            "target_category": ((context.get("athlete") or {}).get("rider_category") or {}).get("target"),
+            "current_category": (athlete.get("rider_category") or {}).get("current"),
+            "target_category": (athlete.get("rider_category") or {}).get("target"),
             "highest_return_sequence": [
                 "bike-specific continuity",
                 "enduro repeatability",
@@ -188,7 +303,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                 "Do not copy a full ideal week when life load, sleep, HRV, arm pump, or back-to-back trail plans require density control.",
             ],
         },
-        "equipment_model": (context.get("athlete") or {}).get("equipment", {}),
+        "equipment_model": athlete.get("equipment", {}),
         "evidence_basis": evidence,
         "decision_hierarchy": [
             "Sabbath hard rest and current readiness.",
@@ -469,6 +584,8 @@ def _text_report(artifact: dict) -> str:
         "Highest Return Sequence:",
     ]
     lines.extend(f"- {item}" for item in artifact["athlete_model"]["highest_return_sequence"])
+    lines.extend(["", "Stack Governance:"])
+    lines.extend(f"- {item}" for item in artifact["stack_governance"]["better_definition"])
     lines.extend(
         [
             "",

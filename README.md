@@ -40,6 +40,20 @@
 Garmin tokens are handled by the `garminconnect`/`garth` stack. Do not store passwords in repo files.
 
 ## Command Surface
+The Python file count is intentionally split by role:
+- `src/coach_sync/` contains package logic.
+- `tools/*.py` are thin compatibility wrappers around `python -m coach_sync ...` commands.
+- `tests/` protects safety, artifact behavior, and coaching architecture rules.
+
+Tool authority is tiered:
+- Decision surface: `coach-packet`, `state`, `plan`, and `brief`.
+- Core evidence builders: readiness, wellness, training status, activity index, modality rollups, gear audit, device audit, and self-evaluation.
+- Architecture/context builders: training architecture, adaptation profile, training hypotheses, athlete questions, historical baselines, data quality, and data inventory.
+- Predictive/experimental tools: Body Battery model, training predictor, predictive training, predictive review, and predictive backtest. These inform questions and reviews unless validation earns stronger authority.
+- Low-authority reports or unconfigured sources: weekly report, insight memo, review block, forecast, local estimates, intraday trends, and weather snapshot. Treat these as supporting context unless they are upgraded with real data and tests.
+
+Promotion rule: a tool or artifact is useful only if it is current, tested, athlete-specific, and changes readiness, dose, stop rules, fueling, sensor confidence, or post-session review. More is not better; better is better.
+
 Preferred direct commands:
 - Current state: `python tools/current_state.py`
 - Daily plan: `python tools/today_plan.py`
@@ -220,6 +234,7 @@ Blank template fields are ignored.
 - Treat `222 W` as historical P20 from `2024-04-24`, not current FTP.
 - Elliptical is recovery/support during bike-performance blocks, not the backbone unless constraints require it.
 - Gym is useful only if it supports trail quality; reduce or move it if it creates DOMS before key rides.
+- Clayton responds best to direct standards, clear constraints, measurable outputs, and honest review; do not substitute generic encouragement for specific coaching.
 - In Kuala Lumpur heat, fuel skill quality early: late sloppy braking, weak pumping, timid jumps, or poor line choice can be under-fuelling or heat load.
 - Garmin Gear is the bike/source truth layer. Flag MTB activities tagged with `Elite Suito` so the Gear field can be corrected.
 - Garmin Devices & Apps is the HR-source truth layer. MTB activities without an external `HEART_RATE` sensor should have lower-confidence HR/load interpretation because Fenix wrist HR can under-read during technical riding.

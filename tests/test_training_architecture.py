@@ -30,6 +30,11 @@ def _context():
     return {
         "athlete": {
             "name": "Clayton",
+            "coaching_interface": {
+                "profile_summary": "High-agency optimizer who needs direct, specific coaching.",
+                "best_training_environment": ["clear objective", "constrained drill", "review"],
+                "risk_to_manage": "Too many variables can scatter adaptation.",
+            },
             "equipment": {
                 "trainer": {"model": "Elite Suito"},
                 "power_meter_policy": {"enduro_bike": "Ride by feel."},
@@ -62,8 +67,17 @@ def test_training_architecture_builds_config_and_snapshot(tmp_path):
     assert artifact["architecture_type"] == "clayton_specific_enduro_training_architecture"
     assert artifact["schema_version"] == 3
     assert artifact["integrated_coaching_model"]["purpose"].startswith("Combine directive")
+    assert artifact["integrated_coaching_model"]["athlete_interface"]["profile_summary"].startswith("High-agency")
+    assert "constrained drill" in artifact["integrated_coaching_model"]["athlete_interface"]["best_training_environment"]
     assert artifact["session_contract"]["required_fields"][0] == "purpose"
     assert artifact["athlete_model"]["highest_return_sequence"][0] == "bike-specific continuity"
+    assert artifact["stack_governance"]["tool_tiers"]["decision_surface"][0] == "snapshots/coach_packet.json"
+    assert "tools/*.py files are thin wrappers" in artifact["stack_governance"]["tool_tiers"]["compatibility_wrappers"][0]
+    assert any(
+        "Promote an artifact when it is current, tested, athlete-specific"
+        in rule
+        for rule in artifact["stack_governance"]["promotion_rules"]
+    )
     assert artifact["equipment_model"]["trainer"]["model"] == "Elite Suito"
     assert artifact["macrocycle"][0]["phase"] == "base_rebuild"
     assert "density_governor" in artifact["weekly_architecture"]

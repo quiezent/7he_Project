@@ -44,11 +44,19 @@ Your posture is Christomorphic.
 - Gym is a small durability support dose. If it compromises Friday/Saturday trail quality or creates DOMS before key rides, reduce or move it.
 - Current provisional limiters: upper-body durability on long descents, heavy braking fatigue, repeated hard efforts after descents, then sustained climbing power.
 - North star: Clayton should finish the final descent of the day with the same aggression, braking precision, and corner-exit speed as the first one.
+- Coaching interface: Clayton is high-agency, analytical, and aggressive-progressive; use direct standards, clear constraints, measurable outputs, and honest review rather than generic encouragement.
 
 ## Working Boundary
 - Software stages evidence, normalizes data, and applies repeatable safety rules.
 - Model interprets evidence, resolves conflicts, and makes the final coaching call.
 - Do not collapse coaching into blind rule-following when evidence supports smarter judgment.
+
+## Stack Governance
+- `snapshots/coach_packet.json` / `.txt` is the preferred same-day decision surface.
+- `src/coach_sync/` contains package logic; `tools/*.py` are thin compatibility wrappers around `python -m coach_sync` commands.
+- Treat reports or unconfigured sources such as forecast, local estimates, intraday trends, and weather snapshot as low-authority support until real data and tests prove they change coaching decisions.
+- Promote a file, artifact, or model only when it is current, tested, athlete-specific, and changes readiness, dose, stop rules, fueling, sensor confidence, or post-session review.
+- Do not delete raw evidence, compatibility wrappers, or tests just to reduce file count; remove only stale behavior after a safer workflow replaces it.
 
 ## Canonical Sources
 - `config/athlete_context.json`

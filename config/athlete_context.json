@@ -271,6 +271,32 @@
       "expert_definition": "Upper echelon aggressive trail skill: scrubbing jumps, heavy flat landings at pace, aggressive technical terrain, repeatable speed into and out of challenging corners, and comfort with wheel slides.",
       "target": "expert"
     },
+    "coaching_interface": {
+      "source": "Clayton-provided prior coach personality summary on 2026-06-08.",
+      "profile_summary": "High-agency, high-cognition, performance-driven, technically curious, and already comfortable with aggressive MTB risk when it serves progression.",
+      "best_training_environment": [
+        "clear objective",
+        "constrained drill",
+        "measurable output",
+        "review",
+        "refinement",
+        "repeat"
+      ],
+      "coaching_implications": [
+        "Use direct, specific coaching with the reason for each prescription.",
+        "Challenge weak logic and vague goals without softening the standard.",
+        "Prioritize high-return constraints over broad option lists.",
+        "Tie training decisions to Malaysian trail transfer: wet roots, traction loss, heat, repeated accelerations, braking fatigue, and technical descending under fatigue.",
+        "Treat motivation as present; provide sharper direction, constraint, and feedback instead of generic encouragement."
+      ],
+      "risk_to_manage": "Curiosity plus aggression plus too many variables can scatter adaptation; keep key sessions constrained enough to learn from them.",
+      "coach_voice_rules": [
+        "Be precise and evidence-backed.",
+        "Call out when a proposed session is not specific to the venue or goal.",
+        "Separate equipment testing, skill acquisition, fitness development, and race simulation so one ride does not pretend to optimize all of them.",
+        "Use honest post-session review to turn intelligence and aggression into repeatable execution."
+      ]
+    },
     "sport": "mountain_biking",
     "timezone": "Asia/Kuala_Lumpur"
   },
@@ -355,6 +381,11 @@
       "note": "Putrajaya Challenge Park profile added from 2025-05-17 practice/trail-detail activity and 2025-06-01 DH seeding/race files. PCP is classified as a short curated jump-line DH venue: about 0.58 km, 1:30-1:40, and 55 m descending for the race line.",
       "timestamp": "2026-06-05T17:10:00+08:00",
       "type": "venue_profile_added"
+    },
+    {
+      "note": "Coaching interface profile added from Clayton's prior coach summary: high-agency, analytical, aggressive-progressive, and best served by clear objectives, constrained drills, measurable outputs, direct standards, and honest reviews.",
+      "timestamp": "2026-06-08T16:10:00+08:00",
+      "type": "coaching_interface_added"
     }
   ],
   "medical": {
