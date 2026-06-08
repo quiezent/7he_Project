@@ -235,6 +235,8 @@ Blank template fields are ignored.
 - Elliptical is recovery/support during bike-performance blocks, not the backbone unless constraints require it.
 - Gym is useful only if it supports trail quality; reduce or move it if it creates DOMS before key rides.
 - Clayton responds best to direct standards, clear constraints, measurable outputs, and honest review; do not substitute generic encouragement for specific coaching.
+- Garmin manages the physiological dashboard; the coach must still judge technical execution, descending stress, heat distortion, variable control, and whether the ride improved the rider.
+- Key rides should use one physiological target, one technical target, one constraint, and one review question.
 - In Kuala Lumpur heat, fuel skill quality early: late sloppy braking, weak pumping, timid jumps, or poor line choice can be under-fuelling or heat load.
 - Garmin Gear is the bike/source truth layer. Flag MTB activities tagged with `Elite Suito` so the Gear field can be corrected.
 - Garmin Devices & Apps is the HR-source truth layer. MTB activities without an external `HEART_RATE` sensor should have lower-confidence HR/load interpretation because Fenix wrist HR can under-read during technical riding.

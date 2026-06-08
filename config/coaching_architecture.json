@@ -392,7 +392,7 @@
     },
     "heat_rule": "In Kuala Lumpur, treat fuel/hydration as skill protection: sloppy braking, weak pumping, timid jumps, or poor line choice late can be carb/sodium/heat failure."
   },
-  "generated_at": "2026-06-08T23:30:20+08:00",
+  "generated_at": "2026-06-08T23:50:33+08:00",
   "integrated_coaching_model": {
     "athlete_interface": {
       "best_training_environment": [
@@ -416,9 +416,66 @@
         "Tie training decisions to Malaysian trail transfer: wet roots, traction loss, heat, repeated accelerations, braking fatigue, and technical descending under fatigue.",
         "Treat motivation as present; provide sharper direction, constraint, and feedback instead of generic encouragement."
       ],
+      "early_warning_signs": [
+        "More setup questions than training questions.",
+        "Desire to change the plan mid-session.",
+        "Chasing speed during a skill day.",
+        "Needing novelty before mastery.",
+        "Review becomes vague instead of naming the skill that improved.",
+        "More intensity without a clear reason."
+      ],
+      "execution_constraints": [
+        "Do not let every ride become a test; some rides must remain practice.",
+        "Use time caps for aerobic or recovery rides.",
+        "Use lap count, trail choice restriction, and one-skill focus for technical riding.",
+        "Use power caps indoors and HR caps for endurance control.",
+        "Stop technical work when quality drops, not when fitness is empty.",
+        "No mid-session mission creep when the session has a defined cap."
+      ],
+      "failure_modes": [
+        "Too many variables.",
+        "Accidental intensity from making rides harder than planned.",
+        "Gear experimentation becoming noise instead of controlled testing.",
+        "Boredom with simple work unless repetition is made measurable.",
+        "Poor fueling or hydration in heat.",
+        "Misreading motivation as readiness.",
+        "Scattered adaptation from doing many good things without one dominant direction."
+      ],
+      "garmin_blind_spots": [
+        "Technical execution: braking release timing, body position, line choice, pump timing, jump shape, corner entry discipline, and whether speed is carried correctly instead of merely survived.",
+        "Descending stress: HR and power can understate nervous-system load, grip demand, eccentric load, impact cost, and consequence.",
+        "Kuala Lumpur heat and humidity: HR drift may reflect thermoregulation, dehydration, sodium loss, or cooling cost rather than useful training intensity.",
+        "Good recovery metrics can create false confidence; physical readiness does not prove technical sharpness or disciplined decision-making.",
+        "Poor recovery metrics are not always a cancellation signal; they may mean lower consequence, tighter caps, or skill-focused practice.",
+        "Bike-to-bike comparisons are noisy because the Stumpjumper power meter, Enduro feel-based rides, hardtail demands, trail intent, traction, and terrain are not equivalent.",
+        "Load without purpose can look productive in Garmin while scattering the actual adaptation."
+      ],
+      "high_transfer_sessions": [
+        "Repeated technical descent laps on the same section with one objective.",
+        "PCP jump-line reps for squash, timing, cornering into and out of jumps, and speed control.",
+        "Kiara repeated climbs plus descents for enduro-specific fatigue.",
+        "Indoor torque or tempo to build the engine without technical chaos or crash risk.",
+        "Sparingly used race-simulation days with clear rules.",
+        "Strength support that improves posture, braking durability, landing tolerance, and repeatability without causing trail-limiting soreness."
+      ],
+      "highest_transfer_pattern": "Controlled fitness work indoors, specific technical reps outdoors, and occasional race simulation used sparingly with rules.",
       "profile_summary": "High-agency, high-cognition, performance-driven, technically curious, and already comfortable with aggressive MTB risk when it serves progression.",
       "risk_to_manage": "Curiosity plus aggression plus too many variables can scatter adaptation; keep key sessions constrained enough to learn from them.",
-      "source": "Clayton-provided prior coach personality summary on 2026-06-08."
+      "session_design_rule": "One physiological target plus one technical target plus one constraint plus one review question.",
+      "source": "Clayton-provided prior coach personality summary on 2026-06-08.",
+      "technical_fatigue_markers": [
+        "Braking gets later or less deliberate.",
+        "Body position gets taller and less elastic.",
+        "Vision narrows.",
+        "Line choice becomes more instinctive and less planned.",
+        "Confidence starts replacing precision."
+      ],
+      "variable_control_rules": [
+        "One new variable per session; everything else stays boring.",
+        "One setup variable, two repeat rides, same trail type, written result.",
+        "Do not combine new setup, new trail, higher speed, and new skill objective in one ride.",
+        "Separate equipment testing, rider testing, and race simulation."
+      ]
     },
     "coaching_standard": "More is not better; more specific, better absorbed, and more repeatable is better.",
     "operating_loop": [

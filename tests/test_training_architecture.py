@@ -33,6 +33,8 @@ def _context():
             "coaching_interface": {
                 "profile_summary": "High-agency optimizer who needs direct, specific coaching.",
                 "best_training_environment": ["clear objective", "constrained drill", "review"],
+                "garmin_blind_spots": ["Technical execution", "Descending stress"],
+                "session_design_rule": "One physiological target plus one technical target plus one constraint plus one review question.",
                 "risk_to_manage": "Too many variables can scatter adaptation.",
             },
             "equipment": {
@@ -69,6 +71,8 @@ def test_training_architecture_builds_config_and_snapshot(tmp_path):
     assert artifact["integrated_coaching_model"]["purpose"].startswith("Combine directive")
     assert artifact["integrated_coaching_model"]["athlete_interface"]["profile_summary"].startswith("High-agency")
     assert "constrained drill" in artifact["integrated_coaching_model"]["athlete_interface"]["best_training_environment"]
+    assert "Descending stress" in artifact["integrated_coaching_model"]["athlete_interface"]["garmin_blind_spots"]
+    assert artifact["integrated_coaching_model"]["athlete_interface"]["session_design_rule"].startswith("One physiological target")
     assert artifact["session_contract"]["required_fields"][0] == "purpose"
     assert artifact["athlete_model"]["highest_return_sequence"][0] == "bike-specific continuity"
     assert artifact["stack_governance"]["tool_tiers"]["decision_surface"][0] == "snapshots/coach_packet.json"
