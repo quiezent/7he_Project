@@ -76,6 +76,8 @@ def test_training_architecture_builds_config_and_snapshot(tmp_path):
     assert artifact["session_contract"]["required_fields"][0] == "purpose"
     assert artifact["athlete_model"]["highest_return_sequence"][0] == "bike-specific continuity"
     assert artifact["stack_governance"]["tool_tiers"]["decision_surface"][0] == "snapshots/coach_packet.json"
+    assert "action-state-prediction" in artifact["stack_governance"]["tool_tiers"]["predictive_and_experimental"]
+    assert "snapshots/action_state_prediction.json" in artifact["predictive_training_loop"]["artifacts"]
     assert "tools/*.py files are thin wrappers" in artifact["stack_governance"]["tool_tiers"]["compatibility_wrappers"][0]
     assert any(
         "Promote an artifact when it is current, tested, athlete-specific"

@@ -88,6 +88,11 @@
       "artifact": "snapshots/predictive_session_plan.json",
       "target": "whether the written prescription is likely to become longer or harder than planned",
       "status": "active_from_10_date_backtest"
+    },
+    "action_state_prediction": {
+      "artifact": "snapshots/action_state_prediction.json",
+      "target": "separate intended action, likely actual action branches, and state response by branch",
+      "status": "heuristic_prototype_until_action_branch_validation_beats_baseline"
     }
   },
   "next_models": [
@@ -95,6 +100,7 @@
     "MTB load-ramp scorer using exposure count, load ramp, heat, and self-evaluation",
     "modality displacement detector for engine maintenance vs MTB readiness",
     "session-response model once subjective skill-quality, fueling, heat, and RPE outcomes accumulate",
-    "larger execution-adherence model split by indoor bike, MTB durability, MTB skill, elliptical, gym, and rest"
+    "larger execution-adherence model split by indoor bike, MTB durability, MTB skill, elliptical, gym, and rest",
+    "calibrated action-branch model using intended prescription, actual modality, duration/load drift, and subjective drift reasons"
   ]
 }

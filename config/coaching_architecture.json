@@ -37,7 +37,7 @@
     "Modern HRV/wake Body Battery is strongest from March 2026 onward.",
     "Subjective trail notes are required for expert-skill decisions."
   ],
-  "date": "2026-06-08",
+  "date": "2026-06-09",
   "decision_hierarchy": [
     "Sabbath hard rest and current readiness.",
     "Garmin freshness: wellness, activity, and training status must be current for hard guidance.",
@@ -210,20 +210,20 @@
         "training_load": 89.0
       },
       "last_structured_power_candidate": {
-        "avg_hr": 120.0,
-        "avg_power": 118.0,
+        "avg_hr": 112.0,
+        "avg_power": 106.0,
         "category": "bike_indoor",
-        "date": "2026-05-25",
+        "date": "2026-06-09",
         "device_id": 3360476305,
-        "duration_min": 58.0,
-        "intensity_factor": 0.5879999995231628,
+        "duration_min": 52.0,
+        "intensity_factor": 0.5270000100135803,
         "manufacturer": "GARMIN",
-        "max_hr": 142.0,
+        "max_hr": 127.0,
         "name": "Tempo",
-        "normalized_power": 133.0,
-        "p10_w": 151.0,
-        "p20_w": 146.0,
-        "training_load": 59.9
+        "normalized_power": 120.0,
+        "p10_w": 131.0,
+        "p20_w": 125.0,
+        "training_load": 37.1
       },
       "power_source_note": "Raw Garmin summaries identify indoor/outdoor activity, Garmin device/manufacturer, and power values, but not the exact power source such as Elite Suito versus bike power meter.",
       "recent_60d_best_p20": {
@@ -244,23 +244,23 @@
       }
     },
     "full_range": {
-      "activity_end": "2026-06-08",
+      "activity_end": "2026-06-09",
       "activity_start": "2021-06-18",
-      "counted_sessions": 1347,
-      "duration_min": 102863.5,
+      "counted_sessions": 1348,
+      "duration_min": 102915.5,
       "elliptical_load": 7227.0,
       "elliptical_sessions": 70,
-      "indoor_bike_load": 37863.7,
-      "indoor_bike_sessions": 587,
+      "indoor_bike_load": 37900.8,
+      "indoor_bike_sessions": 588,
       "mtb_load": 95770.9,
       "mtb_sessions": 470,
-      "training_load": 156329.4
+      "training_load": 156366.5
     },
     "hypothesis_support": {
       "bike_specificity": "strong",
       "consistency_detraining": "strong",
       "nonbike_substitution": "moderate",
-      "recent_365_bike_specific_corr_to_p20": 0.381,
+      "recent_365_bike_specific_corr_to_p20": 0.386,
       "recent_365_elliptical_corr_to_p20": -0.149,
       "recent_365_indoor_bike_corr_to_p20": 0.499
     },
@@ -298,19 +298,19 @@
       "note": "Use the upper end in Kuala Lumpur heat or when skill quality drops late; gut-train before race day."
     },
     "recent_28d": {
-      "bike_specific_load": 1638.2,
-      "bike_specific_ratio": 0.868,
+      "bike_specific_load": 1628.7,
+      "bike_specific_ratio": 0.867,
       "elliptical_ratio": 0.062,
       "indoor_bike_sessions": 2,
       "mtb_sessions": 9,
-      "training_load": 1888.4
+      "training_load": 1878.9
     },
     "recent_7d": {
-      "bike_specific_load": 345.4,
-      "bike_specific_ratio": 0.865,
-      "indoor_bike_sessions": 0,
-      "mtb_sessions": 2,
-      "training_load": 399.4
+      "bike_specific_load": 256.8,
+      "bike_specific_ratio": 0.826,
+      "indoor_bike_sessions": 1,
+      "mtb_sessions": 1,
+      "training_load": 310.8
     },
     "weekly_continuity_blocks": {
       "current_rebuild_apr_to_may_2026": {
@@ -392,7 +392,7 @@
     },
     "heat_rule": "In Kuala Lumpur, treat fuel/hydration as skill protection: sloppy braking, weak pumping, timid jumps, or poor line choice late can be carb/sodium/heat failure."
   },
-  "generated_at": "2026-06-08T23:50:33+08:00",
+  "generated_at": "2026-06-09T23:46:32+08:00",
   "integrated_coaching_model": {
     "athlete_interface": {
       "best_training_environment": [
@@ -627,12 +627,14 @@
   },
   "predictive_training_loop": {
     "artifacts": [
+      "snapshots/action_state_prediction.json",
       "snapshots/predictive_session_plan.json",
       "snapshots/predictive_session_review.json",
       "snapshots/predictive_training.json",
       "snapshots/predictive_backtest_10_dates.json"
     ],
     "post_session": [
+      "Classify the actual action before judging the state model: matched, harder, easier, substituted, deferred, or changed by logistics.",
       "After Garmin sync, compare actual load, self-evaluation, and next-day response with the stored expectation.",
       "If actual load differs materially, classify execution/adherence before judging adaptation.",
       "Only matched-load sessions are eligible for digital-twin calibration; drifted sessions update execution-risk rules first.",
@@ -640,6 +642,8 @@
       "If load matches but trail skill faded, treat the workout as under-fuelled, under-recovered, too technically dense, or poorly targeted until notes prove otherwise."
     ],
     "pre_session": [
+      "Preserve the real intended action for serious chat-coached prescriptions, not only the deterministic today_plan.",
+      "Predict action branches first: follow as written, mission creep/extension, substitution, or defer/rest.",
       "Store expected duration, training load, high-intensity minutes, RPE range, and next-day response before training.",
       "Store the adaptation hypothesis and the execution stop rules so the review can judge quality, not only load.",
       "Store an execution-drift stress test when similar Clayton prescriptions historically became longer or harder than written.",
@@ -850,6 +854,7 @@
       "predictive_and_experimental": [
         "body-battery-model",
         "training-predictor",
+        "action-state-prediction",
         "predictive-training",
         "predictive-review",
         "predictive-backtest"

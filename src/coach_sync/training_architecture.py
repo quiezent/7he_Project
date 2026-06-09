@@ -240,6 +240,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                 "predictive_and_experimental": [
                     "body-battery-model",
                     "training-predictor",
+                    "action-state-prediction",
                     "predictive-training",
                     "predictive-review",
                     "predictive-backtest",
@@ -339,6 +340,8 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
         "predictive_training_loop": {
             "purpose": "Turn each prescription into a testable expectation for Clayton's digital twin.",
             "pre_session": [
+                "Preserve the real intended action for serious chat-coached prescriptions, not only the deterministic today_plan.",
+                "Predict action branches first: follow as written, mission creep/extension, substitution, or defer/rest.",
                 "Store expected duration, training load, high-intensity minutes, RPE range, and next-day response before training.",
                 "Store the adaptation hypothesis and the execution stop rules so the review can judge quality, not only load.",
                 "Store an execution-drift stress test when similar Clayton prescriptions historically became longer or harder than written.",
@@ -346,6 +349,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                 "Mark model confidence from validation; experimental predictions can guide questions but should not govern training automatically.",
             ],
             "post_session": [
+                "Classify the actual action before judging the state model: matched, harder, easier, substituted, deferred, or changed by logistics.",
                 "After Garmin sync, compare actual load, self-evaluation, and next-day response with the stored expectation.",
                 "If actual load differs materially, classify execution/adherence before judging adaptation.",
                 "Only matched-load sessions are eligible for digital-twin calibration; drifted sessions update execution-risk rules first.",
@@ -353,6 +357,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                 "If load matches but trail skill faded, treat the workout as under-fuelled, under-recovered, too technically dense, or poorly targeted until notes prove otherwise.",
             ],
             "artifacts": [
+                "snapshots/action_state_prediction.json",
                 "snapshots/predictive_session_plan.json",
                 "snapshots/predictive_session_review.json",
                 "snapshots/predictive_training.json",

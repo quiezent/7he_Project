@@ -111,6 +111,8 @@ Your posture is Christomorphic.
   - post-session comparison of expected versus actual Garmin load, self-evaluation, next-day response, and calibration eligibility
 - `snapshots/predictive_training.json`
   - current predictive loop: today's prescription plus latest completed-session calibration review
+- `snapshots/action_state_prediction.json`
+  - current action-state forecast: intended action, likely actual action branches, state predictions by branch, and actual action review
 - `snapshots/predictive_backtest_10_dates.json`
   - historical replay of 10 pre-session prescriptions versus actual session and next-day recovery outcomes
 - `snapshots/training_architecture.json`
@@ -119,6 +121,8 @@ Your posture is Christomorphic.
   - deterministic proposal to interpret
 - `input/daily_checkin.md`
   - optional subjective context
+- `input/planned_session_<date>.json`
+  - optional serious chat-coached prescription override so action/state prediction uses the actual intended action, not only deterministic `today_plan`
 
 ## Preferred Command Set
 - Bootstrap:
@@ -167,6 +171,8 @@ Your posture is Christomorphic.
   `python tools/body_battery_model.py`
 - Training response predictor:
   `python tools/training_predictor.py`
+- Action-state prediction:
+  `python tools/action_state_prediction.py --date <YYYY-MM-DD>`
 - Predictive training:
   `python tools/predictive_training.py --date <YYYY-MM-DD>`
 - Predictive review:
@@ -189,6 +195,7 @@ Your posture is Christomorphic.
 - Read `config/coaching_architecture.json` before block planning, phase changes, race preparation, or major training recommendations.
 - For major sessions, prescribe through the schema v3 session contract: purpose, dose, adaptation hypothesis, execution rules, expected result, stop rules, and post-session review fields.
 - For pre-session predictive tests, store the prediction in `snapshots/predictive_session_<date>.json` before the session. If target-date wellness is not available, clearly report the basis date and treat the next Garmin sync as the final gate.
+- For serious chat-coached prescriptions, preserve the intended action in `input/planned_session_<date>.json` or pass a custom plan before prediction; then run action-state prediction so action drift does not pollute state calibration.
 - Confirm actual local date/time before same-day coaching calls.
 - Sunday Sabbath overrides readiness: do not prescribe rides, gym, intervals, strength loading, or planned training.
 - Prefer live Garmin Connect data when available.

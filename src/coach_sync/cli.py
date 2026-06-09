@@ -13,6 +13,7 @@ from .cleanup import cleanup_derived
 from .coach_packet import build_coach_packet
 from .context import handle_context_command, load_context, save_context
 from .activity_profile import build_activity_profile
+from .action_state_prediction import build_action_state_prediction
 from .athlete_questions import build_athlete_question_audit
 from .adaptation_profile import build_adaptation_profile
 from .data_quality import build_data_quality_report
@@ -92,6 +93,7 @@ def build_parser() -> argparse.ArgumentParser:
         ("gear-audit", "Audit Garmin activity Gear metadata for bike/source mismatches."),
         ("device-audit", "Audit Garmin Devices & Apps metadata for HR source confidence."),
         ("self-evaluation", "Summarize Garmin post-activity feel and RPE self evaluations."),
+        ("action-state-prediction", "Predict intended action, likely actual action, and resulting state branches."),
         ("predictive-training", "Build predictive session plan plus latest calibration review."),
         ("predictive-review", "Compare a dated predictive prescription with actual Garmin response."),
         ("predictive-backtest", "Replay predictive prescriptions on historical dates and verify outcomes."),
@@ -260,6 +262,8 @@ def run(args: argparse.Namespace) -> Any:
         return build_device_audit(args.root, args.date)
     if args.command == "self-evaluation":
         return build_self_evaluation_report(args.root, args.date)
+    if args.command == "action-state-prediction":
+        return build_action_state_prediction(args.root, args.date)
     if args.command == "predictive-training":
         return build_predictive_training(args.root, args.date)
     if args.command == "predictive-review":

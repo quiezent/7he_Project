@@ -49,7 +49,7 @@ Tool authority is tiered:
 - Decision surface: `coach-packet`, `state`, `plan`, and `brief`.
 - Core evidence builders: readiness, wellness, training status, activity index, modality rollups, gear audit, device audit, and self-evaluation.
 - Architecture/context builders: training architecture, adaptation profile, training hypotheses, athlete questions, historical baselines, data quality, and data inventory.
-- Predictive/experimental tools: Body Battery model, training predictor, predictive training, predictive review, and predictive backtest. These inform questions and reviews unless validation earns stronger authority.
+- Predictive/experimental tools: Body Battery model, training predictor, action-state prediction, predictive training, predictive review, and predictive backtest. These inform questions and reviews unless validation earns stronger authority.
 - Low-authority reports or unconfigured sources: weekly report, insight memo, review block, forecast, local estimates, intraday trends, and weather snapshot. Treat these as supporting context unless they are upgraded with real data and tests.
 
 Promotion rule: a tool or artifact is useful only if it is current, tested, athlete-specific, and changes readiness, dose, stop rules, fueling, sensor confidence, or post-session review. More is not better; better is better.
@@ -79,6 +79,7 @@ Preferred direct commands:
 - Data quality report: `python tools/data_quality.py`
 - Body Battery decision tree: `python tools/body_battery_model.py`
 - Training response predictor: `python tools/training_predictor.py`
+- Action-state prediction: `python tools/action_state_prediction.py --date <YYYY-MM-DD>`
 - Predictive training loop: `python tools/predictive_training.py --date <YYYY-MM-DD>`
 - Predictive review for a completed prescription: `python tools/predictive_review.py --date <YYYY-MM-DD>`
 - Predictive 10-date backtest: `python tools/predictive_backtest.py`
@@ -98,6 +99,7 @@ After editable install, the same stack is available through:
 - `python -m coach_sync gear-audit --date <YYYY-MM-DD>`
 - `python -m coach_sync device-audit --date <YYYY-MM-DD>`
 - `python -m coach_sync self-evaluation --date <YYYY-MM-DD>`
+- `python -m coach_sync action-state-prediction --date <YYYY-MM-DD>`
 - `python -m coach_sync predictive-training --date <YYYY-MM-DD>`
 - `python -m coach_sync predictive-review --date <YYYY-MM-DD>`
 - `python -m coach_sync predictive-backtest`
@@ -115,6 +117,9 @@ After editable install, the same stack is available through:
   - `stop_rules`
   - `post_session_review_fields`
 - If target-date Garmin wellness does not exist yet, the prediction should state the basis date and use the next Garmin sync as the final gate.
+- For a specific chat-coached session, preserve the intended action before training in `input/planned_session_YYYY-MM-DD.json`; action-state prediction uses this over the generic deterministic plan.
+- Run action-state prediction when the main uncertainty is not only how Clayton will respond, but what Clayton is likely to actually do:
+  `python tools/action_state_prediction.py --date <YYYY-MM-DD>`
 - After the session and next-day Garmin sync, run:
   `python tools/predictive_review.py --date <YYYY-MM-DD>`
 
@@ -189,6 +194,8 @@ Blank template fields are ignored.
   - post-session comparison of expected versus actual Garmin load, self-evaluation, next-day response, and calibration eligibility
 - `snapshots/predictive_training.json`
   - current predictive loop: today's prescription plus the latest completed-session calibration review
+- `snapshots/action_state_prediction.json` / `snapshots/action_state_prediction_YYYY-MM-DD.json`
+  - heuristic action branches plus state predictions, separating the intended prescription from likely actual execution
 - `snapshots/predictive_backtest_10_dates.json`
   - historical pre-session replay against actual session load, self-evaluation, and next-day Garmin recovery
 - `snapshots/historical_activity_baselines.json`
@@ -216,6 +223,7 @@ Blank template fields are ignored.
 - Code answers: what data exists, what changed, what is stale, what rules are triggered.
 - Coach answers: what Clayton should actually do today and why.
 - Predictive loop answers: what response was expected from the prescribed session, what actually happened, and whether the miss was execution, external stress, or model error.
+- Action-state prediction answers: what was intended, what Clayton is likely to actually do, and what state each action branch is expected to produce.
 - Session contract answers: what adaptation the session is buying, what the dose is, when to stop, and what must be reviewed afterward.
 - Density governor answers: whether the ideal week should be downshifted so Friday/Saturday trail quality is protected.
 - Predictive prescriptions now carry two branches: the written plan and the execution-drift stress test when similar Clayton sessions historically became longer or harder.
