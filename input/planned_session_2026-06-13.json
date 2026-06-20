@@ -1,0 +1,64 @@
+{
+  "date": "2026-06-13",
+  "session": {
+    "title": "PCP jump-line quality touch - capped",
+    "type": "outdoor_mtb",
+    "duration_min": 60,
+    "intensity": "moderate",
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Keep jump timing, pump, landing quietness, and DH-line confidence sharp after a high-load Kiara day without adding meaningful recovery debt before Sabbath rest.",
+    "dose": {
+      "venue": "Putrajaya Challenge Park",
+      "run_count": "2 warm-up/assessment runs plus up to 2 quality runs",
+      "cap": "Four DH/jump-line runs maximum; no new features, no lap-time chasing, no extra volume.",
+      "intensity": "moderate",
+      "focus": "Pump timing, squash/absorb timing, quiet landings, braking discipline into corners, and relaxed upper body.",
+      "driving_context": "Driver coaching is mild cognitive stress in an air-conditioned car; keep fueling/hydration steady so it does not become recovery drag."
+    },
+    "adaptation_hypothesis": "A capped PCP session can preserve technical timing and confidence while the nervous system is still recovering from Friday's enduro load; extra runs would likely add impact and sympathetic cost faster than they add skill.",
+    "execution_rules": [
+      "Use the first run as a body check, not a speed check.",
+      "Keep every run at 80-90% aggression with clean timing.",
+      "Rest fully between runs; do not start the next run while breathing, grip, or focus is still elevated.",
+      "Repeat the same line and same cues; do not introduce a new feature or setup variable.",
+      "Eat and hydrate before driver coaching; do not arrive depleted."
+    ],
+    "expected_result": {
+      "garmin_load": "low-to-moderate, with technical impact cost higher than the HR load may show",
+      "rpe": "easy to moderate, never survival or race-like",
+      "next_day": "Sabbath rest with no upper-body hangover, heavy legs, or elevated stress response",
+      "technical_result": "Each run should feel equally timed or cleaner; no progressive decline in pop, braking, or landing quietness."
+    },
+    "stop_rules": [
+      "Stop after two runs if timing feels late, landings get heavy, or upper-body tension appears.",
+      "Stop immediately after any casing, near-miss, sketchy save, or repeated braking mistake.",
+      "No fourth run unless run three is technically cleaner than run two.",
+      "Do not extend the session because the body feels good; yesterday's load is the limiter."
+    ],
+    "post_session_review_fields": [
+      "actual_run_count",
+      "actual_duration_min",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "jump_timing_by_run",
+      "landing_quietness_by_run",
+      "braking_precision_by_run",
+      "upper_body_fatigue",
+      "late_session_skill_fade",
+      "fueling_before_and_after",
+      "driver_coaching_stress_feel",
+      "evening_body_battery_and_stress",
+      "next_morning_response"
+    ]
+  }
+}

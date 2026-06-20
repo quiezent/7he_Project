@@ -1,0 +1,55 @@
+{
+  "date": "2026-06-18",
+  "session": {
+    "title": "Sepang coaching day (3-hour travel, low-stress support only)",
+    "type": "recovery",
+    "duration_min": 30,
+    "intensity": "recovery",
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Protect adaptation from Tuesday by making Thu a recovery-priority non-ride day despite a full schedule.",
+    "dose": {
+      "duration_min": 30,
+      "intensity": "recovery",
+      "logistics": {
+        "coach_day": "Sepang",
+        "car_time": "3 hours total (fixed)",
+        "post_coaching_day_context": "rest/chill and nutrition recovery"
+      },
+      "movement": "Optional 10-20 min walk or light mobility only.",
+      "cap": "No planned endurance MTB/intervals and no gym loading."
+    },
+    "adaptation_hypothesis": "Reducing training friction on Thu protects Friday-endurance quality and lowers the chance of avoidable fatigue accumulation.",
+    "execution_rules": [
+      "Keep body stress low while coaching for focus and hydration.",
+      "No long screens/late night push before sleep.",
+      "No hard riding unless required to move; if any spontaneous ride happens, keep it <20 min Z2."
+    ],
+    "expected_result": {
+      "garmin_load": "minimal",
+      "rpe": "low",
+      "next_day": "higher confidence and fresh baseline entering Bukit Dinding practice."
+    },
+    "stop_rules": [
+      "If stress rises and recovery drops, do zero exercise.",
+      "If sharp pain/early fatigue signals appear during travel, skip any optional movement."
+    ],
+    "post_session_review_fields": [
+      "actual_movement_min",
+      "actual_duration_min",
+      "actual_rpe",
+      "workout_feel",
+      "resting_nervous_system_comment",
+      "sleep_estimate",
+      "next_morning_response"
+    ]
+  }
+}

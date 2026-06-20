@@ -1,0 +1,26 @@
+{
+  "date": "2026-06-16",
+  "activity_id": "23266608479",
+  "activity_name": "Kuala Lumpur Mountain Biking",
+  "rider_report": {
+    "session_status": "Session done and synced.",
+    "post_session_context": "Rider felt three laps was too little and wanted a stronger fourth effort to test whether the coach was being too conservative. This was also the first day riding clipless after about eight years on flat pedals.",
+    "lap_map": {
+      "lap_1": "Access/initial loop to get from car park to 2K and through the end of 2K.",
+      "loop_1_prescribed": "Laps 2 and 3: tarmac climb back to 2K start, then 2K descent to finish.",
+      "loop_2_prescribed": "Laps 4 and 5: tarmac climb back to 2K start, then 2K descent to finish.",
+      "loop_3_prescribed": "Laps 6 and 7: tarmac climb back to 2K start, then 2K descent to finish.",
+      "loop_4_prescribed": "Laps 9 and 10: tarmac climb back to 2K start, then 2K descent to finish.",
+      "lap_12_to_13": "Exit loop from 2K area; includes another tarmac climb and ride back toward the car park/end of 2K."
+    }
+  },
+  "coach_notes": {
+    "primary_analysis_artifact": "snapshots/activity_loop_load_2026-06-16_23266608479.json",
+    "prescribed_2k_loop_laps": [[2, 3], [4, 5], [6, 7], [9, 10]],
+    "access_and_exit_laps": [1, 12, 13],
+    "total_climb_count_interpretation": 6,
+    "route_interpretation": "Use climb-plus-descent pairs, not climb-only laps, as the primary 2K workout unit. Laps 2-3, 4-5, 6-7, and 9-10 are the four prescribed loops. Lap 1 and laps 12-13 are access/exit riding, with lap 12 adding another real climb.",
+    "prescription_quality_review": "The session was better framed as four 2K climb-plus-descent loops, with access and exit load acknowledged. Future prescriptions for this route should state loop count, climb power cap, descent quality target, and whether access/exit climbs count against the workload.",
+    "pending_next_morning_review": true
+  }
+}

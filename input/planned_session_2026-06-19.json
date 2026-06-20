@@ -1,0 +1,79 @@
+{
+  "date": "2026-06-19",
+  "session": {
+    "title": "Kiara Stumpjumper clipless 2K loops with anaerobic microdose",
+    "type": "outdoor_mtb",
+    "duration_min": 105,
+    "intensity": "moderate_to_hard",
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Use green readiness and low Garmin ACWR to add bike-specific load at Kiara while keeping the new clipless pedal variable controlled and avoiding Bukit Dinding logistics.",
+    "dose": {
+      "readiness_basis": "2026-06-19 morning: green readiness 70, Body Battery wake/current 88/89, HRV balanced, sleep score 84, Garmin ACWR 0.7 LOW, high-aerobic shortage.",
+      "bike": "Specialized Stumpjumper with clipless pedals.",
+      "venue": "Bukit Kiara / 2K access, tarmac climb, and 2K descent.",
+      "warm_up": "20 min easy access and clipless confidence check; include several smooth roll-stop-unclip reps before any intensity.",
+      "decision_gate": "Do the anaerobic block only if clipless release feels automatic, tarmac is dry enough, legs feel normal, and the first 15-20 min are calm.",
+      "anaerobic_microdose": {
+        "where": "Tarmac climb or safe straight tarmac only; never on roots, corners, singletrack, wet paint, or traffic-conflict areas.",
+        "primary_set": "4 x 1:30 at 285-300 W with 4:00 easy recovery.",
+        "optional_extension": "Reps 5-6 only if reps 1-4 are smooth, power is controlled, unclipping feels automatic, and recovery breathing is calm.",
+        "hard_cap": "6 total reps. If any rep feels forced or clipless confidence drops, stop the set at 4 or earlier."
+      },
+      "2k_loop_work": {
+        "if_anaerobic_block_done": "2-3 relaxed 2K climb-plus-descent loops afterward.",
+        "if_anaerobic_block_skipped": "3-4 controlled 2K climb-plus-descent loops.",
+        "climb_cap_after_intervals": "170-190 W average; no chasing Tuesday lap 9.",
+        "descent_rule": "Cruise at 6-7/10 with quiet feet, early unclip planning, clean braking, and no speed chasing."
+      },
+      "load_cap": "Target Garmin load 120-170. Hard cap 190 or 2 hours, whichever comes first.",
+      "fueling": "30-60 g carbs/hour plus fluid and sodium because Kiara heat cost is real even when the ride feels controlled."
+    },
+    "adaptation_hypothesis": "A short controlled anaerobic dose on tarmac can address Garmin's high-intensity suggestion and support MTB repeatability, while the 2K loops maintain climb-descent specificity. Keeping intensity off technical terrain protects clipless adaptation and preserves Saturday trail quality.",
+    "execution_rules": [
+      "Warm up until clipless release is automatic before any power work.",
+      "Treat the Fenix 6 x 1:30 @ 300 W workout as optional inspiration, not an order.",
+      "Power reps happen only on predictable tarmac; no technical anaerobic efforts today.",
+      "After the power block, descents are skill-quality checks, not segment attempts.",
+      "If the first two reps do not feel controlled, cancel the remaining reps and convert to aerobic 2K loops."
+    ],
+    "expected_result": {
+      "garmin_load": "meaningful but capped, roughly 120-170",
+      "rpe": "5-7 if anaerobic block is completed; 3-5 if skipped",
+      "next_day": "Should still allow easy PCP or technical practice if recovery is normal, but Saturday gets downshifted if Body Battery/HRV respond poorly."
+    },
+    "stop_rules": [
+      "Stop the anaerobic block immediately if unclipping feels delayed, awkward, or mentally distracting.",
+      "Stop intensity if the tarmac is wet/slippery, traffic-conflicted, or traction is uncertain.",
+      "End the ride if braking timing, vision, or foot confidence deteriorates on descents.",
+      "No extra loops after Garmin load 170 unless the session is clearly easy and clipless remains automatic; absolute stop at load 190 or 2 hours.",
+      "Stop for crash, near-fall, sharp pain, or repeated technical mistakes."
+    ],
+    "post_session_review_fields": [
+      "actual_duration_min",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "anaerobic_reps_completed",
+      "anaerobic_rep_power",
+      "2k_loop_count",
+      "climb_avg_power_by_loop",
+      "clipless_confidence",
+      "clip_out_incidents_or_hesitation",
+      "descent_quality_notes",
+      "late_session_skill_fade",
+      "fueling_carbs_g_per_hour",
+      "fluid_ml_per_hour",
+      "sodium_mg_per_hour",
+      "next_morning_response"
+    ]
+  }
+}

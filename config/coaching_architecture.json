@@ -37,7 +37,7 @@
     "Modern HRV/wake Body Battery is strongest from March 2026 onward.",
     "Subjective trail notes are required for expert-skill decisions."
   ],
-  "date": "2026-06-03",
+  "date": "2026-06-10",
   "decision_hierarchy": [
     "Sabbath hard rest and current readiness.",
     "Garmin freshness: wellness, activity, and training status must be current for hard guidance.",
@@ -84,6 +84,8 @@
       },
       "specialized_stumpjumper": {
         "default_role": "Outdoor trail bike with current power meter.",
+        "mileage_policy": "Clayton is comfortable putting training mileage on the Stumpjumper.",
+        "preferred_training_use": "Power-meter climb-focused Bukit Kiara loop sessions: focus the workout on repeated climbs and cruise the same descent trail to control risk and isolate aerobic/torque fitness.",
         "trainer_swap_option": "Can replace the Marin SQ3 on the Elite Suito if needed."
       }
     },
@@ -208,20 +210,20 @@
         "training_load": 89.0
       },
       "last_structured_power_candidate": {
-        "avg_hr": 120.0,
-        "avg_power": 118.0,
+        "avg_hr": 112.0,
+        "avg_power": 106.0,
         "category": "bike_indoor",
-        "date": "2026-05-25",
+        "date": "2026-06-09",
         "device_id": 3360476305,
-        "duration_min": 58.0,
-        "intensity_factor": 0.5879999995231628,
+        "duration_min": 52.0,
+        "intensity_factor": 0.5270000100135803,
         "manufacturer": "GARMIN",
-        "max_hr": 142.0,
+        "max_hr": 127.0,
         "name": "Tempo",
-        "normalized_power": 133.0,
-        "p10_w": 151.0,
-        "p20_w": 146.0,
-        "training_load": 59.9
+        "normalized_power": 120.0,
+        "p10_w": 131.0,
+        "p20_w": 125.0,
+        "training_load": 37.1
       },
       "power_source_note": "Raw Garmin summaries identify indoor/outdoor activity, Garmin device/manufacturer, and power values, but not the exact power source such as Elite Suito versus bike power meter.",
       "recent_60d_best_p20": {
@@ -242,29 +244,29 @@
       }
     },
     "full_range": {
-      "activity_end": "2026-06-03",
+      "activity_end": "2026-06-10",
       "activity_start": "2021-06-18",
-      "counted_sessions": 1345,
-      "duration_min": 102698.6,
+      "counted_sessions": 1349,
+      "duration_min": 103075.8,
       "elliptical_load": 7227.0,
       "elliptical_sessions": 70,
-      "indoor_bike_load": 37863.7,
-      "indoor_bike_sessions": 587,
-      "mtb_load": 95551.2,
-      "mtb_sessions": 469,
-      "training_load": 156055.7
+      "indoor_bike_load": 37900.8,
+      "indoor_bike_sessions": 588,
+      "mtb_load": 95929.5,
+      "mtb_sessions": 471,
+      "training_load": 156525.1
     },
     "hypothesis_support": {
       "bike_specificity": "strong",
       "consistency_detraining": "strong",
       "nonbike_substitution": "moderate",
-      "recent_365_bike_specific_corr_to_p20": 0.359,
-      "recent_365_elliptical_corr_to_p20": -0.15,
-      "recent_365_indoor_bike_corr_to_p20": 0.5
+      "recent_365_bike_specific_corr_to_p20": 0.391,
+      "recent_365_elliptical_corr_to_p20": -0.148,
+      "recent_365_indoor_bike_corr_to_p20": 0.498
     },
     "nutrition_targets": {
-      "latest_weight_date": "2026-05-28",
-      "latest_weight_kg": 75.56,
+      "latest_weight_date": "2026-06-07",
+      "latest_weight_kg": 76.22,
       "mtb_90_to_150_min": {
         "carbs_g_per_hour": [
           45,
@@ -296,19 +298,19 @@
       "note": "Use the upper end in Kuala Lumpur heat or when skill quality drops late; gut-train before race day."
     },
     "recent_28d": {
-      "bike_specific_load": 1482.7,
-      "bike_specific_ratio": 0.796,
-      "elliptical_ratio": 0.063,
-      "indoor_bike_sessions": 3,
-      "mtb_sessions": 8,
-      "training_load": 1863.7
+      "bike_specific_load": 1787.3,
+      "bike_specific_ratio": 0.877,
+      "elliptical_ratio": 0.057,
+      "indoor_bike_sessions": 2,
+      "mtb_sessions": 10,
+      "training_load": 2037.5
     },
     "recent_7d": {
-      "bike_specific_load": 413.3,
-      "bike_specific_ratio": 0.945,
-      "indoor_bike_sessions": 0,
-      "mtb_sessions": 3,
-      "training_load": 437.2
+      "bike_specific_load": 415.4,
+      "bike_specific_ratio": 0.885,
+      "indoor_bike_sessions": 1,
+      "mtb_sessions": 2,
+      "training_load": 469.4
     },
     "weekly_continuity_blocks": {
       "current_rebuild_apr_to_may_2026": {
@@ -390,7 +392,7 @@
     },
     "heat_rule": "In Kuala Lumpur, treat fuel/hydration as skill protection: sloppy braking, weak pumping, timid jumps, or poor line choice late can be carb/sodium/heat failure."
   },
-  "generated_at": "2026-06-03T22:16:38+08:00",
+  "generated_at": "2026-06-11T06:52:06+08:00",
   "integrated_coaching_model": {
     "coaching_standard": "More is not better; more specific, better absorbed, and more repeatable is better.",
     "operating_loop": [
@@ -413,6 +415,52 @@
         "Store a pre-session expected result and compare it with actual load, RPE, feel, and next-day wellness.",
         "Classify execution drift before calling a model miss or adaptation problem.",
         "Use subjective trail notes to train what Garmin cannot see."
+      ]
+    },
+    "technical_interpretation_standard": {
+      "clipless_body_position_frame": "Do not reduce clipless gains to 'riding more forward.' The expert interpretation is that clipless can provide enough foot security for Clayton to remain dynamically centred, maintain front-tyre authority, and use a larger range of bike-body separation.",
+      "equipment_causality_rule": "Treat suspension and cockpit setup changes as secondary consequences of changed rider loading, speed, terrain, and confidence; do not generalize them into universal clipless setup rules.",
+      "response_shape": [
+        "State the coach's verdict plainly.",
+        "Identify the primary rider adaptation before the equipment implication.",
+        "Name the technical mechanism in expert MTB terms.",
+        "Give validation and failure criteria.",
+        "Prescribe the next constraint or test."
+      ],
+      "setup_validation_criteria": [
+        "Keep a fork rebound change only if the fork does not pack down under repeated hits.",
+        "Keep a shock rebound change only if the rear does not kick or wallow through repeated compressions.",
+        "Keep the combined chassis setting only if the bike recovers without pitching entering and exiting steep chutes or linked corners."
+      ],
+      "voice": "Direct, diagnostic, specific, and willing to sharpen Clayton's interpretation rather than merely agree with it."
+    },
+    "subagent_delegation_model": {
+      "authorization": "Clayton has authorized bounded subagent delegation; the main assistant remains head coach, lead engineer, and final decision owner.",
+      "governance": [
+        "Use subagents only for concrete, bounded work that materially improves the coaching or stack outcome.",
+        "Subagents may advise or implement scoped changes, but the main assistant owns final training prescriptions, code integration, and Git hygiene.",
+        "No subagent output can override fresh readiness evidence, Sunday Sabbath, data-quality caveats, or the schema v3 session contract.",
+        "Subagent advice must state assumptions, confidence, evidence used, and what would change the recommendation."
+      ],
+      "roles": {
+        "coaching_physiology": "Reviews load, adaptation, FTP/VO2, fatigue, readiness, density, and week structure.",
+        "mtb_skills_and_setup": "Reviews braking, body position, line choice, bike-body separation, suspension feel, clipless adaptation, jumps, and descending quality.",
+        "garmin_data_engineer": "Maintains sync, artifact hygiene, lap parsing, gear/device audits, and fast same-day decision paths.",
+        "ai_prediction_researcher": "Tests action/state prediction, backtests, baseline comparisons, and whether model output should influence coaching.",
+        "nutrition_heat": "Reviews carbs, sodium, hydration, recovery, and Kuala Lumpur heat effects on technical execution.",
+        "qa_git_steward": "Checks tests, dirty worktree risk, GitHub backup, raw-data protection, and documentation alignment."
+      },
+      "use_cases": [
+        "Parallel code review or implementation on disjoint file scopes.",
+        "Independent MTB setup interpretation when subjective trail notes are technically nuanced.",
+        "Model validity review before promoting a predictor into coaching decisions.",
+        "Data hygiene audit when sync, artifact freshness, or Garmin metadata becomes noisy."
+      ],
+      "anti_patterns": [
+        "Spawning agents for vague brainstorming without a concrete deliverable.",
+        "Letting a subagent prescribe training without current readiness evidence.",
+        "Duplicating the same investigation across agents.",
+        "Allowing model novelty to outrank simple validated coaching rules."
       ]
     }
   },

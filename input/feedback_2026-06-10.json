@@ -1,0 +1,30 @@
+{
+  "date": "2026-06-10",
+  "activity_id": "23196192466",
+  "session": "Kiara Enduro setup - 3 x Twin Peaks with 2 x Enduro stage descents and 1 x DH line",
+  "athlete_notes": {
+    "perceived_fatigue": "not tired",
+    "climb_execution": "pushed most of the steep climbs",
+    "descents": [
+      "Lap 2 Enduro stage",
+      "Lap 4 Enduro stage",
+      "Lap 7 DH line"
+    ],
+    "dh_line_note": "Stopped and pushed briefly because a tree was blocking the trail.",
+    "sensor_note": "Forgot HRM; downhill HR is not accurate.",
+    "setup_verdict": "Zeb setting is perfect now."
+  },
+  "bike_setup": {
+    "bike": "S-Works Enduro MY25",
+    "fork": "RockShox Zeb",
+    "air_pressure_psi": 65,
+    "rebound_clicks_from_closed": 4,
+    "hsc_clicks_from_closed": 2,
+    "lsc_clicks_from_closed": 5
+  },
+  "coach_notes": {
+    "load_confidence": "moderate-low for downhill HR/load because external HRM was absent; climb load is more usable than descent load.",
+    "action_classification": "Exceeded the written 2-climb cap by doing 3 Twin Peaks climbs, but Garmin load stayed below last Friday's high-load Kiara session.",
+    "technical_result": "Setup variable resolved; preserve these fork settings as the current Enduro Kiara baseline."
+  }
+}

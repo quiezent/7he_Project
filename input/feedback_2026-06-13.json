@@ -1,0 +1,29 @@
+{
+  "date": "2026-06-13",
+  "activity_id": "23229433480",
+  "session": "PCP jump-line quality touch",
+  "athlete_notes": {
+    "arrival_status": "Home safely after PCP and driving coaching.",
+    "lap_1": "Jumps are OK and rhythm for scrubs is almost coming back. Small bike-length tabletops allow boost and squash. Scrub is not smooth yet because confidence is limited at high entry speed.",
+    "lap_2": "Loop with switchbacks used to get rhythm on berm corners.",
+    "lap_3_5_7": "Trail 16 flow DH line with jumps. Not squashing, but riding smooth. Corners are almost back to race pace.",
+    "driver_coaching_context": "Mild cognitive stress in an air-conditioned car, not a major physical load."
+  },
+  "garmin_summary": {
+    "duration_min": 108.9,
+    "distance_km": 9.72,
+    "elevation_gain_m": 329.7,
+    "training_load": 145.1,
+    "aerobic_te": 3.2,
+    "anaerobic_te": 2.3,
+    "avg_hr": 135,
+    "max_hr": 177,
+    "self_evaluation_feel": "normal",
+    "self_evaluation_rpe": "hard_plus"
+  },
+  "coach_notes": {
+    "technical_read": "Cornering rhythm is returning faster than high-speed jump/scrub confidence. Keep PCP progression focused on entry-speed confidence and smooth squash timing, not bigger features.",
+    "next_pcp_focus": "Separate jump-shape practice from race-pace cornering. Use the small tabletops for boost/squash timing at controlled speed, then Trail 16 for smooth corner pace without adding scrub demands.",
+    "recovery_priority": "Evening readiness is red with Body Battery 6 and a 7-day load spike; no further training before Sunday Sabbath rest."
+  }
+}

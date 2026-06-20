@@ -530,7 +530,7 @@
     "software_role": "stage evidence, normalize data, apply repeatable safety rules"
   },
   "schema_version": 1,
-  "training_rules": {
+    "training_rules": {
     "acute_chronic_load_spike_ratio": 1.5,
     "bike_specific_continuity": {
       "downshift_warning": "Do not allow high elliptical/non-bike load to hide a bike-specific drought.",
@@ -565,6 +565,9 @@
         "loaded carry"
       ]
     },
+    "wellness_stale_hard_days": 2,
+    "training_status_stale_warning_days": 1,
+    "training_status_stale_hard_days": 2,
     "stale_data_warning_days": 1,
     "weekly_rest_days": [
       {

@@ -1,0 +1,68 @@
+{
+  "date": "2026-06-10",
+  "session": {
+    "title": "Kiara Enduro setup - 2 x Twin Peaks",
+    "type": "outdoor_mtb",
+    "duration_min": 120,
+    "intensity": "moderate",
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Use a controlled Kiara Enduro session to test the Zeb setup while building enduro-specific climb-to-descent repeatability without turning the day into a high-load race simulation.",
+    "dose": {
+      "bike": "S-Works Enduro MY25",
+      "terrain": "Bukit Kiara / Twin Peaks route family",
+      "duration_min": 120,
+      "cap": "Two Twin Peaks climbs only; total ride cap 135 minutes; no third climb or extra descent unless the first descent is aborted for safety or mechanical reasons.",
+      "intensity": "moderate",
+      "climb_target": "RPE 3-5 / mostly Z2; short trail surges are fine but no sustained threshold climbing.",
+      "descent_target": "Two high-quality descents with race-line attention, not race-day risk.",
+      "setup_variable": "Fork setup package only: 65 psi and one click more HSC than the last Kiara Enduro test; leave other bike variables unchanged."
+    },
+    "adaptation_hypothesis": "Two climb-to-descent cycles should give enough fatigue to judge whether the Zeb setting improves root compliance while preserving support, without creating the recovery cost of a full enduro-volume day.",
+    "execution_rules": [
+      "Warm up on the first climb; do not attack the lower half.",
+      "Use descent one as feel calibration: braking comfort, root compliance, front support, and corner-exit confidence.",
+      "Use descent two as confirmation under mild fatigue: same lines where practical, same aggression ceiling, no extra setup changes.",
+      "Keep the setup test narrow: fork setting only; do not change tires, pressure, cockpit, route, or intensity mid-session.",
+      "Wear the external HR strap and make sure the activity is tagged to the Enduro."
+    ],
+    "expected_result": {
+      "garmin_load": "moderate MTB load, likely below last Friday's high-load Kiara day if the two-climb cap is obeyed",
+      "rpe": "moderate to hard but controlled",
+      "next_day": "yellow or better readiness with no upper-body hangover that compromises Friday/Saturday trail quality",
+      "technical_result": "Clear yes/no notes on root compliance, brake support, corner support, and whether confidence improves on descent two."
+    },
+    "stop_rules": [
+      "Stop descending or take the easier exit if braking timing gets late, vision narrows, or line choice becomes reactive.",
+      "Do not add a third climb if Garmin load feels high, RPE exceeds 6/10 on the second climb, or heat starts driving sloppy riding.",
+      "Abort the setup test if the fork rides harsh enough to reduce grip or confidence over wet roots.",
+      "End the session immediately for crash, near-crash, mechanical issue, or sharp pain."
+    ],
+    "post_session_review_fields": [
+      "actual_duration_min",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "route_and_number_of_twin_peaks_climbs",
+      "fork_pressure_psi",
+      "hsc_clicks_relative_to_last_friday",
+      "root_compliance",
+      "braking_support",
+      "corner_exit_confidence",
+      "upper_body_fatigue",
+      "late_session_skill_fade",
+      "fueling_carbs_g_per_hour",
+      "fluid_ml_per_hour",
+      "sodium_mg_per_hour",
+      "next_morning_response"
+    ]
+  }
+}

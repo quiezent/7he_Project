@@ -1,0 +1,27 @@
+{
+  "date": "2026-06-12",
+  "activity_id": "23219817143",
+  "session": "Kiara repeatability - 2 x Enduro stage simulation and 2 x DH line",
+  "athlete_notes": {
+    "completed": "2 x Enduro and 2 x DH",
+    "perceived_response": "feels good"
+  },
+  "garmin_summary": {
+    "duration_min": 205.6,
+    "distance_km": 17.55,
+    "elevation_gain_m": 832.5,
+    "training_load": 258.6,
+    "aerobic_te": 4.2,
+    "anaerobic_te": 2.6,
+    "avg_hr": 144,
+    "max_hr": 180,
+    "self_evaluation_feel": "strong",
+    "self_evaluation_rpe": "very_hard_plus"
+  },
+  "coach_notes": {
+    "hr_source": "external HRM connected; Garmin load is higher confidence than 2026-06-10.",
+    "gear_check": "Garmin Gear is tagged as Stumpjumper Expert MY25; if the ride was on the Enduro, update the Garmin Gear field.",
+    "execution_classification": "Fourth climb was earned by feel but produced a high total load; treat this as a major enduro durability day.",
+    "recovery_priority": "No more training on 2026-06-12; protect 2026-06-13 PCP quality with morning readiness gate."
+  }
+}

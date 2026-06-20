@@ -1,0 +1,49 @@
+{
+  "date": "2026-06-15",
+  "session": {
+    "title": "Monday freshness reset",
+    "type": "recovery",
+    "duration_min": 35,
+    "intensity": "recovery",
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Start the week with low-cost readiness recovery so Tuesday quality work can be executed cleanly.",
+    "dose": {
+      "duration_min": 35,
+      "intensity": "recovery",
+      "cap": "Keep it easy: walk, mobility, and/or very easy spin only.",
+      "focus": "Sleep debt reduction, tissue freshness, and nervous-system reset."
+    },
+    "adaptation_hypothesis": "A deliberate low-cost reset day helps preserve quality for the 2K repeatability work on Tuesday without adding avoidable load.",
+    "execution_rules": [
+      "No hard intervals, no dense gym loading, no threshold or structured MTB work.",
+      "Choose easy nutrition and hydration; no late-session caffeine spikes."
+    ],
+    "expected_result": {
+      "garmin_load": "low",
+      "rpe": "1-3 for the full day",
+      "next_day": "higher quality and steadier execution readiness for Tuesday."
+    },
+    "stop_rules": [
+      "If fatigue is already high, switch this day to pure rest.",
+      "If any sharp pain or unusual discomfort appears, stop and rest."
+    ],
+    "post_session_review_fields": [
+      "actual_duration_min",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "next_morning_response",
+      "sleep_hours",
+      "body_battery_wake"
+    ]
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "date": "2026-06-16",
+  "session": {
+    "title": "Stumpjumper 2K climb repeats (3 fixed + optional 2K+)",
+    "type": "outdoor_mtb",
+    "duration_min": 105,
+    "intensity": "moderate",
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Use today's confirmed green readiness and Garmin ACWR 0.8 OPTIMAL for a controlled Kiara XC-style repeatability block: stabilize climb power, cruise down cleanly, and preserve Friday/Saturday trail quality.",
+    "dose": {
+      "venue": "Bukit Kiara / 2K loop",
+      "terrain": "Known 2K climb-return loop with repeated ascent and descent to trailhead",
+      "bike": "Specialized Stumpjumper",
+      "loop_model": "2K repeated climbs + return trail loop",
+      "required_repeats": "three 2K climb-return repeats",
+      "optional_repeat": "one 2K+ only if repeat three stays clean",
+      "lap_template": {
+        "reference_laps_from_2026_05_27": "2K descents were laps 2, 4, and 6; 2K+ was lap 8.",
+        "climb": "same return climb to trailhead; build controlled XC-style repeatability rather than one-off PR chasing.",
+        "climb_target": "Use power as the main governor: first climb 180-190 W average, second climb 190-200 W, third climb 195-205 W only if breathing and technique stay controlled.",
+        "descent": "2K cruise on the chosen line with smooth body position, clean braking, and no segment chasing.",
+        "2k_plus": "slightly more technical 2K+ with roots, loose-sand switchbacks, and a short chunky chute."
+      },
+      "climb_power_progression": [
+        "repeat_1: 180-190 W average",
+        "repeat_2: 190-200 W average",
+        "repeat_3: 195-205 W average only if repeat two stayed controlled"
+      ],
+      "cap": "Do not exceed 4 total descents; no session extension beyond this plan.",
+      "warm_up": "15-20 min Z1-Z2 before first repeat.",
+      "recovery_between_repeats": "RPE reset and full-sentence breathing before each next repeat."
+    },
+    "adaptation_hypothesis": "Using today's known green state should buy the XC-quality adaptation while creating more buffer before Friday Dinding and Saturday PCP than waiting until Wednesday.",
+    "execution_rules": [
+      "Run the three 2K climb-return repeats cleanly first; only attempt 2K+ if repeat three stayed controlled.",
+      "Climbs are the work; descents are smooth cruise and skill-quality checks.",
+      "Judge the session by repeatable climb power plus descent calmness, not by forcing a one-off 5-minute climb.",
+      "Use Stumpjumper speed only when line confidence is clear; prioritize control over seconds.",
+      "Track 2K and 2K+ loop quality as technical score, not max pace."
+    ],
+    "expected_result": {
+      "garmin_load": "moderate MTB load with limited mission creep",
+      "rpe": "hard but controlled on final required climb",
+      "next_day": "manageable readiness and enough buffer for Thursday Sepang, Friday Dinding, and Saturday PCP."
+    },
+    "stop_rules": [
+      "No 2K+ if the third climb feels forced or the third descent is less clean than the first.",
+      "Stop immediately for upper-body fatigue that degrades braking timing or line choice.",
+      "Stop on sharp pain, repeated misses, wet-root risk escalation, or near-miss.",
+      "If total elapsed time approaches 2 hours, end the ride even if motivation is high."
+    ],
+    "post_session_review_fields": [
+      "actual_repeats_completed",
+      "lap2k_repeat_count_total",
+      "lap2kplus_completed",
+      "lap_times_sec",
+      "climb_avg_power_by_repeat",
+      "actual_duration_min",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "technical_quality_notes",
+      "root_section_confidence",
+      "late_session_skill_fade",
+      "next_morning_response",
+      "fueling_carbs_g_per_hour",
+      "fluid_ml_per_hour",
+      "sodium_mg_per_hour"
+    ]
+  }
+}

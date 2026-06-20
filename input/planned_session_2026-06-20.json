@@ -1,0 +1,75 @@
+{
+  "date": "2026-06-20",
+  "session": {
+    "title": "Kiara Stumpjumper clipless and suspension validation",
+    "type": "outdoor_mtb",
+    "duration_min": 60,
+    "intensity": "recovery_skill",
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Use Saturday Kiara only as a low-risk clipless and Stumpjumper suspension validation ride after Friday produced two MTB files totaling about 293 Garmin load. Protect adaptation from Friday's above-FTP work rather than adding another engine session.",
+    "dose": {
+      "readiness_gate": "Proceed only after Saturday-morning Garmin sync if wake Body Battery rebounds well, HRV remains balanced, resting HR is not elevated, legs feel normal, and there is no mental fog from Friday's load.",
+      "fallback_if_yellow_or_heavy": "Skip Kiara or do 15-25 min condo/parking clipless handling only: start-stop, figure-8, slow roll, and sudden-stop unclip practice. No trail load.",
+      "bike": "Specialized Stumpjumper with clipless pedals.",
+      "venue": "Bukit Kiara / 2K access and low-consequence loops.",
+      "duration_min": "35-60",
+      "load_target": "35-70 Garmin load; hard cap 85.",
+      "loop_cap": "Access plus 1 relaxed 2K climb-plus-descent loop. Second loop only if the first loop is clearly easy, clipless release is automatic, and HR stays controlled.",
+      "climb_target": "125-155 W average on climbs; absolute cap 170 W. No above-FTP work and no 180-200 W chasing.",
+      "hr_cap": "Mostly Z1-Z2, brief Z3 acceptable on pitches. No sustained Z4.",
+      "descent_rule": "Cruise at 5/10, quiet feet, early unclip planning, clean braking, and no segment chasing.",
+      "clipless_drills": "Before trail consequence, do 6-10 deliberate stop/unclip reps including two surprise-stop simulations at walking speed.",
+      "suspension_rule": "Do not change more settings tomorrow. Validate the current fork rebound +1 click damping and shock rebound -1 click damping change on the same trail feel before further adjustment."
+    },
+    "adaptation_hypothesis": "Friday delivered the overload needed to push FTP/VO2 rebuild. A short, low-load Kiara validation ride on Saturday should improve clipless automaticity and confirm whether the new rebound settings support the more forward position, while still allowing the anaerobic/threshold stimulus to consolidate before Sunday Sabbath.",
+    "execution_rules": [
+      "Treat the first 15 minutes as a readiness test; if legs feel heavy or attention is dull, exit early.",
+      "Keep every climb well below threshold. This is not a second engine session.",
+      "Use clipless confidence as the technical metric: early release, calm stops, no hesitation during sudden stops.",
+      "Use suspension feel as a validation metric only: front support, rear tracking, steep-chute posture, and corner entry/exit calmness.",
+      "If you feel tempted to test power, end the session instead of adding work.",
+      "Do not make another fork or shock adjustment during the ride unless there is a clear safety/control issue.",
+      "Fuel normally if riding longer than 45 minutes, but do not use fueling as permission to extend."
+    ],
+    "expected_result": {
+      "garmin_load": "35-70, cap 85",
+      "rpe": "2-3",
+      "next_day": "Sunday Sabbath full rest with better chance of absorbing Friday's high-load stimulus."
+    },
+    "stop_rules": [
+      "No ride if Saturday morning Body Battery/HRV/resting HR show a poor response to Friday.",
+      "Stop if clipless release is delayed, awkward, or mentally distracting.",
+      "Stop if sudden-stop unclipping is not reliable during the pre-trail drills.",
+      "Stop if HR drifts into sustained Z4 or climbs require more than 170 W to feel smooth.",
+      "Stop after one 2K loop unless the session is clearly easy; absolute cap is 85 Garmin load.",
+      "Stop for crash, near-fall, sharp pain, repeated misses, or braking/vision deterioration."
+    ],
+    "post_session_review_fields": [
+      "actual_duration_min",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "2k_loop_count",
+      "climb_avg_power_by_loop",
+      "hr_zone_distribution",
+      "clipless_confidence",
+      "clip_out_incidents_or_hesitation",
+      "sudden_stop_unclip_success",
+      "fork_rebound_feedback",
+      "shock_rebound_feedback",
+      "forward_body_position_feedback",
+      "descent_quality_notes",
+      "late_session_skill_fade",
+      "next_morning_response"
+    ]
+  }
+}

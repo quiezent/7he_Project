@@ -1,0 +1,35 @@
+{
+  "date": "2026-06-17",
+  "rider_report": {
+    "session_status": "Gym session done.",
+    "reported_at_local": "2026-06-17T11:26:06+08:00",
+    "planned_session": "Rain-day recovery gym plus clipless handling",
+    "nap_update": {
+      "reported_at_local": "2026-06-17T15:17:14+08:00",
+      "note": "Took a nap and Body Battery went up a bit on the watch.",
+      "garmin_sync_status": "not_yet_reflected_in_local_body_battery_series"
+    },
+    "clipless_plan_update": {
+      "reported_at_local": "2026-06-17T15:17:14+08:00",
+      "intent": "Going to practice clipless pedals.",
+      "coach_limit": "Skill-only practice on dry, flat, low-risk surface; no load-building."
+    },
+    "clipless_practice_update": {
+      "reported_status": "Indoor clipless session done.",
+      "coach_interpretation": "Completed skill-only clipless adaptation exposure after recovery gym work."
+    },
+    "details_pending": [
+      "actual_duration_min",
+      "actual_training_load",
+      "actual_rpe",
+      "elliptical_avg_hr",
+      "activation_exercises_completed",
+      "body_battery_current_after_session",
+      "clipless_practice_completed"
+    ]
+  },
+  "coach_notes": {
+    "interpretation": "Treat this as completion of the recovery gym portion. Keep any later clipless practice skill-only and optional, depending on surface condition and post-gym freshness.",
+    "pending_garmin_sync_review": true
+  }
+}

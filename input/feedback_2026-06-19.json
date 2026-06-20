@@ -1,0 +1,51 @@
+{
+  "date": "2026-06-19",
+  "activity_id": "23301777471",
+  "activity_name": "Kuala Lumpur Mountain Biking",
+  "rider_report": {
+    "mid_session_status": "Anaerobic intervals completed and synced. Rider was at the bottom/finish line of 2K and asked whether to do slow repeats.",
+    "coach_call": "No slow repeats; ride home very easy only.",
+    "ftp_context": "Garmin activity detail shows functionalThresholdPower 214 W after this session; prior 2026-06-16 Stumpjumper file showed 227 W.",
+    "evening_status": "After dinner, rider plans to target 8+ hours of sleep. Clipless comfort is improving; main remaining issue is failure to unclip during sudden stops.",
+    "stumpjumper_setup_feedback": "Rider noticed clipless changes body posture forward enough that suspension feel changed. Fork rebound damping increased by 1 click and shock rebound damping reduced by 1 click.",
+    "technical_feedback": "Clipless allows a slightly more forward attacking posture and better control into steep chutes with corners before/after compared with flat pedals.",
+    "second_session_context": "The second 36 min file was not only a low-intensity ride back to the car park. Rider included a half-2K verification run after changing fork and shock rebound during the interval session.",
+    "second_session_technical_result": "During the half-2K verification, rider felt more confident attacking a steep chute on both corner entry and exit despite a slightly tired body."
+  },
+  "coach_notes": {
+    "summary": "The above-FTP/anaerobic stimulus is complete. Treat this as the hard engine session for the week.",
+    "observed_activity_load": {
+      "duration_min": 66.6,
+      "training_load": 229.1,
+      "aerobic_training_effect": 3.7,
+      "anaerobic_training_effect": 2.9,
+      "intensity_factor": 0.897,
+      "max_hr": 179
+    },
+    "evening_ride_home_load": {
+      "duration_min": 36.0,
+      "training_load": 63.7,
+      "aerobic_training_effect": 2.7,
+      "anaerobic_training_effect": 0.1,
+      "intensity_factor": 0.591,
+      "max_hr": 171,
+      "interpretation": "This file included a deliberate half-2K setup verification, not just an easy ride back to the car park."
+    },
+    "same_day_total_mtb_load_estimate": {
+      "duration_min": 102.6,
+      "training_load": 292.8,
+      "note": "Two separate 2026-06-19 MTB files are present after evening sync; this materially changes tomorrow's density call."
+    },
+    "interval_laps_from_garmin_splits": [2, 4, 6, 8, 10],
+    "clipless_limiter": "Sudden stops are the current risk point; planned practice should include low-speed surprise-stop drills before technical consequence.",
+    "setup_interpretation": "The technical result is positive because confidence improved on steep chute entry and exit while mildly fatigued. Treat clipless/body-position adaptation as the primary change and suspension feel as a secondary setup consequence. Do not change more suspension variables tomorrow; validate the fork/shock rebound changes on the same trail context before further adjustment.",
+    "setup_validation_criteria": [
+      "Fork must not pack down on repeated hits or steep chute entries.",
+      "Rear must not kick, wallow, or unload unpredictably on corner exits.",
+      "Chassis must recover without pitching when linking steep chute entry to corner exit.",
+      "Rider must keep front-tyre authority without relying on clipless to pull the bike around.",
+      "Sudden-stop unclipping must become automatic before increasing consequence."
+    ],
+    "pending_final_sync_review": false
+  }
+}

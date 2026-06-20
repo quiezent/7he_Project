@@ -1,0 +1,69 @@
+{
+  "date": "2026-06-12",
+  "session": {
+    "title": "Kiara Enduro/DH repeatability - 3 plus earned 4th",
+    "type": "outdoor_mtb",
+    "duration_min": 150,
+    "intensity": "moderate",
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Build Kiara enduro repeatability while protecting Saturday PCP quality by making the fourth Twin Peaks climb conditional on execution quality rather than motivation.",
+    "dose": {
+      "bike": "S-Works Enduro MY25",
+      "terrain": "Bukit Kiara / Twin Peaks route family",
+      "duration_min": 150,
+      "primary_work": "Three Twin Peaks climbs: two Enduro-stage simulation descents and one DH-line descent.",
+      "optional_work": "Fourth Twin Peaks climb plus DH-line descent only if all execution gates are passed after the third descent.",
+      "cap": "Hard cap 180 minutes elapsed and four climbs; no fifth climb, no extra descent, no segment chasing.",
+      "climb_target": "RPE 3-5 / mostly Z2-Z3; steep pitches may be pushed but no sustained threshold climbing.",
+      "descent_target": "Race-line attention at 85-90% aggression, with clean braking and no late-ride survival riding.",
+      "setup_variable": "Keep Zeb baseline fixed: 65 psi, rebound 4 clicks from closed, HSC 2 clicks from closed, LSC 5 clicks from closed."
+    },
+    "adaptation_hypothesis": "Three controlled climb-to-descent cycles should reinforce repeatable stage execution; a fourth cycle is useful only if technical quality remains stable and does not compromise Saturday PCP jump-line work.",
+    "execution_rules": [
+      "Wear the external HR strap and confirm the ride is tagged to the Enduro.",
+      "Run the two Enduro-stage simulations first while lines and braking are sharp.",
+      "Use the third descent on the DH line as the quality gate, not as proof that more is automatically better.",
+      "Earn the fourth climb only if climb-three RPE is 5/10 or lower, braking timing is still deliberate, vision is wide, no arm pump is building, and fuel/hydration are on schedule.",
+      "If the fourth is earned, ride the climb aerobic and descend at 85-90%, not maximum pace."
+    ],
+    "expected_result": {
+      "garmin_load": "moderate-to-meaningful MTB load; likely 160-230 for three quality climbs and higher if the fourth is earned",
+      "rpe": "moderate-hard but controlled",
+      "next_day": "still able to do PCP quality reps without heavy legs, arm pump hangover, or braking sloppiness",
+      "technical_result": "Lap-to-lap descent quality remains stable, especially braking release timing, corner exits, and root composure."
+    },
+    "stop_rules": [
+      "No fourth climb if climb-three RPE is above 5/10, breathing is no longer controlled, or heat is driving sloppy choices.",
+      "Stop descending hard if braking gets late, vision narrows, line choice becomes reactive, or front-end confidence fades.",
+      "Abort the fourth if fuel or fluid intake has lagged behind plan.",
+      "End the session immediately for crash, near-crash, mechanical issue, sharp pain, or repeated mistakes."
+    ],
+    "post_session_review_fields": [
+      "actual_duration_min",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "number_of_twin_peaks_climbs",
+      "enduro_stage_lap_times",
+      "dh_line_lap_times",
+      "fourth_climb_gate_passed",
+      "braking_precision_by_descent",
+      "corner_exit_confidence_by_descent",
+      "upper_body_fatigue",
+      "late_session_skill_fade",
+      "fueling_carbs_g_per_hour",
+      "fluid_ml_per_hour",
+      "sodium_mg_per_hour",
+      "next_morning_response"
+    ]
+  }
+}
