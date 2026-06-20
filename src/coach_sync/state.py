@@ -10,7 +10,7 @@ from .device_audit import build_device_audit
 from .evidence import load_activities, load_latest_training_status, load_latest_wellness, summarize_recent_training
 from .gear_audit import build_gear_audit
 from .historical_baselines import build_historical_baselines
-from .io import write_json
+from .io import read_json, write_json
 from .load_model import build_modality_load_rollups
 from .paths import snapshots_dir
 from .readiness import build_readiness
@@ -43,15 +43,34 @@ def build_training_load_snapshot(
     if spike is not None and spike > threshold:
         training["flags"].append(
             {
-                "type": "load_spike",
-                "message": f"Acute load is {spike}x prior 7 days.",
+                "type": "week_over_week_load_jump",
+                "message": f"Local 7-day load is {spike}x the prior 7 days; compare with Garmin ACWR before using as a readiness limiter.",
             }
         )
     write_json(snapshots_dir(root) / "training_load.json", training)
     return training
 
 
-def build_current_state(root: str | Path | None = None, for_date: str | date | None = None) -> dict:
+def _cached_or_build_report(
+    root: str | Path | None,
+    filename: str,
+    builder,
+    target_date: date,
+    refresh_models: bool,
+) -> dict:
+    if refresh_models:
+        return builder(root, target_date)
+    cached = read_json(snapshots_dir(root) / filename, {})
+    if isinstance(cached, dict) and cached:
+        return cached
+    return builder(root, target_date)
+
+
+def build_current_state(
+    root: str | Path | None = None,
+    for_date: str | date | None = None,
+    refresh_models: bool = True,
+) -> dict:
     context = load_context(root)
     tz = context.get("athlete", {}).get("timezone", DEFAULT_TIMEZONE)
     target_date = parse_date(for_date) or today_local(tz)
@@ -66,9 +85,27 @@ def build_current_state(root: str | Path | None = None, for_date: str | date | N
     activity_profile = build_activity_profile(root, target_date)
     training_status_current = build_training_status_current(root, target_date.isoformat())
     modality_load_rollups = build_modality_load_rollups(root, target_date)
-    body_battery_model = build_body_battery_model(root, target_date)
-    historical_baselines = build_historical_baselines(root, target_date)
-    training_predictor = build_training_predictor(root, target_date)
+    body_battery_model = _cached_or_build_report(
+        root,
+        "body_battery_model_report.json",
+        build_body_battery_model,
+        target_date,
+        refresh_models,
+    )
+    historical_baselines = _cached_or_build_report(
+        root,
+        "historical_activity_baselines.json",
+        build_historical_baselines,
+        target_date,
+        refresh_models,
+    )
+    training_predictor = _cached_or_build_report(
+        root,
+        "training_response_model_report.json",
+        build_training_predictor,
+        target_date,
+        refresh_models,
+    )
     gear_audit = build_gear_audit(root, target_date)
     device_audit = build_device_audit(root, target_date)
     self_evaluation = build_self_evaluation_report(root, target_date)
@@ -82,42 +119,89 @@ def build_current_state(root: str | Path | None = None, for_date: str | date | N
             "age_days": latest_body_composition.get("age_days"),
         }
 
-    if wellness_date is None:
-        freshness = {"status": "missing", "message": "No Garmin wellness data has been synced."}
-    else:
-        age = (target_date - wellness_date).days
-        freshness = {
-            "status": "current" if age <= 0 else "stale",
-            "age_days": age,
-            "latest_wellness_date": wellness_date.isoformat(),
-            "message": "Garmin wellness data is current."
-            if age <= 0
-            else f"Garmin wellness data is {age} day(s) behind the wall-clock date.",
-        }
-    latest_activity = training_load.get("latest_activity")
     hard_limiters = []
-    if wellness_date is None or freshness.get("status") != "current":
-        hard_limiters.append(freshness.get("message"))
-    if latest_activity is None:
+
+    if wellness_date is None:
+        wellness_freshness = {
+            "status": "missing",
+            "message": "No Garmin wellness data has been synced.",
+        }
+        hard_limiters.append(wellness_freshness["message"])
+    else:
+        wellness_age = (target_date - wellness_date).days
+        if wellness_age < 0:
+            wellness_freshness = {
+                "status": "future",
+                "age_days": wellness_age,
+                "message": "Latest wellness snapshot is dated after the target date.",
+            }
+            hard_limiters.append(wellness_freshness["message"])
+        elif wellness_age == 0:
+            wellness_freshness = {
+                "status": "current",
+                "age_days": wellness_age,
+                "message": "Garmin wellness data is current.",
+            }
+        else:
+            wellness_freshness = {
+                "status": "stale",
+                "age_days": wellness_age,
+                "message": f"Garmin wellness data is {wellness_age} day(s) behind the wall-clock date.",
+            }
+            hard_limiters.append(wellness_freshness["message"])
+
+    if training_status_date is None:
+        training_status_freshness = {
+            "status": "missing",
+            "message": "No Garmin training status snapshot is available.",
+        }
+        hard_limiters.append(training_status_freshness["message"])
+    else:
+        status_age = (target_date - training_status_date).days
+        if status_age < 0:
+            training_status_freshness = {
+                "status": "future",
+                "age_days": status_age,
+                "message": "Latest training status is dated after the target date.",
+            }
+            hard_limiters.append(training_status_freshness["message"])
+        elif status_age == 0:
+            training_status_freshness = {
+                "status": "current",
+                "age_days": status_age,
+                "message": "Garmin training status is current.",
+            }
+        else:
+            training_status_freshness = {
+                "status": "stale",
+                "age_days": status_age,
+                "message": f"Latest training status is {status_age} day(s) old.",
+            }
+            hard_limiters.append(training_status_freshness["message"])
+
+    latest_training_activity = training_load.get("latest_training_activity") or training_load.get(
+        "latest_activity"
+    )
+    if latest_training_activity is None:
         activity_freshness = {
             "status": "missing",
-            "message": "No Garmin activity data is available to verify recent load.",
+            "message": "No Garmin training activity data is available to verify recent load.",
         }
         hard_limiters.append(activity_freshness["message"])
     else:
-        latest_activity_date = parse_date(latest_activity.get("date"))
+        latest_activity_date = parse_date(latest_training_activity.get("date"))
         activity_age = (target_date - latest_activity_date).days if latest_activity_date else None
         if activity_age is None:
             activity_freshness = {
                 "status": "unknown",
-                "message": "Latest activity has no usable date.",
+                "message": "Latest training activity has no usable date.",
             }
             hard_limiters.append(activity_freshness["message"])
         elif activity_age < 0:
             activity_freshness = {
                 "status": "future",
                 "age_days": activity_age,
-                "message": "Latest activity is dated after the target date and cannot support this plan.",
+                "message": "Latest training activity is dated after the target date and cannot support this plan.",
             }
             hard_limiters.append(activity_freshness["message"])
         elif activity_age > 7:
@@ -125,7 +209,7 @@ def build_current_state(root: str | Path | None = None, for_date: str | date | N
                 "status": "stale",
                 "age_days": activity_age,
                 "latest_activity_date": latest_activity_date.isoformat(),
-                "message": f"Latest activity is {activity_age} day(s) old.",
+                "message": f"Latest training activity is {activity_age} day(s) old.",
             }
             hard_limiters.append(activity_freshness["message"])
         else:
@@ -133,19 +217,45 @@ def build_current_state(root: str | Path | None = None, for_date: str | date | N
                 "status": "current",
                 "age_days": activity_age,
                 "latest_activity_date": latest_activity_date.isoformat(),
-                "message": "Recent activity data is available.",
+                "message": "Recent training activity is available.",
             }
-    freshness["activity_data"] = activity_freshness
-    freshness["hard_session_confidence"] = "normal" if not hard_limiters else "limited"
-    freshness["hard_session_limiters"] = [item for item in hard_limiters if item]
+
+    freshness_statuses = (
+        wellness_freshness.get("status"),
+        training_status_freshness.get("status"),
+        activity_freshness.get("status"),
+    )
+    if "missing" in freshness_statuses:
+        overall_status = "missing"
+    elif "stale" in freshness_statuses or "future" in freshness_statuses or "unknown" in freshness_statuses:
+        overall_status = "stale"
+    else:
+        overall_status = "current"
+    freshness = {
+        "status": overall_status,
+        "age_days": wellness_freshness.get("age_days"),
+        "latest_wellness_date": wellness_date.isoformat() if wellness_date else None,
+        "message": (
+            "Garmin readiness inputs are current."
+            if overall_status == "current"
+            else next((item for item in hard_limiters if item), "Readiness inputs are not current; limit hard-session confidence.")
+        ),
+        "wellness_data": wellness_freshness,
+        "training_status_data": training_status_freshness,
+        "activity_data": activity_freshness,
+        "hard_session_confidence": "normal" if not hard_limiters else "limited",
+        "hard_session_limiters": [item for item in hard_limiters if item],
+    }
 
     state = {
         "date": target_date.isoformat(),
         "generated_at": iso_now(tz),
+        "build_mode": "full" if refresh_models else "decision_quick",
         "athlete": athlete,
         "goal": context.get("athlete", {}).get("goal"),
         "phase": phase,
         "readiness": readiness,
+        "readiness_accuracy": readiness.get("readiness_accuracy"),
         "data_freshness": freshness,
         "training_load": training_load,
         "wellness_trends": wellness_trends,
@@ -178,6 +288,7 @@ def build_current_state(root: str | Path | None = None, for_date: str | date | N
         "device_audit": device_audit,
         "self_evaluation": self_evaluation,
         "latest_activity": training_load.get("latest_activity"),
+        "latest_training_activity": training_load.get("latest_training_activity"),
         "evidence_sources": {
             "wellness_date": wellness_date.isoformat() if wellness_date else None,
             "training_status_date": (

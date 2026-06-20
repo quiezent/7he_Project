@@ -75,6 +75,9 @@ def default_athlete_context() -> dict:
         },
         "training_rules": {
             "stale_data_warning_days": 1,
+            "wellness_stale_hard_days": 2,
+            "training_status_stale_warning_days": 1,
+            "training_status_stale_hard_days": 2,
             "acute_chronic_load_spike_ratio": 1.5,
             "weekly_rest_days": [
                 {

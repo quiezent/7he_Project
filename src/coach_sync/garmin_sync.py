@@ -255,12 +255,44 @@ def sync_connect(
     activity_limit: int = 200,
     rebuild_only: bool = False,
     cleanup_after: bool = False,
+    decision_only: bool = False,
 ) -> dict:
     ensure_layout(root)
     live = {"status": "skipped", "reason": "rebuild_only"} if rebuild_only else _fetch_live(root, wellness_days, activity_limit)
-    state = build_current_state(root)
+    state = build_current_state(root, refresh_models=not decision_only)
     plan = build_today_plan(root, state=state)
     predictive = build_predictive_training(root, state=state, plan=plan)
+    if decision_only:
+        coach_packet = build_coach_packet(root, state=state, plan=plan)
+        status = {
+            "generated_at": iso_now(DEFAULT_TIMEZONE),
+            "mode": "decision_only",
+            "live_sync": live,
+            "state_file": str(snapshots_dir(root) / "current_state.json"),
+            "coach_packet_file": str(snapshots_dir(root) / "coach_packet.txt"),
+            "readiness_level": state.get("readiness", {}).get("readiness_level"),
+            "session_title": plan.get("session", {}).get("title"),
+            "predictive_training_file": str(snapshots_dir(root) / "predictive_training.json"),
+            "predictive_model_confidence": (
+                predictive.get("today_prescription", {}).get("model_confidence", {}).get("status")
+            ),
+            "predictive_latest_review": (
+                predictive.get("latest_review", {}).get("comparison", {}).get("interpretation")
+            ),
+            "coach_packet_confidence": coach_packet.get("today_call", {}).get("coach_confidence"),
+            "coach_packet_stance": coach_packet.get("today_call", {}).get("stance"),
+            "skipped_full_rebuild_artifacts": [
+                "daily_brief",
+                "review_block",
+                "data_inventory",
+                "data_quality",
+                "fresh_body_battery_model",
+                "fresh_training_predictor_model",
+                "fresh_historical_baselines",
+            ],
+        }
+        write_json(snapshots_dir(root) / "sync_status.json", status)
+        return status
     brief = build_daily_brief(root, state=state, plan=plan)
     review = review_block(root, state=state)
     inventory = build_data_inventory(root)

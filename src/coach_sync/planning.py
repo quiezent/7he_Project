@@ -3,8 +3,8 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from .io import write_json
-from .paths import snapshots_dir
+from .io import read_json, write_json
+from .paths import input_dir, snapshots_dir
 from .state import build_current_state
 from .time_utils import DEFAULT_TIMEZONE, iso_now, parse_date, today_local
 
@@ -25,6 +25,30 @@ TRAINABLE_SESSION_TYPES = {
     "endurance_skills",
     "outdoor_bike_optional",
 }
+
+
+def _planned_session_path(target_date: date) -> str:
+    return f"input/planned_session_{target_date.isoformat()}.json"
+
+
+def _load_planned_session(root: str | Path | None, target_date: date) -> dict | None:
+    path = input_dir(root) / f"planned_session_{target_date.isoformat()}.json"
+    payload = read_json(path, {})
+    if not isinstance(payload, dict):
+        return None
+    session = payload.get("session")
+    if not isinstance(session, dict):
+        return None
+    payload_date = parse_date(payload.get("date"))
+    if payload_date and payload_date != target_date:
+        return None
+    return {
+        "session": session,
+        "source": {
+            "type": "input_planned_session",
+            "path": _planned_session_path(target_date),
+        },
+    }
 
 
 def _nutrition_block(context: dict, session_intensity: str, duration_min: int) -> dict:
@@ -326,15 +350,20 @@ def build_today_plan(
     hard_guidance = readiness.get("hard_session_guidance")
     phase = state.get("phase", {}).get("name")
     data_status = state.get("data_freshness", {}).get("status")
-    stale = data_status in {"stale", "missing"}
+    stale = data_status in {"stale", "future", "missing"}
     hard_confidence_limited = (
         state.get("data_freshness", {}).get("hard_session_confidence") == "limited"
     )
+    planned_session = _load_planned_session(root, target_date)
+    plan_source = {"type": "today_plan", "path": "snapshots/today_plan.json"}
 
     if scheduled_rest:
         session = _scheduled_rest_plan(scheduled_rest)
     elif level == "red" or hard_guidance == "avoid":
         session = _red_plan(state)
+    elif planned_session:
+        session = dict(planned_session["session"])
+        plan_source = planned_session["source"]
     elif level == "yellow" or stale:
         session = _yellow_base_plan(state)
     else:
@@ -359,6 +388,8 @@ def build_today_plan(
         "Progression follows readiness, recent load, bike specificity, and next-day response.",
         "Downshift tomorrow if the session produces unusually poor recovery or skill quality.",
     ]
+    if planned_session and not scheduled_rest and not (level == "red" or hard_guidance == "avoid"):
+        guardrails.insert(0, f"Using coach-authored planned session from {plan_source['path']}.")
     if scheduled_rest:
         guardrails.insert(
             0,
@@ -381,6 +412,7 @@ def build_today_plan(
         "generated_at": iso_now(tz),
         "coaching_status": "proposal_for_llm_coach",
         "session": session,
+        "plan_source": plan_source,
         "gym": _gym_block(state, scheduled_rest=scheduled_rest),
         "nutrition": nutrition,
         "guardrails": guardrails,
@@ -388,6 +420,7 @@ def build_today_plan(
             "phase": phase,
             "readiness_level": level,
             "readiness_score": readiness.get("readiness_score"),
+            "readiness_accuracy": readiness.get("readiness_accuracy"),
             "hard_session_guidance": hard_guidance,
             "data_freshness": state.get("data_freshness"),
             "scheduled_rest": scheduled_rest,

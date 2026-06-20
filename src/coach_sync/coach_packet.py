@@ -383,10 +383,25 @@ def _today_decision(state: dict, plan: dict, cautions: list[dict]) -> dict:
 
 
 def _next_data_needed(state: dict) -> list[str]:
-    needed = [
-        "Keep live Garmin wellness and activity sync current before hard-session decisions.",
-        "Label what the Fenix cannot see: ride purpose, trail condition, confidence, braking comfort, skill quality, fueling, and heat feel.",
-    ]
+    readiness_accuracy = (state.get("readiness") or {}).get("readiness_accuracy") or {}
+    needed = []
+    recommended_next_step = (
+        (readiness_accuracy.get("recommended_next_step") or {}) if isinstance(readiness_accuracy, dict) else {}
+    )
+    readiness_commands = recommended_next_step.get("commands")
+    if readiness_commands:
+        needed.append("Recommended readiness fix sequence (in order):")
+        for command in readiness_commands:
+            needed.append(command)
+        blockers = recommended_next_step.get("label") or "No explicit blocker label."
+        if blockers:
+            needed.append(f"Readiness blocker context: {blockers}")
+    needed.extend(
+        [
+            "Keep live Garmin wellness and activity sync current before hard-session decisions.",
+            "Label what the Fenix cannot see: ride purpose, trail condition, confidence, braking comfort, skill quality, fueling, and heat feel.",
+        ]
+    )
     if not (state.get("body_battery_model") or {}).get("samples"):
         needed.append("Collect more modern wellness rows before trusting Body Battery modeling.")
     if (state.get("training_predictor") or {}).get("validation", {}).get("utility") != "useful":

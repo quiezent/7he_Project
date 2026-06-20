@@ -74,6 +74,32 @@ def write_interrupted_sleep_wellness(tmp_path):
     )
 
 
+def write_training_status(tmp_path):
+    write_json(
+        tmp_path / "snapshots" / "garmin_training_status_2026-05-29.json",
+        {
+            "date": "2026-05-29",
+            "payload": {
+                "ok": True,
+                "data": {
+                    "mostRecentTrainingStatus": {
+                        "latestTrainingStatusData": {
+                            "dev": {
+                                "primaryTrainingDevice": True,
+                                "trainingStatusFeedbackPhrase": "MAINTAINING_2",
+                                "acuteTrainingLoadDTO": {
+                                    "acwrStatus": "OPTIMAL",
+                                    "dailyAcuteChronicWorkloadRatio": 0.8,
+                                },
+                            }
+                        }
+                    }
+                },
+            },
+        },
+    )
+
+
 def test_wellness_verification_detects_post_wake_body_battery_recharge(tmp_path):
     write_interrupted_sleep_wellness(tmp_path)
 
@@ -90,6 +116,7 @@ def test_wellness_verification_detects_post_wake_body_battery_recharge(tmp_path)
 
 def test_readiness_uses_verified_morning_anchor_instead_of_blind_wake_value(tmp_path):
     write_interrupted_sleep_wellness(tmp_path)
+    write_training_status(tmp_path)
 
     readiness = build_readiness(tmp_path, "2026-05-29")
 

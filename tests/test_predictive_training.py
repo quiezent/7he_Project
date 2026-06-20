@@ -113,6 +113,45 @@ def test_predictive_training_builds_prescription_and_latest_review(tmp_path):
     assert (tmp_path / "snapshots" / f"predictive_session_{target.isoformat()}.json").exists()
 
 
+def test_predictive_training_uses_dated_planned_session_input(tmp_path):
+    target = _seed_history(tmp_path)
+    write_json(
+        tmp_path / "input" / f"planned_session_{target.isoformat()}.json",
+        {
+            "date": target.isoformat(),
+            "session": {
+                "title": "Stumpjumper 2K repeatability",
+                "type": "outdoor_mtb",
+                "duration_min": 105,
+                "intensity": "moderate",
+                "schema_version": 3,
+                "contract_fields": SESSION_CONTRACT_FIELDS,
+                "purpose": "Use the planned Kiara loop prescription, not the generic daily fallback.",
+                "dose": {"required_repeats": 3, "optional_repeats": 1},
+                "adaptation_hypothesis": "Capped repeats should build climb-to-descent repeatability.",
+                "execution_rules": ["Keep descents smooth and do not chase segments."],
+                "expected_result": {"garmin_load": "moderate"},
+                "stop_rules": ["Stop optional work if technique fades."],
+                "post_session_review_fields": ["actual_repeats_completed"],
+            },
+        },
+    )
+
+    artifact = build_predictive_training(tmp_path, target)
+
+    expected = artifact["today_prescription"]["prediction"]["expected_session"]
+    assert artifact["today_prescription"]["plan_source"] == {
+        "type": "input_planned_session",
+        "path": f"input/planned_session_{target.isoformat()}.json",
+    }
+    assert expected["title"] == "Stumpjumper 2K repeatability"
+    assert expected["type"] == "outdoor_mtb"
+    assert expected["duration_min"] == 105
+    assert expected["mtb_sessions"] == 1
+    for field in SESSION_CONTRACT_FIELDS:
+        assert expected.get(field), field
+
+
 def test_predictive_review_compares_dated_prescription_to_actuals(tmp_path):
     target = _seed_history(tmp_path)
     review_day = target - timedelta(days=1)

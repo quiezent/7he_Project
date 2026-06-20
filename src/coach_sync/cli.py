@@ -23,6 +23,7 @@ from .gear_audit import build_gear_audit
 from .historical_baselines import build_historical_baselines
 from .load_model import build_activity_summary_index, build_modality_load_rollups
 from .loop_load import build_loop_load, parse_lap_groups
+from .lap_comparator import build_lap_distance_comparison
 from .planning import build_today_plan
 from .predictive_backtest import build_predictive_backtest
 from .predictive_training import build_predictive_review, build_predictive_training
@@ -68,9 +69,23 @@ def build_parser() -> argparse.ArgumentParser:
     sync.add_argument("--activity-limit", type=int, default=200)
     sync.add_argument("--rebuild-only", action="store_true")
     sync.add_argument("--cleanup-derived", action="store_true")
+    sync.add_argument(
+        "--decision-only",
+        "--quick",
+        action="store_true",
+        dest="decision_only",
+        help="Fetch/rebuild only the same-day decision surface; skip heavyweight reports.",
+    )
 
     rebuild = sub.add_parser("rebuild", help="Rebuild derived artifacts without live Garmin fetch.")
     _add_root(rebuild)
+    rebuild.add_argument(
+        "--decision-only",
+        "--quick",
+        action="store_true",
+        dest="decision_only",
+        help="Rebuild only the same-day decision surface; skip heavyweight reports.",
+    )
 
     for name, help_text in (
         ("readiness", "Build today's readiness snapshot."),
@@ -99,6 +114,14 @@ def build_parser() -> argparse.ArgumentParser:
         child = sub.add_parser(name, help=help_text)
         _add_root(child)
         child.add_argument("--date", default=None)
+        if name == "state":
+            child.add_argument(
+                "--decision-only",
+                "--quick",
+                action="store_true",
+                dest="decision_only",
+                help="Build current state using cached heavyweight model reports when available.",
+            )
 
     adaptation = sub.add_parser("adaptation-profile", help="Build N-of-1 training adaptation profile.")
     _add_root(adaptation)
@@ -125,6 +148,17 @@ def build_parser() -> argparse.ArgumentParser:
     loop_load.add_argument("--loops", nargs="+", required=True, help="Lap groups, for example: 1,2 3,4 5,6")
     loop_load.add_argument("--labels", nargs="*", default=None)
     loop_load.add_argument("--no-fetch-live", action="store_true")
+
+    lap_compare = sub.add_parser("lap-compare", help="Compare two laps by distance after movement anchor trim.")
+    _add_root(lap_compare)
+    lap_compare.add_argument("--activity-a-id", required=True)
+    lap_compare.add_argument("--activity-b-id", required=True)
+    lap_compare.add_argument("--lap-number", type=int, required=True)
+    lap_compare.add_argument("--metric", nargs="*", default=None)
+    lap_compare.add_argument("--grid-m", type=float, default=1.0)
+    lap_compare.add_argument("--speed-eps", type=float, default=0.5)
+    lap_compare.add_argument("--dist-eps", type=float, default=1.0)
+    lap_compare.add_argument("--chart-output", default=None, help="Optional SVG path for per-distance delta/speed chart output.")
 
     log = sub.add_parser("log", help="Import subjective feedback.")
     _add_root(log)
@@ -202,13 +236,18 @@ def run(args: argparse.Namespace) -> Any:
             activity_limit=args.activity_limit,
             rebuild_only=args.rebuild_only,
             cleanup_after=args.cleanup_derived,
+            decision_only=args.decision_only,
         )
     if args.command == "rebuild":
-        return sync_connect(args.root, rebuild_only=True)
+        return sync_connect(args.root, rebuild_only=True, decision_only=args.decision_only)
     if args.command == "readiness":
         return build_readiness(args.root, args.date)
     if args.command == "state":
-        return build_current_state(args.root, args.date)
+        return build_current_state(
+            args.root,
+            args.date,
+            refresh_models=not getattr(args, "decision_only", False),
+        )
     if args.command == "plan":
         return build_today_plan(args.root, args.date)
     if args.command == "brief":
@@ -249,6 +288,18 @@ def run(args: argparse.Namespace) -> Any:
             date=args.date,
             labels=args.labels,
             fetch_live=not args.no_fetch_live,
+        )
+    if args.command == "lap-compare":
+        return build_lap_distance_comparison(
+            activity_a=args.activity_a_id,
+            activity_b=args.activity_b_id,
+            lap_number=args.lap_number,
+            metric_cols=args.metric,
+            grid_m=args.grid_m,
+            speed_eps=args.speed_eps,
+            dist_eps=args.dist_eps,
+            chart_output=args.chart_output,
+            root=args.root,
         )
     if args.command == "historical-baselines":
         return build_historical_baselines(args.root, args.date)

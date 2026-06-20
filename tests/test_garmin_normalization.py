@@ -6,6 +6,32 @@ from coach_sync.training_status import build_training_status_current
 from coach_sync.wellness import build_wellness_trends
 
 
+def _write_training_status(root, day: str) -> None:
+    write_json(
+        root / "snapshots" / f"garmin_training_status_{day}.json",
+        {
+            "date": day,
+            "payload": {
+                "ok": True,
+                "data": {
+                    "mostRecentTrainingStatus": {
+                        "latestTrainingStatusData": {
+                            "dev": {
+                                "primaryTrainingDevice": True,
+                                "trainingStatusFeedbackPhrase": "MAINTAINING_2",
+                                "acuteTrainingLoadDTO": {
+                                    "acwrStatus": "OPTIMAL",
+                                    "dailyAcuteChronicWorkloadRatio": 0.8,
+                                },
+                            }
+                        }
+                    }
+                },
+            },
+        },
+    )
+
+
 def test_wellness_normalizes_nested_sleep_body_battery_and_hrv(tmp_path):
     write_json(
         tmp_path / "snapshots" / "garmin_wellness_2026-04-30.json",
@@ -40,6 +66,7 @@ def test_wellness_normalizes_nested_sleep_body_battery_and_hrv(tmp_path):
             ],
         },
     )
+    _write_training_status(tmp_path, "2026-04-30")
 
     trends = build_wellness_trends(tmp_path, "2026-04-30")
     readiness = build_readiness(tmp_path, "2026-04-30")

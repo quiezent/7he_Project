@@ -9,7 +9,7 @@ from typing import Any
 from .evidence import as_number
 from .io import read_json, write_json, write_text
 from .load_model import build_activity_summary_index
-from .paths import snapshots_dir
+from .paths import input_dir, snapshots_dir
 from .planning import SESSION_CONTRACT_FIELDS, build_today_plan
 from .state import build_current_state
 from .time_utils import DEFAULT_TIMEZONE, iso_now, parse_date, today_local
@@ -45,6 +45,31 @@ BIKE_SPECIFIC_TYPES = EXPLICIT_MTB_TYPES | {"bike_quality"}
 MIN_EXECUTION_PROFILE_SAMPLES = 3
 
 
+def _planned_session_path(target: date) -> str:
+    return f"input/planned_session_{target.isoformat()}.json"
+
+
+def _load_planned_session_plan(root: str | Path | None, target: date) -> dict | None:
+    path = input_dir(root) / f"planned_session_{target.isoformat()}.json"
+    payload = read_json(path, {})
+    if not isinstance(payload, dict):
+        return None
+    session = payload.get("session")
+    if not isinstance(session, dict):
+        return None
+    payload_date = parse_date(payload.get("date"))
+    if payload_date and payload_date != target:
+        return None
+    plan = dict(payload)
+    plan["date"] = target.isoformat()
+    plan.setdefault("coaching_status", "coach_authored_planned_session")
+    plan["plan_source"] = {
+        "type": "input_planned_session",
+        "path": _planned_session_path(target),
+    }
+    return plan
+
+
 def _round(value: float | None, digits: int = 1) -> float | None:
     return round(value, digits) if value is not None else None
 
@@ -56,7 +81,7 @@ def _number(value: Any, default: float = 0.0) -> float:
 
 def _model_report(root: str | Path | None, target: date) -> dict:
     report = read_json(snapshots_dir(root) / "training_response_model_report.json", {})
-    if not isinstance(report, dict) or not report.get("tree") or report.get("date") != target.isoformat():
+    if not isinstance(report, dict) or not report.get("tree"):
         report = build_training_predictor(root, target)
     return report
 
@@ -808,17 +833,25 @@ def build_predictive_prescription(
 ) -> dict:
     target = parse_date(for_date) or parse_date((state or {}).get("date")) or today_local(DEFAULT_TIMEZONE)
     state = state or build_current_state(root, target)
-    plan = plan or build_today_plan(root, target, state=state)
+    plan = plan or _load_planned_session_plan(root, target) or build_today_plan(root, target, state=state)
+    plan_source = plan.get("plan_source") or {
+        "type": "today_plan",
+        "path": "snapshots/today_plan.json",
+    }
     model = _model_report(root, target)
     artifact = {
         "date": target.isoformat(),
         "generated_at": iso_now(DEFAULT_TIMEZONE),
         "artifact_type": "predictive_session_plan",
+        "plan_source": plan_source,
         "model": {
             "source": "snapshots/training_response_model_report.json",
             "model_type": model.get("model_type"),
             "samples": model.get("samples"),
             "target": model.get("target"),
+            "report_date": model.get("date"),
+            "prediction_date": target.isoformat(),
+            "reuse_policy": "reuse_valid_historical_tree_until_explicit_training-predictor rebuild",
             "validation": model.get("validation"),
         },
         "model_confidence": _model_confidence(model),

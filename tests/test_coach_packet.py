@@ -28,9 +28,51 @@ def _write_green_wellness(root, day: str) -> None:
     )
 
 
+def _write_training_status(root, day: str) -> None:
+    write_json(
+        root / "snapshots" / f"garmin_training_status_{day}.json",
+        {
+            "date": day,
+            "payload": {
+                "ok": True,
+                "data": {
+                    "mostRecentTrainingStatus": {
+                        "latestTrainingStatusData": {
+                            "dev": {
+                                "primaryTrainingDevice": True,
+                                "trainingStatusFeedbackPhrase": "MAINTAINING_2",
+                                "acuteTrainingLoadDTO": {
+                                    "acwrStatus": "OPTIMAL",
+                                    "dailyAcuteChronicWorkloadRatio": 0.8,
+                                },
+                            }
+                        }
+                    }
+                },
+            },
+        },
+    )
+
+
+def _write_activity(root, day: str) -> None:
+    write_json(
+        root / "activities" / f"activity_{day}.json",
+        {
+            "activityId": int(day.replace("-", "")),
+            "activityName": "Indoor Cycling",
+            "activityType": {"typeKey": "indoor_cycling"},
+            "startTimeLocal": f"{day} 10:00:00",
+            "duration": 3600,
+            "activityTrainingLoad": 55,
+        },
+    )
+
+
 def test_coach_packet_writes_decision_surface_and_triages_models(tmp_path):
     load_context(tmp_path)
     _write_green_wellness(tmp_path, "2026-04-29")
+    _write_training_status(tmp_path, "2026-04-29")
+    _write_activity(tmp_path, "2026-04-29")
 
     packet = build_coach_packet(tmp_path, "2026-04-29")
 

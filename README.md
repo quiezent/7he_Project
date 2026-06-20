@@ -25,6 +25,8 @@
   `python tools/bootstrap.py`
 - Rebuild artifacts without Garmin login:
   `python tools/sync_connect.py --rebuild-only`
+- Same-day coaching fast path:
+  `python tools/sync_connect.py --wellness-days 3 --activity-limit 5 --decision-only`
 
 ## Garmin Sync
 - Set credentials as environment variables:
@@ -32,16 +34,21 @@
   - `GARMIN_PASSWORD`
 - Main sync:
   `python tools/sync_connect.py --wellness-days 30 --activity-limit 200`
+- Same-day decision sync:
+  `python tools/sync_connect.py --wellness-days 3 --activity-limit 5 --decision-only`
 - Wellness + rebuild only:
   `python tools/sync_connect.py --wellness-days 30 --activity-limit 0`
 - Rebuild only:
   `python tools/sync_connect.py --rebuild-only`
+- Quick rebuild without live Garmin fetch:
+  `python tools/sync_connect.py --rebuild-only --decision-only`
 
 Garmin tokens are handled by the `garminconnect`/`garth` stack. Do not store passwords in repo files.
 
 ## Command Surface
 Preferred direct commands:
 - Current state: `python tools/current_state.py`
+- Current state fast path: `python tools/current_state.py --decision-only`
 - Daily plan: `python tools/today_plan.py`
 - Daily brief: `python tools/daily_brief.py`
 - Weekly report: `python tools/weekly_report.py --days 7`
@@ -71,7 +78,7 @@ Preferred direct commands:
 - Historical activity baselines: `python tools/historical_baselines.py`
 - Coach evidence packet: `python tools/coach_packet.py`
 - Controlled Garmin history backfill: `python tools/historical_backfill.py --start-date 2021-07-01 --wellness-max-days 180`
-- Cleanup safe derived caches: `python tools/cleanup_derived.py --apply`
+- Cleanup safe derived caches and transient activity-detail JSON: `python tools/cleanup_derived.py --apply`
 
 After editable install, the same stack is available through:
 - `python -m coach_sync sync --wellness-days 30 --activity-limit 200`
@@ -90,6 +97,7 @@ After editable install, the same stack is available through:
 
 ## Predictive Workflow
 - Use this before a planned key session to store a testable expectation in `snapshots/`, not in this README.
+- If `input/planned_session_YYYY-MM-DD.json` exists, the predictive loop uses that coach-authored session contract before falling back to the generic `today_plan`.
 - For a generic deterministic proposal:
   `python tools/predictive_training.py --date <YYYY-MM-DD>`
 - For a specific coached session, call `build_predictive_training(..., plan=<custom plan>)` with the schema v3 session contract fields:

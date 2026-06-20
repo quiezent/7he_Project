@@ -12,6 +12,48 @@ def write_wellness(root, day, **fields):
     )
 
 
+def write_training_status(root, day):
+    write_json(
+        root / "snapshots" / f"garmin_training_status_{day}.json",
+        {
+            "date": day,
+            "payload": {
+                "ok": True,
+                "data": {
+                    "mostRecentTrainingStatus": {
+                        "latestTrainingStatusData": {
+                            "dev": {
+                                "primaryTrainingDevice": True,
+                                "trainingStatusFeedbackPhrase": "MAINTAINING_2",
+                                "acuteTrainingLoadDTO": {
+                                    "acwrStatus": "OPTIMAL",
+                                    "dailyAcuteChronicWorkloadRatio": 0.8,
+                                    "dailyTrainingLoadAcute": 357,
+                                    "dailyTrainingLoadChronic": 402,
+                                },
+                            }
+                        }
+                    }
+                },
+            },
+        },
+    )
+
+
+def write_activity(root, day, load=55):
+    write_json(
+        root / "activities" / f"activity_{day}.json",
+        {
+            "activityId": int(day.replace("-", "")),
+            "activityName": "Indoor Cycling",
+            "activityType": {"typeKey": "indoor_cycling"},
+            "startTimeLocal": f"{day} 10:00:00",
+            "duration": 3600,
+            "activityTrainingLoad": load,
+        },
+    )
+
+
 def write_body_composition(root, day, **fields):
     weight = fields.get("weight")
     sample = {
@@ -106,9 +148,53 @@ def test_current_pain_notes_do_not_block_session(tmp_path):
     assert plan["session"]["type"] != "recovery"
 
 
+def test_garmin_optimal_acwr_overrides_local_week_over_week_jump(tmp_path):
+    load_context(tmp_path)
+    write_wellness(tmp_path, "2026-06-16", sleepScore=90, hrvStatus="balanced", bodyBattery=82)
+    write_training_status(tmp_path, "2026-06-16")
+    write_activity(tmp_path, "2026-06-03", load=100)
+    write_activity(tmp_path, "2026-06-10", load=200)
+    write_activity(tmp_path, "2026-06-12", load=200)
+
+    readiness = build_readiness(tmp_path, "2026-06-16")
+
+    assert readiness["readiness_level"] == "green"
+    assert not any(reason["type"] == "load_spike" for reason in readiness["reasons"])
+
+
+def test_today_plan_uses_dated_planned_session_input(tmp_path):
+    load_context(tmp_path)
+    write_wellness(tmp_path, "2026-06-16", sleepScore=90, hrvStatus="balanced", bodyBattery=82)
+    write_training_status(tmp_path, "2026-06-16")
+    write_activity(tmp_path, "2026-06-16")
+    write_json(
+        tmp_path / "input" / "planned_session_2026-06-16.json",
+        {
+            "date": "2026-06-16",
+            "session": {
+                "title": "Coach-authored primer",
+                "type": "recovery",
+                "duration_min": 30,
+                "intensity": "recovery",
+            },
+        },
+    )
+
+    plan = build_today_plan(tmp_path, "2026-06-16")
+
+    assert plan["session"]["title"] == "Coach-authored primer"
+    assert plan["plan_source"] == {
+        "type": "input_planned_session",
+        "path": "input/planned_session_2026-06-16.json",
+    }
+    assert any("coach-authored planned session" in item for item in plan["guardrails"])
+
+
 def test_base_phase_green_day_gets_trainable_plan(tmp_path):
     load_context(tmp_path)
     write_wellness(tmp_path, "2026-04-29", sleepScore=90, hrvStatus="balanced", bodyBattery=80)
+    write_training_status(tmp_path, "2026-04-29")
+    write_activity(tmp_path, "2026-04-29")
 
     plan = build_today_plan(tmp_path, "2026-04-29")
 
@@ -197,6 +283,7 @@ def test_base_phase_hard_session_requires_activity_evidence(tmp_path):
     context["goal_progression"]["current_phase"] = "base_rebuild"
     save_context(context, tmp_path)
     write_wellness(tmp_path, "2026-05-21", sleepScore=90, hrvStatus="balanced", bodyBattery=80)
+    write_training_status(tmp_path, "2026-05-21")
 
     plan = build_today_plan(tmp_path, "2026-05-21")
 

@@ -123,22 +123,61 @@ def _prepare_pre_session_root(source_root: str | Path | None, dest_root: Path, t
 def _data_freshness(root: str | Path | None, target: date, training: dict) -> dict:
     wellness_date, _ = load_latest_wellness(root, target)
     if wellness_date is None:
-        freshness = {"status": "missing", "message": "No Garmin wellness data has been synced."}
+        wellness_freshness = {"status": "missing", "message": "No Garmin wellness data has been synced."}
     else:
         age = (target - wellness_date).days
-        freshness = {
-            "status": "current" if age <= 0 else "stale",
-            "age_days": age,
-            "latest_wellness_date": wellness_date.isoformat(),
-            "message": "Garmin wellness data is current."
-            if age <= 0
-            else f"Garmin wellness data is {age} day(s) behind the decision date.",
-        }
+        if age < 0:
+            wellness_freshness = {
+                "status": "future",
+                "age_days": age,
+                "message": "Latest wellness snapshot is dated after the target date.",
+            }
+        elif age == 0:
+            wellness_freshness = {
+                "status": "current",
+                "age_days": age,
+                "message": "Garmin wellness data is current.",
+            }
+        else:
+            wellness_freshness = {
+                "status": "stale",
+                "age_days": age,
+                "message": f"Garmin wellness data is {age} day(s) behind the decision date.",
+            }
 
-    latest_activity = training.get("latest_activity")
+    training_status_date, _ = load_latest_training_status(root, target)
+    if training_status_date is None:
+        training_status_freshness = {
+            "status": "missing",
+            "message": "No Garmin training status snapshot is available.",
+        }
+    else:
+        status_age = (target - training_status_date).days
+        if status_age < 0:
+            training_status_freshness = {
+                "status": "future",
+                "age_days": status_age,
+                "message": "Latest training status is dated after the target date.",
+            }
+        elif status_age == 0:
+            training_status_freshness = {
+                "status": "current",
+                "age_days": status_age,
+                "message": "Garmin training status is current.",
+            }
+        else:
+            training_status_freshness = {
+                "status": "stale",
+                "age_days": status_age,
+                "message": f"Latest training status is {status_age} day(s) old.",
+            }
+
+    latest_activity = training.get("latest_training_activity") or training.get("latest_activity")
     hard_limiters = []
-    if wellness_date is None or freshness.get("status") != "current":
-        hard_limiters.append(freshness.get("message"))
+    if wellness_freshness.get("status") != "current":
+        hard_limiters.append(wellness_freshness.get("message"))
+    if training_status_freshness.get("status") != "current":
+        hard_limiters.append(training_status_freshness.get("message"))
     if latest_activity is None:
         activity_freshness = {
             "status": "missing",
@@ -169,9 +208,32 @@ def _data_freshness(root: str | Path | None, target: date, training: dict) -> di
                 "latest_activity_date": latest_activity_date.isoformat(),
                 "message": "Recent pre-session activity data is available.",
             }
-    freshness["activity_data"] = activity_freshness
-    freshness["hard_session_confidence"] = "normal" if not hard_limiters else "limited"
-    freshness["hard_session_limiters"] = [item for item in hard_limiters if item]
+    freshness_statuses = (
+        wellness_freshness.get("status"),
+        training_status_freshness.get("status"),
+        activity_freshness.get("status"),
+    )
+    if "missing" in freshness_statuses:
+        overall_status = "missing"
+    elif "stale" in freshness_statuses or "future" in freshness_statuses or "unknown" in freshness_statuses:
+        overall_status = "stale"
+    else:
+        overall_status = "current"
+    freshness = {
+        "status": overall_status,
+        "age_days": wellness_freshness.get("age_days"),
+        "latest_wellness_date": wellness_date.isoformat() if wellness_date else None,
+        "message": (
+            "Garmin readiness data is current."
+            if overall_status == "current"
+            else next((item for item in hard_limiters if item), "Readiness data is not current; limit hard-session confidence.")
+        ),
+        "wellness_data": wellness_freshness,
+        "training_status_data": training_status_freshness,
+        "activity_data": activity_freshness,
+        "hard_session_confidence": "normal" if not hard_limiters else "limited",
+        "hard_session_limiters": [item for item in hard_limiters if item],
+    }
     return freshness
 
 
@@ -204,6 +266,7 @@ def _pre_session_state(root: str | Path | None, target: date) -> dict:
         "training_load": training,
         "body_composition": latest_body_composition or None,
         "latest_activity": training.get("latest_activity"),
+        "latest_training_activity": training.get("latest_training_activity"),
         "evidence_sources": {
             "wellness_date": wellness_date.isoformat() if wellness_date else None,
             "training_status_date": training_status_date.isoformat() if training_status_date else None,

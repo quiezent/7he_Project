@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from datetime import date, timedelta
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -190,13 +191,49 @@ def summarize_activity(payload: dict, path: Path | None = None) -> dict:
     }
 
 
-def load_activities(root: str | Path | None = None) -> list[dict]:
+def _activity_fingerprint(base: Path) -> tuple[int, int, int]:
+    count = 0
+    latest_mtime_ns = 0
+    total_size = 0
+    for path in base.glob("**/*.json"):
+        try:
+            stat = path.stat()
+        except OSError:
+            continue
+        count += 1
+        latest_mtime_ns = max(latest_mtime_ns, stat.st_mtime_ns)
+        total_size += stat.st_size
+    return count, latest_mtime_ns, total_size
+
+
+@lru_cache(maxsize=8)
+def _load_activities_cached(
+    base_dir: str,
+    file_count: int,
+    latest_mtime_ns: int,
+    total_size: int,
+) -> tuple[tuple[tuple[str, Any], ...], ...]:
     summaries: list[dict] = []
-    for path in activities_dir(root).glob("**/*.json"):
+    # file_count/latest_mtime_ns/total_size are part of the cache key.
+    _ = (file_count, latest_mtime_ns, total_size)
+    for path in Path(base_dir).glob("**/*.json"):
         payload = read_json(path, {})
         if isinstance(payload, dict):
             summaries.append(summarize_activity(payload, path))
-    return sorted(summaries, key=lambda item: item.get("date") or "")
+    ordered = sorted(summaries, key=lambda item: item.get("date") or "")
+    return tuple(tuple(sorted(item.items())) for item in ordered)
+
+
+def load_activities(root: str | Path | None = None) -> list[dict]:
+    base = activities_dir(root).resolve()
+    file_count, latest_mtime_ns, total_size = _activity_fingerprint(base)
+    cached = _load_activities_cached(
+        str(base),
+        file_count,
+        latest_mtime_ns,
+        total_size,
+    )
+    return [dict(items) for items in cached]
 
 
 def redacted_activity_summary(activity: dict | None) -> dict | None:
@@ -255,10 +292,17 @@ def summarize_recent_training(activities: list[dict], today: date) -> dict:
     spike_ratio = None
     if prev_load > 0:
         spike_ratio = round(last_7_totals["training_load"] / prev_load, 2)
+    latest_activity = activities[-1] if activities else None
+    latest_training_activity = None
+    for row in reversed(activities):
+        if row.get("counts_for_training_load"):
+            latest_training_activity = row
+            break
     return {
         "last_7_days": last_7_totals,
         "previous_7_days": previous_7_totals,
         "last_28_days": totals(last_28),
         "acute_load_spike_ratio": spike_ratio,
-        "latest_activity": redacted_activity_summary(activities[-1] if activities else None),
+        "latest_activity": redacted_activity_summary(latest_activity),
+        "latest_training_activity": redacted_activity_summary(latest_training_activity),
     }

@@ -337,7 +337,10 @@ def build_wellness_verification(
         report["generated_at"] = iso_now(tz)
         report["source_date"] = wellness_date.isoformat() if wellness_date else report.get("source_date")
         report["data_age_days"] = (target - wellness_date).days if wellness_date else None
-        if wellness_date and wellness_date != target:
+        if wellness_date and wellness_date > target:
+            report["verification_status"] = "future_wellness_snapshot"
+            report["confidence"] = "low"
+        elif wellness_date and wellness_date != target:
             report["verification_status"] = "stale_wellness_snapshot"
             report["confidence"] = "low"
 

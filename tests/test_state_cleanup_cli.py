@@ -35,6 +35,29 @@ def test_cleanup_does_not_touch_activities(tmp_path):
     assert str(protected) not in result["removed_or_would_remove"]
 
 
+def test_cleanup_removes_only_transient_snapshot_json(tmp_path):
+    load_context(tmp_path)
+    snapshots = tmp_path / "snapshots"
+    transient_detail = snapshots / "activity_detail_123.json"
+    transient_current = snapshots / "activity_loop_load_current.json"
+    dated_loop = snapshots / "activity_loop_load_2026-06-10_123.json"
+    current_state = snapshots / "current_state.json"
+    transient_detail.write_text("{}", encoding="utf-8")
+    transient_current.write_text("{}", encoding="utf-8")
+    dated_loop.write_text("{}", encoding="utf-8")
+    current_state.write_text("{}", encoding="utf-8")
+
+    result = cleanup_derived(tmp_path, apply=True)
+
+    assert not transient_detail.exists()
+    assert not transient_current.exists()
+    assert dated_loop.exists()
+    assert current_state.exists()
+    assert str(transient_detail.resolve()) in result["removed_or_would_remove"]
+    assert str(transient_current.resolve()) in result["removed_or_would_remove"]
+    assert str(dated_loop.resolve()) not in result["removed_or_would_remove"]
+
+
 def test_cli_rebuild_creates_valid_json(tmp_path, capsys):
     code = main(["rebuild", "--root", str(tmp_path)])
     captured = capsys.readouterr()

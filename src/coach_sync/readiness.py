@@ -22,6 +22,28 @@ from .wellness import normalize_wellness_payload
 from .wellness_verification import build_wellness_verification
 
 
+def _as_non_negative_int(value: object, default: int) -> int:
+    try:
+        as_int = int(value)
+    except (TypeError, ValueError):
+        return default
+    return as_int if as_int >= 0 else default
+
+
+def _freshness_thresholds(
+    training_rules: dict,
+    warning_key: str,
+    hard_key: str,
+    default_warning: int,
+    default_hard: int | None = None,
+) -> tuple[int, int]:
+    warning = _as_non_negative_int(training_rules.get(warning_key), default_warning)
+    hard = _as_non_negative_int(training_rules.get(hard_key), default_hard if default_hard is not None else warning)
+    if hard < warning:
+        hard = warning
+    return warning, hard
+
+
 def _text(value: Any) -> str:
     return "" if value is None else str(value).strip().lower()
 
@@ -70,6 +92,122 @@ def _dated_subjective_context(
     )
 
 
+def _readiness_accuracy_plan(
+    target_date: date,
+    is_today: bool,
+    confidence: str,
+    blockers: list[dict],
+    body_battery_current: float | None,
+) -> dict:
+    blocker_types = [item.get("type") for item in blockers]
+    high_blockers = [item for item in blockers if item.get("priority") == "high"]
+    medium_blockers = [
+        item for item in blockers if item.get("priority") in {"medium", "high"} and item not in high_blockers
+    ]
+    sync_cmd = "python tools/sync_connect.py --wellness-days 30 --activity-limit 0"
+    if "wellness_missing" in blocker_types or "training_status_missing" in blocker_types:
+        return {
+            "decision_quality": "insufficient",
+            "decision_risk": "high",
+            "recommended_next_step": {
+                "status": "required",
+                "priority": 1,
+                "label": "Sync fresh Garmin wellness + training status",
+                "rationale": (
+                    "Readiness is missing required Garmin signal for the target date; "
+                    "without it, confidence is not reliable."
+                ),
+                "commands": [sync_cmd, "python tools/current_state.py", "python tools/coach_packet.py"],
+                "expected_effect": "Rebuild readiness inputs and restore actionable confidence.",
+            },
+            "blockers": blockers,
+        }
+    if any(
+        item.get("type") in {"future_wellness_snapshot", "future_training_status"}
+        for item in blockers
+    ):
+        return {
+            "decision_quality": "insufficient",
+            "decision_risk": "high",
+            "recommended_next_step": {
+                "status": "required",
+                "priority": 1,
+                "label": "Refresh using target-date snapshots only",
+                "rationale": (
+                    "A future-dated Garmin record was found for this target date. "
+                    "Treating it as current is backward-in-time contamination."
+                ),
+                "commands": [sync_cmd, "python tools/current_state.py", "python tools/coach_packet.py"],
+                "expected_effect": "Forces readiness scoring to use target-date evidence only.",
+            },
+            "blockers": blockers,
+        }
+    if high_blockers:
+        return {
+            "decision_quality": "limited",
+            "decision_risk": "high",
+            "recommended_next_step": {
+                "status": "required",
+                "priority": 2,
+                "label": "Refresh stale core readiness sources",
+                "rationale": (
+                    f"{len(high_blockers)} high-impact freshness blocker(s) remain "
+                    f"for {target_date.isoformat()}. "
+                    f"{'Do this first if this is a training day.' if is_today else ''}"
+                ).strip(),
+                "commands": [sync_cmd, "python tools/current_state.py", "python tools/coach_packet.py"],
+                "expected_effect": "Improves confidence for hard-session guidance and lowers decision noise.",
+            },
+            "blockers": blockers,
+        }
+    if medium_blockers:
+        return {
+            "decision_quality": "limited",
+            "decision_risk": "moderate",
+            "recommended_next_step": {
+                "status": "recommended",
+                "priority": 3,
+                "label": "Refresh freshness (non-blocking)",
+                "rationale": (
+                    f"{len(medium_blockers)} readiness sources are behind but not yet hard-blocking."
+                ),
+                "commands": [sync_cmd, "python tools/current_state.py"],
+                "expected_effect": "Lets hard-session confidence move from likely-caution to clearer guidance.",
+            },
+            "blockers": blockers,
+        }
+    if body_battery_current is not None and body_battery_current < 40:
+        return {
+            "decision_quality": "adequate" if confidence in {"medium", "high"} else "limited",
+            "decision_risk": "moderate",
+            "recommended_next_step": {
+                "status": "current_limit",
+                "priority": 4,
+                "label": "Cap session by current Body Battery",
+                "rationale": (
+                    "Freshness is sufficient; use current Body Battery as the primary limiter "
+                    "for session load and intensity."
+                ),
+                "commands": [],
+                "expected_effect": "Maintains safety while avoiding unnecessary hard-session bans.",
+            },
+            "blockers": blockers,
+        }
+    return {
+        "decision_quality": "adequate" if not blockers and confidence in {"medium", "high"} else "limited",
+        "decision_risk": "low" if not blockers else "moderate",
+        "recommended_next_step": {
+            "status": "ready",
+            "priority": 5,
+            "label": "Proceed on current evidence",
+            "rationale": "No high-impact readiness-data blockers are present.",
+            "commands": [],
+            "expected_effect": "Use current readiness score in plan and training call.",
+        },
+        "blockers": blockers,
+    }
+
+
 def readiness_level(score: float, hard_block: bool = False) -> str:
     if hard_block or score < 45:
         return "red"
@@ -93,10 +231,26 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
         training_status,
         training_status_date.isoformat() if training_status_date else None,
     )
+    training_rules = context.get("training_rules", {})
+    wellness_warning_days, wellness_hard_days = _freshness_thresholds(
+        training_rules,
+        "stale_data_warning_days",
+        "wellness_stale_hard_days",
+        default_warning=1,
+    )
+    training_status_warning_days, training_status_hard_days = _freshness_thresholds(
+        training_rules,
+        "training_status_stale_warning_days",
+        "training_status_stale_hard_days",
+        default_warning=wellness_warning_days,
+        default_hard=wellness_hard_days,
+    )
 
     score = 70.0
     confidence = "medium"
     hard_block = False
+    data_blockers: list[dict] = []
+    body_battery_current = None
     reasons: list[dict] = []
 
     if subjective_warning:
@@ -105,6 +259,13 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
     if wellness is None:
         confidence = "low"
         score -= 5
+        data_blockers.append(
+            {
+                "type": "wellness_missing",
+                "priority": "high",
+                "message": "No Garmin wellness snapshot is available for readiness scoring.",
+            }
+        )
         reasons.append(
             {
                 "type": "data_missing",
@@ -116,12 +277,66 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
         data_age = (target_date - wellness_date).days if wellness_date else None
         if data_age is not None and data_age > 0:
             confidence = "low"
-            score -= 5
+            if data_age > wellness_hard_days:
+                hard_block = True
+                score -= 10
+                data_blockers.append(
+                    {
+                        "type": "stale_wellness",
+                        "priority": "high",
+                        "age_days": data_age,
+                        "source": "wellness",
+                    }
+                )
+                reasons.append(
+                    {
+                        "type": "stale_wellness",
+                        "severity": "yellow",
+                        "message": (
+                            f"Latest Garmin wellness data is {data_age} day(s) old. "
+                            "Hard-session guidance confidence is limited."
+                        ),
+                        "latest_date": wellness_date.isoformat(),
+                    }
+                )
+            else:
+                score -= 5
+                data_blockers.append(
+                    {
+                        "type": "stale_wellness",
+                        "priority": "medium",
+                        "age_days": data_age,
+                        "source": "wellness",
+                    }
+                )
+                reasons.append(
+                    {
+                        "type": "stale_wellness",
+                        "severity": "yellow",
+                        "message": f"Latest Garmin wellness data is {data_age} day(s) old.",
+                        "latest_date": wellness_date.isoformat(),
+                    }
+                )
+        elif data_age is not None and data_age < 0:
+            confidence = "low"
+            hard_block = True
+            score -= 10
+            data_blockers.append(
+                {
+                    "type": "future_wellness_snapshot",
+                    "priority": "high",
+                    "age_days": data_age,
+                    "source": "wellness",
+                }
+            )
             reasons.append(
                 {
-                    "type": "stale_wellness",
+                    "type": "future_wellness_snapshot",
                     "severity": "yellow",
-                    "message": f"Latest Garmin wellness data is {data_age} day(s) old.",
+                    "message": (
+                        "Garmin wellness snapshot date is in the future relative to the target date; "
+                        "treat readiness as uncertain."
+                    ),
                     "latest_date": wellness_date.isoformat(),
                 }
             )
@@ -222,7 +437,24 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
             elif "balanced" in hrv_status:
                 score += 3
 
-    if training_status:
+    if not training_status:
+        confidence = "low"
+        score -= 5
+        data_blockers.append(
+            {
+                "type": "training_status_missing",
+                "priority": "high",
+                "message": "No Garmin training status snapshot is available for readiness scoring.",
+            }
+        )
+        reasons.append(
+            {
+                "type": "training_status_missing",
+                "severity": "yellow",
+                "message": "No Garmin training status snapshot is available for readiness scoring.",
+            }
+        )
+    elif training_status_date is None or training_status_date <= target_date:
         status_text = _text(normalized_training_status.get("training_status_feedback")) or _text(
             find_value(training_status, ("trainingStatus", "training_status", "status"))
         )
@@ -245,6 +477,71 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
                     "message": f"Garmin acute/chronic workload status is {acwr_status}.",
                 }
             )
+    if training_status_date is not None:
+        status_age = (target_date - training_status_date).days
+        if status_age > 0:
+            if status_age > training_status_hard_days:
+                hard_block = True
+                score -= 8
+                data_blockers.append(
+                    {
+                        "type": "stale_training_status",
+                        "priority": "high",
+                        "age_days": status_age,
+                        "source": "training_status",
+                    }
+                )
+                reasons.append(
+                    {
+                        "type": "stale_training_status",
+                        "severity": "yellow",
+                        "message": (
+                            f"Latest Garmin training status is {status_age} day(s) old. "
+                            "Hard-session confidence is limited."
+                        ),
+                        "latest_training_status_date": training_status_date.isoformat(),
+                    }
+                )
+            else:
+                score -= 5
+                data_blockers.append(
+                    {
+                        "type": "stale_training_status",
+                        "priority": "medium",
+                        "age_days": status_age,
+                        "source": "training_status",
+                    }
+                )
+                reasons.append(
+                    {
+                        "type": "stale_training_status",
+                        "severity": "yellow",
+                        "message": f"Latest Garmin training status is {status_age} day(s) old.",
+                        "latest_training_status_date": training_status_date.isoformat(),
+                    }
+                )
+        elif status_age < 0:
+            hard_block = True
+            score -= 8
+            data_blockers.append(
+                {
+                    "type": "future_training_status",
+                    "priority": "high",
+                    "age_days": status_age,
+                    "source": "training_status",
+                }
+            )
+            reasons.append(
+                {
+                    "type": "future_training_status",
+                    "severity": "yellow",
+                    "message": (
+                        "Garmin training status date is in the future relative to the target date; "
+                        "treat readiness as uncertain."
+                    ),
+                    "latest_training_status_date": training_status_date.isoformat(),
+                }
+            )
 
     next_morning = _text(
         _checkin_value(checkin, "next_morning_response", "morning_response", "next_day_response")
@@ -262,7 +559,11 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
 
     spike_ratio = training.get("acute_load_spike_ratio")
     threshold = context.get("training_rules", {}).get("acute_chronic_load_spike_ratio", 1.5)
-    if spike_ratio is not None and spike_ratio > threshold:
+    acwr = normalized_training_status.get("acute_chronic") or {}
+    acwr_status = _text(acwr.get("status"))
+    acwr_ratio = as_number(acwr.get("ratio"))
+    garmin_acwr_optimal = acwr_status == "optimal" and (acwr_ratio is None or acwr_ratio <= 1.0)
+    if spike_ratio is not None and spike_ratio > threshold and not garmin_acwr_optimal:
         score -= 10
         reasons.append(
             {
@@ -273,6 +574,14 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
         )
 
     score = max(0, min(100, round(score, 1)))
+    is_today = target_date == today_local(tz)
+    readiness_accuracy = _readiness_accuracy_plan(
+        target_date,
+        is_today=is_today,
+        confidence=confidence,
+        blockers=data_blockers,
+        body_battery_current=body_battery_current,
+    )
     level = readiness_level(score, hard_block)
     hard_session_guidance = "ok" if level == "green" else "caution" if level == "yellow" else "avoid"
 
@@ -311,6 +620,7 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
                 ).get("detected"),
             },
         },
+        "readiness_accuracy": readiness_accuracy,
     }
     readiness_features = {
         "date": target_date.isoformat(),
