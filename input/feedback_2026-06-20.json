@@ -1,0 +1,19 @@
+{
+  "date": "2026-06-20",
+  "activity_id": "23313711657",
+  "source": "athlete_post_session_message",
+  "venue": "Bukit Kiara",
+  "bike": "Specialized Stumpjumper",
+  "session_notes": [
+    "Kiara ride completed and synced to Garmin.",
+    "Corrected lap map from athlete: lap 1 is tarmac climb from car park to 2K trail head plus descent down 2K.",
+    "Lap 2 is the climb from the end of 2K back to the 2K trail head.",
+    "Laps 3, 5, and 9 are 2K+ descents.",
+    "Lap 7 is a clean 2K descent.",
+    "Lap 10 is climb from end of 2K back to the 2K trail head, then descent down Bunian and Adam back to car park.",
+    "Climbs were intentionally slow.",
+    "Athlete intentionally pushed beyond the recovery-skill prescription because he felt good, Garmin showed Productive training status, load focus still skewed low aerobic, and he wanted a combined fitness plus bike-skill stimulus.",
+    "Use this as post-session context when interpreting load, lap structure, clipless adaptation, and next-day response."
+  ],
+  "coach_review_status": "pending_next_morning_response"
+}
