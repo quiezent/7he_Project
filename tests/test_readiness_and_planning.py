@@ -233,6 +233,43 @@ def _yellow_state(day: str) -> dict:
     return state
 
 
+def _with_training_status(
+    state: dict,
+    *,
+    feedback: str = "PRODUCTIVE_2",
+    acwr_status: str = "OPTIMAL",
+    acwr_ratio: float = 1.0,
+    low_aerobic: float = 1230,
+    low_aerobic_max: float = 1081,
+    high_aerobic: float = 901,
+    high_aerobic_min: float = 768,
+    high_aerobic_max: float = 1420,
+    anaerobic: float = 560,
+    anaerobic_max: float = 652,
+) -> dict:
+    state["training_status_current"] = {
+        "training_status_feedback": feedback,
+        "training_paused": False,
+        "acute_chronic": {
+            "status": acwr_status,
+            "ratio": acwr_ratio,
+        },
+        "load_focus": {
+            "low_aerobic": low_aerobic,
+            "low_aerobic_target_min": 428,
+            "low_aerobic_target_max": low_aerobic_max,
+            "high_aerobic": high_aerobic,
+            "high_aerobic_target_min": high_aerobic_min,
+            "high_aerobic_target_max": high_aerobic_max,
+            "anaerobic": anaerobic,
+            "anaerobic_target_min": 217,
+            "anaerobic_target_max": anaerobic_max,
+            "feedback": "AEROBIC_LOW_FOCUS",
+        },
+    }
+    return state
+
+
 def _assert_schema_v3_contract(session: dict) -> None:
     assert session["schema_version"] == 3
     assert session["contract_fields"] == SESSION_CONTRACT_FIELDS
@@ -262,6 +299,38 @@ def test_trainable_today_plan_sessions_include_schema_v3_contract(tmp_path):
     assert data_limited["session"]["type"] == "endurance_data_limited"
     for plan in (yellow, green_skills, green_quality, data_limited):
         _assert_schema_v3_contract(plan["session"])
+
+
+def test_garmin_productive_status_can_upgrade_yellow_day_to_controlled_repeatability(tmp_path):
+    load_context(tmp_path)
+    state = _with_training_status(_yellow_state("2026-04-29"))
+
+    plan = build_today_plan(tmp_path, "2026-04-29", state=state)
+
+    arbitration = plan["decision_inputs"]["garmin_arbitration"]
+    assert arbitration["recommended_action"] == "controlled_upgrade"
+    assert arbitration["ceiling"] == "controlled_mtb_repeatability"
+    assert plan["session"]["type"] == "mtb_repeatability_controlled"
+    assert plan["session"]["stimulus_intent"] == "controlled_high_aerobic_mtb"
+    assert any("anaerobic" in item.lower() for item in arbitration["avoid"])
+    assert any("Garmin arbitration" in item for item in plan["guardrails"])
+    _assert_schema_v3_contract(plan["session"])
+
+
+def test_garmin_non_optimal_acwr_downshifts_green_hard_day(tmp_path):
+    load_context(tmp_path)
+    state = _with_training_status(
+        _green_state("2026-04-30"),
+        acwr_status="HIGH",
+        acwr_ratio=1.6,
+    )
+
+    plan = build_today_plan(tmp_path, "2026-04-30", state=state)
+
+    assert plan["decision_inputs"]["garmin_arbitration"]["recommended_action"] == "downshift"
+    assert plan["session"]["type"] == "outdoor_bike_optional"
+    assert plan["session"]["intensity"] == "easy"
+    _assert_schema_v3_contract(plan["session"])
 
 
 def test_sunday_sabbath_blocks_planned_exercise(tmp_path):

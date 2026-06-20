@@ -41,6 +41,7 @@
   "decision_hierarchy": [
     "Sabbath hard rest and current readiness.",
     "Garmin freshness: wellness, activity, and training status must be current for hard guidance.",
+    "Garmin diagnosis arbitration: use Training Status, ACWR, and Load Focus to decide whether the session ceiling should downshift, hold, or allow a controlled upgrade.",
     "Current phase and recent load: avoid spikes while rebuilding.",
     "Bike-specific continuity: protect the weekly minimum before adding non-bike work.",
     "MTB specificity: protect trail quality and durability exposures before gym or extra intensity.",
@@ -415,6 +416,35 @@
         "Store a pre-session expected result and compare it with actual load, RPE, feel, and next-day wellness.",
         "Classify execution drift before calling a model miss or adaptation problem.",
         "Use subjective trail notes to train what Garmin cannot see."
+      ]
+    },
+    "garmin_diagnosis_arbitration": {
+      "purpose": "Use Garmin's sport-specific diagnosis as a structured co-diagnostic signal while keeping the coach responsible for MTB-specific execution, route consequence, and adaptation logic.",
+      "inputs": [
+        "Training Status feedback such as Productive, Maintaining, Recovery, Unproductive, or Overreaching.",
+        "Garmin acute/chronic workload ratio and status.",
+        "Load Focus buckets for low aerobic, high aerobic, and anaerobic relative to Garmin target ranges.",
+        "Freshness of wellness, activity, and training-status data.",
+        "Clayton's subjective sharpness and technical intent."
+      ],
+      "allowed_outputs": {
+        "controlled_upgrade": "When Garmin status is Productive or Peaking, ACWR is optimal, readiness is not red, and load focus shows the objective needs more specific stimulus, the coach may raise an easy plan into a bounded high-aerobic or MTB repeatability session.",
+        "hold_plan": "When Garmin status supports the written plan but does not clearly expose a useful stimulus gap, follow the plan and protect the next key session.",
+        "downshift": "When ACWR is non-optimal, Garmin status is Recovery/Unproductive/Overreaching/Strained, readiness is red, or the session would stack the wrong load bucket, reduce the ceiling.",
+        "no_hard_guidance": "When Garmin freshness is limited, do not use stale status to justify intensity."
+      },
+      "load_focus_rules": [
+        "If low aerobic is above target while high aerobic is below or inside target, do not keep adding only easy volume; consider controlled tempo, torque, or MTB repeatability if readiness and route consequence agree.",
+        "If anaerobic is near or above its upper target, avoid stacking sprints, VO2, or full-attack descents even when Productive.",
+        "If high aerobic is low and anaerobic is not near the upper target, a controlled high-aerobic session can be more useful than another recovery ride.",
+        "Garmin can raise the stimulus ceiling only within an explicit contract; it cannot authorize open-ended mission creep."
+      ],
+      "non_overrides": [
+        "Sunday Sabbath.",
+        "Red readiness or hard-session avoid guidance.",
+        "Stale Garmin freshness.",
+        "Poor subjective sharpness, unsafe trail conditions, or technical consequence above the session purpose.",
+        "Schema v3 stop rules."
       ]
     },
     "technical_interpretation_standard": {

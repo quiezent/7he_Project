@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+from .garmin_arbitration import build_garmin_arbitration
 from .io import read_json, write_json, write_text
 from .paths import snapshots_dir
 from .planning import build_today_plan
@@ -86,6 +87,9 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
     readiness = state.get("readiness") or {}
     phase = state.get("phase") or {}
     training_status = state.get("training_status_current") or {}
+    garmin_arbitration = (plan.get("decision_inputs") or {}).get("garmin_arbitration")
+    if not isinstance(garmin_arbitration, dict) or not garmin_arbitration:
+        garmin_arbitration = build_garmin_arbitration(state)
     rollups = state.get("modality_load_rollups") or {}
     baselines = state.get("historical_baselines") or {}
     gear_audit = state.get("gear_audit") or {}
@@ -158,6 +162,23 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
             },
             "load_context_not_daily_command",
             "Use Garmin training status as context, not as an automatic workout prescription.",
+        ),
+        _signal(
+            "Garmin diagnosis arbitration",
+            garmin_arbitration.get("recommended_action") or "unknown",
+            {
+                "ceiling": garmin_arbitration.get("ceiling"),
+                "stimulus": garmin_arbitration.get("stimulus"),
+                "confidence": garmin_arbitration.get("confidence"),
+                "acwr": garmin_arbitration.get("acwr"),
+                "load_focus": garmin_arbitration.get("load_focus"),
+                "allowed_stimulus": garmin_arbitration.get("allowed_stimulus"),
+                "avoid": garmin_arbitration.get("avoid"),
+                "reasons": garmin_arbitration.get("reasons"),
+            },
+            "session_ceiling_arbitration",
+            garmin_arbitration.get("summary")
+            or "Use Garmin diagnosis as a bounded session-ceiling signal.",
         ),
         _signal(
             "Modality load rollups",
@@ -355,6 +376,7 @@ def _build_experimental_evidence(state: dict) -> tuple[list[dict], list[dict]]:
 
 def _today_decision(state: dict, plan: dict, cautions: list[dict]) -> dict:
     session = plan.get("session") or {}
+    garmin_arbitration = (plan.get("decision_inputs") or {}).get("garmin_arbitration") or {}
     phase = (state.get("phase") or {}).get("name")
     readiness = state.get("readiness") or {}
     confidence = _coach_confidence(state)
@@ -362,6 +384,10 @@ def _today_decision(state: dict, plan: dict, cautions: list[dict]) -> dict:
         stance = "sabbath_rest"
     elif readiness.get("readiness_level") == "red":
         stance = "downshift"
+    elif session.get("adaptive_upgrade_option"):
+        stance = "controlled_upgrade_option"
+    elif session.get("type") == "mtb_repeatability_controlled":
+        stance = "controlled_upgrade"
     elif session.get("intensity") == "hard":
         stance = "quality_allowed"
     else:
@@ -377,6 +403,7 @@ def _today_decision(state: dict, plan: dict, cautions: list[dict]) -> dict:
             f"Readiness is {_value(readiness.get('readiness_level'))} at {_value(readiness.get('readiness_score'))}/100.",
             f"Phase is {_value(phase)}.",
             f"Planned session is {session.get('title', 'unknown session')} at {session.get('intensity', 'unknown')} intensity.",
+            f"Garmin arbitration recommends {_value(garmin_arbitration.get('recommended_action'))}.",
             f"{len(cautions)} caution item(s) are active.",
         ],
     }

@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
+from .garmin_arbitration import build_garmin_arbitration
 from .io import read_json, write_json
 from .paths import input_dir, snapshots_dir
 from .state import build_current_state
@@ -23,6 +24,7 @@ TRAINABLE_SESSION_TYPES = {
     "bike_quality",
     "endurance_data_limited",
     "endurance_skills",
+    "mtb_repeatability_controlled",
     "outdoor_bike_optional",
 }
 
@@ -219,6 +221,42 @@ def _contract_for_session(session: dict) -> dict:
             "stop_rules": _default_stop_rules(),
             "post_session_review_fields": _review_fields(),
         }
+    if session_type == "mtb_repeatability_controlled":
+        return {
+            "purpose": "Use Garmin Productive/optimal load status to buy a controlled MTB repeatability stimulus instead of adding more easy-only volume.",
+            "dose": {
+                "duration_min": duration,
+                "intensity": intensity,
+                "completion": "Repeatable climb/descent work is complete when the final descent is still precise and the load stays inside the cap.",
+                "cap": "Controlled high-aerobic/MTB repeatability only; no sprint, VO2, KOM, or extra anaerobic stacking.",
+            },
+            "adaptation_hypothesis": (
+                "A bounded MTB repeatability dose should convert Garmin's productive status and low-aerobic skew into useful high-aerobic trail fitness while preserving technical precision and next-day recovery."
+            ),
+            "execution_rules": [
+                "Use a repeatable loop so the session tests repeatability rather than novelty.",
+                "Climb controlled: mostly Z2 to low tempo unless the prescription states otherwise.",
+                "Descend smooth and technically deliberate; speed is allowed only if braking, vision, and body position stay clean.",
+                "Name any upgrade before doing it; do not let feeling good turn the session into open-ended testing.",
+            ],
+            "expected_result": {
+                "garmin_load": "meaningful but bounded MTB load",
+                "rpe": "moderate to hard, but not survival",
+                "next_day": "no poor response beyond expected fatigue and no technical slop carried forward",
+            },
+            "stop_rules": [
+                *_default_stop_rules(),
+                "Stop adding loops if Garmin load approaches the cap, HR stays high on easy climbs, or descents become reactive.",
+                "Stop anaerobic attacks if Garmin anaerobic load is already near the upper target.",
+            ],
+            "post_session_review_fields": [
+                *_review_fields(),
+                "loop_count",
+                "climb_power_or_hr_by_loop",
+                "descent_quality_by_loop",
+                "garmin_load_focus_after_session",
+            ],
+        }
     return {
         "purpose": "Protect bike-specific continuity without adding meaningful recovery debt.",
         "dose": {
@@ -306,6 +344,42 @@ def _green_base_plan(state: dict) -> dict:
     }
 
 
+def _controlled_upgrade_plan(state: dict, arbitration: dict) -> dict:
+    return {
+        "title": "Controlled MTB repeatability",
+        "type": "mtb_repeatability_controlled",
+        "duration_min": 75,
+        "intensity": "moderate",
+        "stimulus_intent": arbitration.get("stimulus"),
+        "details": [
+            "Use Garmin Productive/optimal status as permission for a bounded stimulus, not an open-ended hard day.",
+            "Choose repeatable climb/descent loops; climb controlled and descend with technical precision.",
+            "If anaerobic load is near the upper band, skip sprint, VO2, and attack efforts.",
+        ],
+    }
+
+
+def _session_can_receive_adaptive_upgrade(session: dict) -> bool:
+    return str(session.get("intensity") or "").lower() in {"easy", "recovery", "recovery_skill"}
+
+
+def _with_adaptive_upgrade_option(session: dict, arbitration: dict) -> dict:
+    if arbitration.get("recommended_action") != "controlled_upgrade":
+        return session
+    if not _session_can_receive_adaptive_upgrade(session):
+        return session
+    upgraded = dict(session)
+    upgraded["adaptive_upgrade_option"] = {
+        "source": "garmin_diagnosis_arbitration",
+        "ceiling": arbitration.get("ceiling"),
+        "stimulus": arbitration.get("stimulus"),
+        "allowed_stimulus": arbitration.get("allowed_stimulus", []),
+        "avoid": arbitration.get("avoid", []),
+        "rule": "Only use this upgrade if subjective sharpness, route consequence, and the written session purpose still agree.",
+    }
+    return upgraded
+
+
 def _scheduled_rest_rule(context: dict, target_date: date) -> dict | None:
     for rule in context.get("training_rules", {}).get("weekly_rest_days", []):
         if int(rule.get("weekday", -1)) == target_date.weekday():
@@ -356,6 +430,7 @@ def build_today_plan(
     )
     planned_session = _load_planned_session(root, target_date)
     plan_source = {"type": "today_plan", "path": "snapshots/today_plan.json"}
+    garmin_arbitration = build_garmin_arbitration(state)
 
     if scheduled_rest:
         session = _scheduled_rest_plan(scheduled_rest)
@@ -363,13 +438,22 @@ def build_today_plan(
         session = _red_plan(state)
     elif planned_session:
         session = dict(planned_session["session"])
+        session = _with_adaptive_upgrade_option(session, garmin_arbitration)
         plan_source = planned_session["source"]
     elif level == "yellow" or stale:
-        session = _yellow_base_plan(state)
+        if not stale and garmin_arbitration.get("recommended_action") == "controlled_upgrade":
+            session = _controlled_upgrade_plan(state, garmin_arbitration)
+        else:
+            session = _yellow_base_plan(state)
     else:
         session = _green_base_plan(state)
         if session.get("intensity") == "hard" and hard_confidence_limited:
             session = _data_limited_base_plan(state)
+        elif (
+            session.get("intensity") == "hard"
+            and garmin_arbitration.get("recommended_action") in {"downshift", "no_hard_guidance"}
+        ):
+            session = _yellow_base_plan(state)
     session = _with_session_contract(session)
 
     nutrition_context = {
@@ -406,6 +490,16 @@ def build_today_plan(
         for limiter in state.get("data_freshness", {}).get("hard_session_limiters", []):
             if limiter and limiter not in guardrails:
                 guardrails.append(limiter)
+    if (
+        not scheduled_rest
+        and not (level == "red" or hard_guidance == "avoid")
+        and garmin_arbitration.get("status") in {"available", "freshness_limited"}
+    ):
+        guardrails.append(
+            f"Garmin arbitration: {garmin_arbitration.get('summary')} "
+            f"Allowed: {'; '.join(garmin_arbitration.get('allowed_stimulus') or [])} "
+            f"Avoid: {'; '.join(garmin_arbitration.get('avoid') or [])}"
+        )
 
     plan = {
         "date": target_date.isoformat(),
@@ -424,6 +518,7 @@ def build_today_plan(
             "hard_session_guidance": hard_guidance,
             "data_freshness": state.get("data_freshness"),
             "scheduled_rest": scheduled_rest,
+            "garmin_arbitration": garmin_arbitration,
         },
     }
     write_json(snapshots_dir(root) / "today_plan.json", plan)
