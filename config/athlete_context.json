@@ -530,13 +530,14 @@
     "software_role": "stage evidence, normalize data, apply repeatable safety rules"
   },
   "schema_version": 1,
-    "training_rules": {
+  "training_rules": {
     "acute_chronic_load_spike_ratio": 1.5,
     "bike_specific_continuity": {
       "downshift_warning": "Do not allow high elliptical/non-bike load to hide a bike-specific drought.",
       "minimum_bike_touches_per_week": 2,
       "preferred_rebuild_bike_touches_per_week": 3,
-      "protect_mtb_exposures_per_week": 2
+      "protect_mtb_exposures_per_week": 2,
+      "maximum_mtb_exposures_per_week": 3
     },
     "elliptical_use": {
       "allowed": "Recovery/support aerobic work, usually HR-capped around 120 bpm.",

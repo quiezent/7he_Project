@@ -20,7 +20,8 @@ from .predictive_training import build_predictive_training
 from .reports import review_block
 from .self_evaluation import build_self_evaluation_report, summarize_activity_self_evaluation
 from .state import build_current_state
-from .time_utils import DEFAULT_TIMEZONE, iso_now, today_local
+from .time_utils import DEFAULT_TIMEZONE, iso_now, parse_date, today_local
+from .weekly_planning import build_weekly_plan
 
 
 def _safe_call(label: str, func: Callable[..., Any], *args: Any) -> dict:
@@ -261,6 +262,8 @@ def sync_connect(
     live = {"status": "skipped", "reason": "rebuild_only"} if rebuild_only else _fetch_live(root, wellness_days, activity_limit)
     state = build_current_state(root, refresh_models=not decision_only)
     plan = build_today_plan(root, state=state)
+    state_date = parse_date(state.get("date"))
+    weekly_plan = build_weekly_plan(root, state=state) if state_date and state_date.weekday() == 0 else None
     predictive = build_predictive_training(root, state=state, plan=plan)
     if decision_only:
         coach_packet = build_coach_packet(root, state=state, plan=plan)
@@ -269,6 +272,7 @@ def sync_connect(
             "mode": "decision_only",
             "live_sync": live,
             "state_file": str(snapshots_dir(root) / "current_state.json"),
+            "weekly_plan_file": str(snapshots_dir(root) / "weekly_plan.txt") if weekly_plan else None,
             "coach_packet_file": str(snapshots_dir(root) / "coach_packet.txt"),
             "readiness_level": state.get("readiness", {}).get("readiness_level"),
             "session_title": plan.get("session", {}).get("title"),
@@ -310,6 +314,7 @@ def sync_connect(
         "live_sync": live,
         "state_file": str(snapshots_dir(root) / "current_state.json"),
         "brief_file": str(snapshots_dir(root) / "daily_brief.txt"),
+        "weekly_plan_file": str(snapshots_dir(root) / "weekly_plan.txt") if weekly_plan else None,
         "coach_packet_file": str(snapshots_dir(root) / "coach_packet.txt"),
         "review_block_file": str(snapshots_dir(root) / "review_block.txt"),
         "readiness_level": state.get("readiness", {}).get("readiness_level"),

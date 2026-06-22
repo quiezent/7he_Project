@@ -51,6 +51,7 @@ Preferred direct commands:
 - Current state fast path: `python tools/current_state.py --decision-only`
 - Daily plan: `python tools/today_plan.py`
 - Daily brief: `python tools/daily_brief.py`
+- Weekly plan: `python tools/weekly_plan.py`
 - Weekly report: `python tools/weekly_report.py --days 7`
 - Insight memo: `python tools/insight_memo.py --days 28`
 - Review block: `python tools/review_block.py`
@@ -197,6 +198,8 @@ Blank template fields are ignored.
   - dated generated copy of the Clayton-specific training architecture
 - `snapshots/coach_packet.json` / `snapshots/coach_packet.txt`
   - coach-facing evidence triage: trusted signals, cautions, experimental models, ignored model output, and today's call
+- `snapshots/weekly_plan.json` / `snapshots/weekly_plan.txt`
+  - Monday weekly intent layer: objective, target load range, MTB exposure cap, daily gates, and schema v3 session contracts
 - `config/coaching_architecture.json`
   - schema v3 machine-readable coaching objective, integrated coaching model, session contract, density governor, session library, evidence priorities, and phase plan
 - `snapshots/today_plan.json`
@@ -210,6 +213,7 @@ Blank template fields are ignored.
 - Code answers: what data exists, what changed, what is stale, what rules are triggered.
 - Coach answers: what Clayton should actually do today and why.
 - Predictive loop answers: what response was expected from the prescribed session, what actually happened, and whether the miss was execution, external stress, or model error.
+- Weekly planner answers: what the week is trying to buy before daily readiness gates adjust execution.
 - Session contract answers: what adaptation the session is buying, what the dose is, when to stop, and what must be reviewed afterward.
 - Density governor answers: whether the ideal week should be downshifted so Friday/Saturday trail quality is protected.
 - Predictive prescriptions now carry two branches: the written plan and the execution-drift stress test when similar Clayton sessions historically became longer or harder.
@@ -223,6 +227,7 @@ Blank template fields are ignored.
 - Every major prescription should follow the schema v3 session contract: purpose, dose, adaptation hypothesis, execution rules, expected result, stop rules, and post-session review fields.
 - Bike-specific continuity is the highest-yield lever. Maintenance floor is about 2 bike touches/week; rebuild target is 3 bike touches/week.
 - Protect 2 MTB exposures/week when possible: one quality/skill day and one durability/enduro-volume day.
+- Allow up to 3 MTB exposures/week when readiness, logistics, and load density support it; more than 3 is an event/race block, not a default build week.
 - Use the density governor: start from 3 good bike touches, do not stack threshold, repeatability, and two hard MTB days unless recovery is clearly green.
 - Use one structured indoor tempo/torque session per week and progress `3x8 -> 3x10 -> 3x12` before raising watts.
 - Treat `222 W` as historical P20 from `2024-04-24`, not current FTP.

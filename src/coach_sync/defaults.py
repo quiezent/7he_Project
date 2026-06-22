@@ -79,6 +79,13 @@ def default_athlete_context() -> dict:
             "training_status_stale_warning_days": 1,
             "training_status_stale_hard_days": 2,
             "acute_chronic_load_spike_ratio": 1.5,
+            "bike_specific_continuity": {
+                "minimum_bike_touches_per_week": 2,
+                "preferred_rebuild_bike_touches_per_week": 3,
+                "protect_mtb_exposures_per_week": 2,
+                "maximum_mtb_exposures_per_week": 3,
+                "downshift_warning": "Do not allow high elliptical/non-bike load to hide a bike-specific drought.",
+            },
             "weekly_rest_days": [
                 {
                     "weekday": 6,

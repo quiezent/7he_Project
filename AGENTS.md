@@ -36,6 +36,7 @@ Your posture is Christomorphic.
 - Garmin N-of-1 review shows bike-specific continuity is the strongest durable fitness currency for Clayton; total load alone is misleading.
 - Maintenance floor is about 2 bike-specific touches/week; preferred rebuild target is 3 bike touches/week.
 - Protect 2 MTB exposures/week when life allows: one quality/skill day and one durability/enduro-volume day.
+- Allow up to 3 MTB exposures/week when readiness, logistics, and load density support it; the third exposure is normally capped skill-transfer, not another hidden hard day.
 - Every major prescription should state purpose, dose, adaptation hypothesis, execution rules, expected result, stop rules, and post-session review fields.
 - Use the density governor: start from 3 good bike touches, protect Friday/Saturday trail quality, and do not stack threshold, repeatability, and two hard MTB days unless recovery is clearly green.
 - Use Garmin diagnosis arbitration after readiness/freshness: Training Status, ACWR, and Load Focus can downshift, hold, or permit a controlled upgrade, but cannot override Sabbath, red readiness, stale data, technical consequence, or schema v3 stop rules.
@@ -129,6 +130,8 @@ Your posture is Christomorphic.
   - post-session comparison of expected versus actual Garmin load, self-evaluation, next-day response, and calibration eligibility
 - `snapshots/predictive_training.json`
   - current predictive loop: today's prescription plus latest completed-session calibration review
+- `snapshots/weekly_plan.json`
+  - Monday-generated weekly intent plan: objective, target load range, protected/optional MTB exposures, daily gates, and schema v3 contracts for the week's trainable sessions
 - `snapshots/predictive_backtest_10_dates.json`
   - historical replay of 10 pre-session prescriptions versus actual session and next-day recovery outcomes
 - `snapshots/training_architecture.json`
@@ -177,6 +180,8 @@ Your posture is Christomorphic.
   `python tools/self_evaluation.py --date <YYYY-MM-DD>`
 - Weekly report:
   `python tools/weekly_report.py --days 7`
+- Weekly plan:
+  `python tools/weekly_plan.py`
 - Garmin data inventory:
   `python tools/data_inventory.py`
 - Wellness trends:
@@ -208,6 +213,7 @@ Your posture is Christomorphic.
 
 ## Key Coaching Rules
 - Always read latest readiness/current-state artifacts before recommending a same-day workout.
+- On Monday, use `snapshots/weekly_plan.json` after live sync as the week-level intent layer, but keep `snapshots/coach_packet.json` / `.txt` as the same-day decision surface.
 - Prefer `snapshots/coach_packet.json` / `.txt` as the final decision surface after rebuild.
 - Read `config/athlete_context.json` training_strategy before block planning or major training recommendations.
 - Read `config/coaching_architecture.json` before block planning, phase changes, race preparation, or major training recommendations.

@@ -45,6 +45,7 @@ from .training_hypotheses import build_training_hypotheses
 from .training_architecture import build_training_architecture
 from .wellness import build_wellness_trends
 from .wellness_verification import build_wellness_verification
+from .weekly_planning import build_weekly_plan
 
 
 def _emit(data: Any) -> int:
@@ -110,6 +111,7 @@ def build_parser() -> argparse.ArgumentParser:
         ("predictive-training", "Build predictive session plan plus latest calibration review."),
         ("predictive-review", "Compare a dated predictive prescription with actual Garmin response."),
         ("predictive-backtest", "Replay predictive prescriptions on historical dates and verify outcomes."),
+        ("weekly-plan", "Build Monday weekly intent plan with daily readiness gates."),
     ):
         child = sub.add_parser(name, help=help_text)
         _add_root(child)
@@ -318,6 +320,8 @@ def run(args: argparse.Namespace) -> Any:
     if args.command == "predictive-backtest":
         dates = [item.strip() for item in str(args.date).split(",") if item.strip()] if args.date else None
         return build_predictive_backtest(args.root, dates)
+    if args.command == "weekly-plan":
+        return build_weekly_plan(args.root, args.date)
     if args.command == "log":
         return import_checkin(args.from_md, args.root)
     if args.command in {"report", "weekly-report"}:
