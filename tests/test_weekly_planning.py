@@ -95,6 +95,13 @@ def test_weekly_plan_writes_artifacts_and_caps_mtb_exposures(tmp_path):
     assert (tmp_path / "snapshots" / "weekly_plan.json").exists()
     assert (tmp_path / "snapshots" / "weekly_plan_2026-W26.json").exists()
     assert (tmp_path / "snapshots" / "weekly_plan.txt").exists()
+    text = (tmp_path / "snapshots" / "weekly_plan.txt").read_text(encoding="utf-8")
+    assert "Purpose:" in text
+    assert "Dose:" in text
+    assert "Readiness gate:" in text
+    assert "Execution rules:" in text
+    assert "Stop rules:" in text
+    assert "Review fields:" in text
 
     trainable = [session for session in plan["sessions"] if session["type"] != "scheduled_rest"]
     assert trainable

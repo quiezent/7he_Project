@@ -619,6 +619,26 @@ def _daily_gates() -> list[dict[str, str]]:
     ]
 
 
+def _compact_text(value: Any) -> str:
+    if isinstance(value, dict):
+        parts = []
+        for key, item in value.items():
+            if isinstance(item, (dict, list)):
+                parts.append(f"{key}: {_compact_text(item)}")
+            else:
+                parts.append(f"{key}: {item}")
+        return "; ".join(parts)
+    if isinstance(value, list):
+        return "; ".join(str(item) for item in value)
+    return str(value)
+
+
+def _first_items(items: Any, limit: int = 3) -> list[str]:
+    if not isinstance(items, list):
+        return []
+    return [str(item) for item in items[:limit]]
+
+
 def _text_summary(plan: dict[str, Any]) -> str:
     lines = [
         f"Weekly Plan - {plan['week_key']}",
@@ -638,10 +658,29 @@ def _text_summary(plan: dict[str, Any]) -> str:
     ]
     for session in plan["sessions"]:
         marker = "optional " if session.get("optional") else ""
-        lines.append(
-            f"- {session['day_name']} {session['date']}: {marker}{session['title']} "
-            f"({session['modality']}, {session['intensity']})"
+        lines.extend(
+            [
+                "",
+                f"{session['day_name']} {session['date']}: {marker}{session['title']}",
+                f"- Type: {session['type']} | Modality: {session['modality']} | Intensity: {session['intensity']} | Duration: {session['duration_min']} min",
+                f"- Purpose: {session.get('purpose')}",
+            ]
         )
+        if session.get("dose"):
+            lines.append(f"- Dose: {_compact_text(session['dose'])}")
+        if session.get("readiness_gate"):
+            lines.append(f"- Readiness gate: {_compact_text(session['readiness_gate'])}")
+        execution_rules = _first_items(session.get("execution_rules"), 3)
+        if execution_rules:
+            lines.append("- Execution rules:")
+            lines.extend(f"  - {item}" for item in execution_rules)
+        stop_rules = _first_items(session.get("stop_rules"), 3)
+        if stop_rules:
+            lines.append("- Stop rules:")
+            lines.extend(f"  - {item}" for item in stop_rules)
+        review_fields = _first_items(session.get("post_session_review_fields"), 6)
+        if review_fields:
+            lines.append(f"- Review fields: {', '.join(review_fields)}")
     lines.extend(
         [
             "",
