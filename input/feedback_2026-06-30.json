@@ -1,0 +1,31 @@
+{
+  "date": "2026-06-30",
+  "entries": [
+    {
+      "time_local": "afternoon",
+      "subjective_report": "Completed Kiara session and synced Garmin data. Feels like getting back to the groove. Took it slow; muscle memory is partly there, but the brain still has fog. Suspects CNS fatigue or neural pathway rebuilding after previous Sepang laps and two weeks of Enduro/Stumpjumper back-to-back exposure.",
+      "garmin_context": {
+        "activity_id": "23425137328",
+        "activity_type": "mountain_biking",
+        "bike": "Stumpjumper Expert MY25",
+        "external_hr_sensor": true,
+        "duration_min": 84.1,
+        "distance_km": 11.0,
+        "elevation_gain_m": 386.2,
+        "training_load": 128.2,
+        "aerobic_training_effect": 3.4,
+        "anaerobic_training_effect": 1.0,
+        "avg_hr": 142,
+        "max_hr": 172,
+        "avg_power": 93,
+        "normalized_power": 135,
+        "body_battery_wake": 82,
+        "body_battery_current_evening": 21,
+        "overnight_hrv": 47,
+        "hrv_status": "LOW",
+        "training_status": "STRAINED_3"
+      },
+      "coaching_interpretation": "Legitimate return-to-trail stimulus after systemic stress. Subjective groove is improving, but Garmin still shows strained status and low HRV. Brain fog means technical processing is not fully recovered even if muscle memory is available; next-day response determines whether this was productive return or too early."
+    }
+  ]
+}

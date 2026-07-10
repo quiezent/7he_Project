@@ -4,6 +4,7 @@ from coach_sync.context import load_context
 from coach_sync.io import read_json, write_json
 from coach_sync.planning import SESSION_CONTRACT_FIELDS
 from coach_sync.predictive_training import (
+    _session_expectation,
     build_predictive_prescription,
     build_predictive_review,
     build_predictive_training,
@@ -150,6 +151,64 @@ def test_predictive_training_uses_dated_planned_session_input(tmp_path):
     assert expected["mtb_sessions"] == 1
     for field in SESSION_CONTRACT_FIELDS:
         assert expected.get(field), field
+
+
+def test_weekly_session_types_are_classified_as_mtb_or_indoor_bike_actions():
+    mtb = _session_expectation(
+        {
+            "session": {
+                "title": "Kiara Enduro durability",
+                "type": "mtb_durability_enduro",
+                "modality": "mtb",
+                "duration_min": 120,
+                "intensity": "moderate_hard",
+            }
+        }
+    )
+    tempo = _session_expectation(
+        {
+            "session": {
+                "title": "Indoor tempo/torque",
+                "type": "indoor_tempo_torque",
+                "modality": "bike",
+                "duration_min": 75,
+                "intensity": "moderate",
+            }
+        }
+    )
+
+    assert mtb["mtb_sessions"] == 1
+    assert mtb["categories"] == {"mtb": 1}
+    assert mtb["expected_high_intensity_min"] > 0
+    assert tempo["mtb_sessions"] == 0
+    assert tempo["categories"] == {"bike_indoor": 1}
+
+
+def test_prediction_keeps_action_on_target_date_when_using_prior_wellness_basis(tmp_path):
+    latest = _seed_history(tmp_path)
+    target = latest + timedelta(days=1)
+    plan = {
+        "session": {
+            "title": "Future indoor tempo",
+            "type": "indoor_tempo_torque",
+            "modality": "bike",
+            "duration_min": 60,
+            "intensity": "moderate",
+        }
+    }
+
+    artifact = build_predictive_prescription(
+        tmp_path,
+        target,
+        state={"date": target.isoformat()},
+        plan=plan,
+    )
+    prediction = artifact["prediction"]
+
+    assert prediction["basis_date"] == latest.isoformat()
+    assert prediction["action_date"] == target.isoformat()
+    assert prediction["predicts_date"] == (target + timedelta(days=1)).isoformat()
+    assert prediction["simulated_features"]["today_training_load"] > 0
 
 
 def test_predictive_review_compares_dated_prescription_to_actuals(tmp_path):

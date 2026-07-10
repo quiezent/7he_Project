@@ -4,7 +4,7 @@ import re
 from datetime import date, timedelta
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 from .io import read_json
 from .paths import activities_dir, snapshots_dir
@@ -56,33 +56,80 @@ def dated_snapshot_files(root: str | Path | None, prefix: str) -> list[tuple[dat
     return sorted(files, key=lambda item: item[0])
 
 
+WELLNESS_CORE_PAYLOADS = {
+    "get_stats",
+    "get_user_summary",
+    "get_sleep_data",
+    "get_hrv_data",
+    "get_body_battery",
+}
+
+
+def _has_usable_data(payload: dict) -> bool:
+    if payload.get("ok") is False:
+        return False
+    data = payload.get("data")
+    if isinstance(data, (dict, list, tuple, str)):
+        return bool(data)
+    return data is not None
+
+
+def wellness_snapshot_is_usable(snapshot: Any) -> bool:
+    if not isinstance(snapshot, dict):
+        return False
+    payloads = snapshot.get("payloads")
+    if not isinstance(payloads, list):
+        return False
+    return any(
+        isinstance(payload, dict)
+        and (payload.get("label") in WELLNESS_CORE_PAYLOADS or payload.get("label") is None)
+        and _has_usable_data(payload)
+        for payload in payloads
+    )
+
+
+def training_status_snapshot_is_usable(snapshot: Any) -> bool:
+    if not isinstance(snapshot, dict):
+        return False
+    payload = snapshot.get("payload")
+    return isinstance(payload, dict) and _has_usable_data(payload)
+
+
 def latest_snapshot(
     root: str | Path | None,
     prefix: str,
     on_or_before: str | date | None = None,
+    usable: Callable[[Any], bool] | None = None,
 ) -> tuple[date, dict] | tuple[None, None]:
     files = dated_snapshot_files(root, prefix)
     cutoff = parse_date(on_or_before)
     if cutoff is not None:
         files = [item for item in files if item[0] <= cutoff]
-    if not files:
-        return None, None
-    snap_date, path = files[-1]
-    return snap_date, read_json(path, {})
+    for snap_date, path in reversed(files):
+        payload = read_json(path, {})
+        if usable is not None and not usable(payload):
+            continue
+        return snap_date, payload
+    return None, None
 
 
 def load_latest_wellness(
     root: str | Path | None = None,
     on_or_before: str | date | None = None,
 ) -> tuple[date | None, dict | None]:
-    return latest_snapshot(root, "garmin_wellness", on_or_before)
+    return latest_snapshot(root, "garmin_wellness", on_or_before, usable=wellness_snapshot_is_usable)
 
 
 def load_latest_training_status(
     root: str | Path | None = None,
     on_or_before: str | date | None = None,
 ) -> tuple[date | None, dict | None]:
-    return latest_snapshot(root, "garmin_training_status", on_or_before)
+    return latest_snapshot(
+        root,
+        "garmin_training_status",
+        on_or_before,
+        usable=training_status_snapshot_is_usable,
+    )
 
 
 def activity_date(payload: dict) -> date | None:

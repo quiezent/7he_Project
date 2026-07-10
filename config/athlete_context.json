@@ -250,6 +250,14 @@
         "marin_sq3": "Move the power meter to the Marin SQ3 only if outdoor hardtail power data becomes strategically useful, not for routine indoor trainer work."
       },
       "trainer": {
+        "calibration_notes": [
+          {
+            "activity_id": "23533251221",
+            "date": "2026-07-09",
+            "note": "Elite Suito appears accurate up to about 200 W; above that it under-reads by about 10% based on power meter 300 W versus Suito 270 W.",
+            "coaching_use": "Use Suito power normally for endurance/tempo under about 200 W. For high-power indoor targets above 200 W, account for under-reading or validate against the bike power meter before using the result for FTP or anaerobic conclusions."
+          }
+        ],
         "default_bike": "Marin San Quentin 3",
         "model": "Elite Suito",
         "swap_option": "Stumpjumper can replace the Marin SQ3 on the trainer when needed."
@@ -469,6 +477,24 @@
         "preferred_rebuild_bike_touches_per_week": 3
       }
     },
+    "cns_readiness_policy": {
+      "decision_role": "Use CNS readiness as the technical-consequence ceiling after Sabbath and physical readiness.",
+      "why_it_exists": "Clayton can show low or manageable training load while still having brain fog, low HRV, weak feel, slow processing, or reduced braking/line-choice precision after systemic stress, heat, illness, or dense technical riding.",
+      "green_signal": "Mental clarity, normal vision width, fast line choice, deliberate braking release, no unclipping delay, strong/normal feel for the dose, and stable HRV/stress context.",
+      "yellow_signal": "Motivated and physically capable, but with residual brain fog, weak feel, low HRV, elevated stress, or uncertainty about decision speed.",
+      "red_signal": "Brain fog, sick/systemic stress, strained HRV, weak or very weak feel at low RPE, delayed processing, or confidence masking sloppy timing.",
+      "if_watch": "Use one familiar skill target, low-to-moderate consequence, no speed hunting, no stacked setup changes, and stop when decision speed drops.",
+      "if_compromised_or_impaired": "No speed, jumps, enduro simulation, high-consequence descending, setup testing, hard intervals, or heavy gym loading; use rest, recovery, or low-consequence repetition only.",
+      "subjective_notes_required": [
+        "brain fog or mental clarity",
+        "vision width",
+        "line-choice speed",
+        "braking timing compared with first descent",
+        "unclipping delay",
+        "confidence versus precision",
+        "whether the final descent decision speed matched the first"
+      ]
+    },
     "limiter_ranking_current": [
       {
         "limiter": "Upper-body durability on long descents",
@@ -552,6 +578,15 @@
       ],
       "rule": "When Devices & Apps does not show an external HEART_RATE sensor on MTB, treat wrist-HR-derived load, zones, and intensity as lower confidence.",
       "wrist_hr_limitation": "Fenix wrist optical HR may under-read during technical MTB because grip pressure, vibration, sweat, and arm pump reduce optical signal quality."
+    },
+    "cns_readiness": {
+      "artifact": "snapshots/cns_readiness.json",
+      "decision_use": "technical_consequence_ceiling",
+      "hard_limits": [
+        "impaired",
+        "compromised"
+      ],
+      "rule": "When CNS readiness is impaired or compromised, remove technical consequence and high intensity even if load is low or Body Battery has rebounded."
     },
     "strength_training": {
       "default_dose": "1-2 short support sessions per week, 20-35 min.",

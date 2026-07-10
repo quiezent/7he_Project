@@ -1,4 +1,5 @@
 from coach_sync.activity_profile import build_activity_profile
+from coach_sync.evidence import load_latest_training_status, load_latest_wellness
 from coach_sync.io import write_json
 from coach_sync.load_model import build_modality_load_rollups
 from coach_sync.readiness import build_readiness
@@ -30,6 +31,37 @@ def _write_training_status(root, day: str) -> None:
             },
         },
     )
+
+
+def test_failed_dated_payloads_do_not_satisfy_wellness_or_training_status_freshness(tmp_path):
+    write_json(
+        tmp_path / "snapshots" / "garmin_wellness_2026-04-29.json",
+        {
+            "date": "2026-04-29",
+            "payloads": [{"label": "get_stats", "ok": True, "data": {"restingHeartRate": 48}}],
+        },
+    )
+    write_json(
+        tmp_path / "snapshots" / "garmin_wellness_2026-04-30.json",
+        {
+            "date": "2026-04-30",
+            "payloads": [{"label": "get_stats", "ok": False, "error": "timeout"}],
+        },
+    )
+    _write_training_status(tmp_path, "2026-04-29")
+    write_json(
+        tmp_path / "snapshots" / "garmin_training_status_2026-04-30.json",
+        {
+            "date": "2026-04-30",
+            "payload": {"ok": False, "error": "timeout"},
+        },
+    )
+
+    wellness_date, _ = load_latest_wellness(tmp_path, "2026-04-30")
+    status_date, _ = load_latest_training_status(tmp_path, "2026-04-30")
+
+    assert wellness_date is not None and wellness_date.isoformat() == "2026-04-29"
+    assert status_date is not None and status_date.isoformat() == "2026-04-29"
 
 
 def test_wellness_normalizes_nested_sleep_body_battery_and_hrv(tmp_path):

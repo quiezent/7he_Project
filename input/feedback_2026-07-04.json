@@ -1,0 +1,23 @@
+{
+  "date": "2026-07-04",
+  "entries": [
+    {
+      "timestamp_local": "2026-07-06T10:41:37+08:00",
+      "source": "athlete_report",
+      "subjective_report": "Saturday Kiara ride focused on Stumpjumper clipless cleat position and 2K+ trail transfer. Clayton moved cleat position back and forth between laps, with longer rest before climbing back to 2K while testing changes. Most laps were 2K+ because it has more roots, roughness, and a punchy climb, giving a better gauge of overall riding. When the cleat position felt correct, it felt natural and allowed full use of the Stumpjumper 140 mm fork travel.",
+      "coaching_interpretation": "Treat this as a controlled equipment-rider interaction note: improved cleat position likely improved foot security, dynamic centering, front tyre authority, and bike-body separation. Do not over-credit the cleat alone; validate by repeat 2K+/2K performance, braking timing, line choice, and whether full fork travel occurs without harshness, pitching, or sloppy timing.",
+      "technical_focus": [
+        "clipless cleat position",
+        "dynamic centered posture",
+        "2K+ roots and roughness",
+        "fork travel use",
+        "Stumpjumper trail transfer"
+      ],
+      "review_questions": [
+        "Did correct cleat position improve corner entry and exit timing, or mainly comfort?",
+        "Did full fork travel come from better loading and speed, or from overdriving/harsh impacts?",
+        "Did the final 2K+ lap preserve braking timing and line choice compared with the first clean lap?"
+      ]
+    }
+  ]
+}

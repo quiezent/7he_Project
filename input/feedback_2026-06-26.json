@@ -1,0 +1,23 @@
+{
+  "date": "2026-06-26",
+  "entries": [
+    {
+      "time_local": "afternoon",
+      "subjective_report": "Feeling better today with no brain fog and overall motivated. Body Battery is still low. Considering a return to riding tomorrow.",
+      "garmin_context": {
+        "readiness_level": "red",
+        "readiness_score": 2,
+        "training_status": "STRAINED_3",
+        "sleep_score": 39,
+        "sleep_hours": 3.98,
+        "body_battery_wake": 22,
+        "current_body_battery": 17,
+        "overnight_hrv": 38,
+        "hrv_status": "LOW",
+        "resting_hr": 52,
+        "avg_stress": 41
+      },
+      "coaching_interpretation": "Subjective brain fog and motivation are improving, but autonomic recovery remains suppressed. Treat Saturday riding as provisional return-to-movement only, gated by morning recharge and symptom status."
+    }
+  ]
+}

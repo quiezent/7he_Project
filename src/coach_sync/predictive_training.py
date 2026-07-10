@@ -30,6 +30,8 @@ LOAD_PER_HOUR = {
     "recovery": 15.0,
     "easy": 35.0,
     "moderate": 55.0,
+    "moderate_hard": 70.0,
+    "skill": 45.0,
     "hard": 85.0,
 }
 
@@ -37,11 +39,26 @@ RPE_RANGES = {
     "recovery": [10, 20],
     "easy": [20, 40],
     "moderate": [30, 50],
+    "moderate_hard": [40, 65],
+    "skill": [25, 45],
     "hard": [50, 80],
 }
 
-EXPLICIT_MTB_TYPES = {"outdoor_mtb", "outdoor_bike_optional", "endurance_skills"}
-BIKE_SPECIFIC_TYPES = EXPLICIT_MTB_TYPES | {"bike_quality"}
+MTB_SESSION_TYPES = {
+    "endurance_skills",
+    "mtb_durability_enduro",
+    "mtb_quality_skill",
+    "mtb_repeatability_controlled",
+    "mtb_skill_transfer_optional",
+    "outdoor_bike_optional",
+    "outdoor_mtb",
+}
+INDOOR_BIKE_SESSION_TYPES = {
+    "bike_quality",
+    "easy_bike_continuity",
+    "indoor_tempo_torque",
+    "garmin_aerobic_continuity",
+}
 MIN_EXECUTION_PROFILE_SAMPLES = 3
 
 
@@ -120,9 +137,9 @@ def _quantile(values: list[float], q: float) -> float | None:
 
 
 def _session_family(session_type: str) -> str:
-    if session_type in EXPLICIT_MTB_TYPES:
+    if session_type in MTB_SESSION_TYPES:
         return "outdoor_mtb_or_skill"
-    if session_type == "bike_quality" or "bike" in session_type or "cycling" in session_type:
+    if session_type in INDOOR_BIKE_SESSION_TYPES or "bike" in session_type or "cycling" in session_type:
         return "bike_indoor_or_quality"
     if "gym" in session_type:
         return "gym"
@@ -161,7 +178,7 @@ def _risk_adjusted_expected_session(expected: dict, profile: dict) -> dict | Non
     )
     categories = dict(expected.get("categories") or {})
     category_counts = profile.get("actual_category_counts") or {}
-    if str(expected.get("type") or "") in EXPLICIT_MTB_TYPES:
+    if str(expected.get("type") or "") in MTB_SESSION_TYPES:
         categories = {"mtb": 1}
     elif category_counts:
         primary = max(category_counts.items(), key=lambda item: item[1])[0]
@@ -193,7 +210,7 @@ def _fallback_execution_profile(expected: dict) -> dict:
     session_type = str(expected.get("type") or "")
     expected_load = _number(expected.get("expected_training_load"))
     expected_duration = _number(expected.get("duration_min"))
-    if session_type in EXPLICIT_MTB_TYPES:
+    if session_type in MTB_SESSION_TYPES:
         duration = max(expected_duration, 150.0 if expected_duration <= 60 else expected_duration * 1.75)
         load = max(expected_load, expected_load * (4.5 if expected_load < 50 else 2.0))
         high_intensity = max(_number(expected.get("expected_high_intensity_min")), duration * 0.08)
@@ -349,7 +366,7 @@ def _coaching_adjusted_response(raw_response: dict, features: dict, expected: di
         penalize(12, "planned_or_stress_test_load_at_or_above_200")
     elif training_load >= 120:
         penalize(7, "planned_or_stress_test_load_at_or_above_120")
-    elif training_load >= 90 and session_type in EXPLICIT_MTB_TYPES:
+    elif training_load >= 90 and session_type in MTB_SESSION_TYPES:
         penalize(3, "mtb_load_above_easy_continuity_band")
 
     if high_intensity >= 30:
@@ -403,22 +420,33 @@ def _session_expectation(plan: dict) -> dict:
     session_type = str(session.get("type") or "unknown")
     intensity = str(session.get("intensity") or "easy")
     duration = int(session.get("duration_min") or 0)
+    modality = str(session.get("modality") or "").lower()
     if session_type == "scheduled_rest":
         duration = 0
     session_count = 1 if duration > 0 else 0
     base_load_per_hour = LOAD_PER_HOUR.get(intensity, LOAD_PER_HOUR["easy"])
-    if session_type in EXPLICIT_MTB_TYPES:
+    is_mtb = modality == "mtb" or session_type in MTB_SESSION_TYPES
+    is_bike = (
+        is_mtb
+        or modality in {"bike", "bike_indoor", "bike_outdoor", "cycling"}
+        or session_type in INDOOR_BIKE_SESSION_TYPES
+        or "bike" in session_type
+        or "cycling" in session_type
+    )
+    if is_mtb:
         base_load_per_hour += 10
     elif session_type == "bike_quality":
         base_load_per_hour += 15
     training_load = (duration / 60.0) * base_load_per_hour if duration > 0 else 0.0
     if intensity == "hard":
         high_intensity_min = duration * 0.25
+    elif intensity == "moderate_hard":
+        high_intensity_min = duration * 0.16
     elif intensity == "moderate":
         high_intensity_min = duration * 0.08
     else:
         high_intensity_min = 0.0
-    mtb_sessions = 1 if session_count and session_type in EXPLICIT_MTB_TYPES else 0
+    mtb_sessions = 1 if session_count and is_mtb else 0
     gym_sessions = 1 if session_count and "gym" in session_type else 0
     categories = {}
     if session_count:
@@ -426,7 +454,7 @@ def _session_expectation(plan: dict) -> dict:
             categories["mtb"] = 1
         elif gym_sessions:
             categories["gym"] = 1
-        elif "bike" in session_type or "cycling" in session_type:
+        elif is_bike:
             categories["bike_indoor"] = 1
         else:
             categories["other"] = 1
@@ -436,6 +464,7 @@ def _session_expectation(plan: dict) -> dict:
         "title": session.get("title"),
         "type": session_type,
         "intensity": intensity,
+        "modality": modality or ("mtb" if is_mtb else "bike" if is_bike else "other"),
         "duration_min": duration,
         "sessions": session_count,
         "expected_training_load": _round(training_load),
@@ -513,11 +542,25 @@ def _prediction_from_plan(
         }
     if basis_date != target:
         warnings.append(
-            f"Prediction uses wellness from {basis_date.isoformat()} because {target.isoformat()} is not available."
+            f"Prediction uses wellness from {basis_date.isoformat()} as the state basis for action on {target.isoformat()}."
         )
     activity_by_day = _activity_by_date(build_activity_summary_index(root, target))
-    simulated = _simulate_activity_day(activity_by_day, basis_date, expected)
-    features = _features_for_day(basis_date, wellness_by_date, wellness_rows, simulated)
+    feature_wellness_by_date = dict(wellness_by_date)
+    feature_wellness_rows = list(wellness_rows)
+    if target.isoformat() not in feature_wellness_by_date:
+        basis_row = wellness_by_date.get(basis_date.isoformat())
+        if basis_row is None:
+            return {
+                "status": "unavailable",
+                "basis_date": basis_date.isoformat(),
+                "expected_session": expected,
+                "warnings": ["The latest wellness basis row could not be loaded for the planned action date."],
+            }
+        surrogate = {**basis_row, "date": target.isoformat(), "prediction_state_basis_date": basis_date.isoformat()}
+        feature_wellness_by_date[target.isoformat()] = surrogate
+        feature_wellness_rows.append(surrogate)
+    simulated = _simulate_activity_day(activity_by_day, target, expected)
+    features = _features_for_day(target, feature_wellness_by_date, feature_wellness_rows, simulated)
     if features is None:
         return {
             "status": "unavailable",
@@ -533,8 +576,8 @@ def _prediction_from_plan(
     execution_risk = _execution_risk_profile(root, expected)
     stress_expected = execution_risk.get("stress_test_expected_session")
     if stress_expected:
-        stress_simulated = _simulate_activity_day(activity_by_day, basis_date, stress_expected)
-        stress_features = _features_for_day(basis_date, wellness_by_date, wellness_rows, stress_simulated)
+        stress_simulated = _simulate_activity_day(activity_by_day, target, stress_expected)
+        stress_features = _features_for_day(target, feature_wellness_by_date, feature_wellness_rows, stress_simulated)
         if stress_features is not None:
             stress_prediction = _predict(tree, stress_features)
             stress_raw_response = _leaf_response_payload(stress_prediction["leaf"])
@@ -550,7 +593,8 @@ def _prediction_from_plan(
     return {
         "status": "ok" if not warnings else "caution",
         "basis_date": basis_date.isoformat(),
-        "predicts_date": (basis_date + timedelta(days=1)).isoformat(),
+        "action_date": target.isoformat(),
+        "predicts_date": (target + timedelta(days=1)).isoformat(),
         "expected_session": expected,
         "simulated_features": features,
         "prediction_path": prediction.get("path"),

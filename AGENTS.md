@@ -40,6 +40,8 @@ Your posture is Christomorphic.
 - Every major prescription should state purpose, dose, adaptation hypothesis, execution rules, expected result, stop rules, and post-session review fields.
 - Use the density governor: start from 3 good bike touches, protect Friday/Saturday trail quality, and do not stack threshold, repeatability, and two hard MTB days unless recovery is clearly green.
 - Use Garmin diagnosis arbitration after readiness/freshness: Training Status, ACWR, and Load Focus can downshift, hold, or permit a controlled upgrade, but cannot override Sabbath, red readiness, stale data, technical consequence, or schema v3 stop rules.
+- Resolve every session source through the same hard constraints: Sabbath and red physical readiness first, then CNS ceiling, data freshness, and Garmin arbitration. Explicit coach-authored sessions override weekly intent, but neither can override a safety constraint.
+- Use CNS readiness after physical readiness for MTB/technical sessions. Brain fog, weak feel at low RPE, low HRV, strained status, high stress, delayed processing, late-ride decision-speed loss, and weighted 48-hour MTB neural cost can cap speed, jumps, enduro simulation, novelty, and technical consequence even when Body Battery rebounds.
 - Use one structured indoor bike tempo/torque session per week; progress `3x8 -> 3x10 -> 3x12` before raising watts.
 - Treat 222 W as historical P20 from `2024-04-24`, not current FTP. Do not prescribe expert-level intervals from stale FTP.
 - Elliptical is recovery/support only during bike-performance blocks; do not let it become the backbone unless trail-access or logistics constraints require it.
@@ -92,6 +94,8 @@ Your posture is Christomorphic.
   - best merged state
 - `snapshots/readiness_<date>.json`
   - day-level readiness evidence
+- `snapshots/cns_readiness.json` / `snapshots/cns_readiness_<date>.json`
+  - CNS and technical-consequence readiness: brain fog, HRV/stress/RHR/Body Battery context, self-evaluation, recent MTB neural load, and session ceiling
 - `snapshots/training_load.json`
   - recent load and spike flags
 - `snapshots/wellness_trends.json`
@@ -102,6 +106,8 @@ Your posture is Christomorphic.
   - ACWR, training status, load focus, VO2 max, acclimation
 - `snapshots/activity_summary_index.json`
   - redacted per-activity rows
+- `snapshots/activity_loop_load_current.json` / `snapshots/activity_loop_load_<date>_<activity_id>.json`
+  - manual MTB lap/loop analysis: official-load redistribution, moving/stopped timeline, long-rest detection, boundary-HR carryover flags, and action-terrain categories such as punchy climb pedaling, flat pedaling, downhill pedaling, downhill coasting, and stopped/resting
 - `snapshots/activity_gear_index.json`
   - recent Garmin activity Gear metadata fetched from `get_activity_gear`
 - `snapshots/gear_audit.json`
@@ -131,7 +137,7 @@ Your posture is Christomorphic.
 - `snapshots/predictive_training.json`
   - current predictive loop: today's prescription plus latest completed-session calibration review
 - `snapshots/weekly_plan.json`
-  - Monday-generated weekly intent plan: objective, target load range, protected/optional MTB exposures, daily gates, and schema v3 contracts for the week's trainable sessions
+  - Monday-generated weekly intent plan: objective, target load range, protected/optional MTB exposures, daily gates, and schema v3 contracts for the week's trainable sessions; matching sessions feed `today_plan` unless an explicit coach-authored session replaces them
 - `snapshots/predictive_backtest_10_dates.json`
   - historical replay of 10 pre-session prescriptions versus actual session and next-day recovery outcomes
 - `snapshots/training_architecture.json`
@@ -164,6 +170,8 @@ Your posture is Christomorphic.
   `python tools/daily_brief.py`
 - Coach packet:
   `python tools/coach_packet.py`
+- CNS readiness:
+  `python tools/cns_readiness.py --date <YYYY-MM-DD>`
 - Adaptation profile:
   `python tools/adaptation_profile.py --all`
 - Training hypotheses:
@@ -172,6 +180,8 @@ Your posture is Christomorphic.
   `python tools/athlete_questions.py --date <YYYY-MM-DD>`
 - Training architecture:
   `python tools/training_architecture.py --date <YYYY-MM-DD>`
+- Manual lap/loop load:
+  `python tools/loop_load.py --activity-id <GARMIN_ID> --date <YYYY-MM-DD> --loops 1,2 3,4`
 - Gear audit:
   `python tools/gear_audit.py --date <YYYY-MM-DD>`
 - Device audit:
@@ -213,12 +223,13 @@ Your posture is Christomorphic.
 
 ## Key Coaching Rules
 - Always read latest readiness/current-state artifacts before recommending a same-day workout.
-- On Monday, use `snapshots/weekly_plan.json` after live sync as the week-level intent layer, but keep `snapshots/coach_packet.json` / `.txt` as the same-day decision surface.
+- On Monday, generate/use `snapshots/weekly_plan.json` after live sync; if the current-week plan is missing on another day, sync creates it. `today_plan` consumes the matching weekly intent, but `snapshots/coach_packet.json` / `.txt` remains the same-day decision surface.
 - Prefer `snapshots/coach_packet.json` / `.txt` as the final decision surface after rebuild.
+- Use `snapshots/cns_readiness.json` as the technical-consequence ceiling. If CNS status is `impaired` or `compromised`, the planner must replace technical, structured, and high-consequence work with low-consequence recovery; do not merely label the warning.
 - Read `config/athlete_context.json` training_strategy before block planning or major training recommendations.
 - Read `config/coaching_architecture.json` before block planning, phase changes, race preparation, or major training recommendations.
 - For major sessions, prescribe through the schema v3 session contract: purpose, dose, adaptation hypothesis, execution rules, expected result, stop rules, and post-session review fields.
-- For pre-session predictive tests, store the prediction in `snapshots/predictive_session_<date>.json` before the session. If target-date wellness is not available, clearly report the basis date and treat the next Garmin sync as the final gate.
+- For pre-session predictive tests, store the prediction in `snapshots/predictive_session_<date>.json` before the session. Record state-basis, action, and predicted-response dates separately; if target-date wellness is not available, clearly report the prior state basis while still simulating action on the planned date.
 - Confirm actual local date/time before same-day coaching calls.
 - Sunday Sabbath overrides readiness: do not prescribe rides, gym, intervals, strength loading, or planned training.
 - Prefer live Garmin Connect data when available.
@@ -232,13 +243,16 @@ Your posture is Christomorphic.
 - Verify Garmin wake Body Battery against raw Body Battery series when sleep is interrupted; use verified post-wake recharge as a morning anchor, while keeping current Body Battery as an intraday limiter.
 - Subjective check-ins are optional and should cover what Garmin cannot see.
 - For expert-enduro coaching, subjective notes must cover what Garmin cannot see: ride purpose, trail condition, wet roots/rocks, braking fatigue, upper-body fatigue, jump confidence, late-ride skill fade, fuel/hydration, and actual aggression.
+- For CNS readiness, subjective notes should explicitly label brain fog, vision narrowing, delayed line choice, braking timing, unclipping delay, confidence covering sloppy timing, and whether the final descent decision speed matched the first.
 - Poor next-morning response can downshift the next recommendation; historical finger notes must not.
 - Do not chase stale FTP. Use recent controlled power, RPE, HR, and session response until a fresh clean FTP/P20 test exists.
-- Use Garmin activity Gear metadata to identify bike/source context. Flag any mountain bike activity tagged with `Elite Suito` because it likely needs its Gear field updated.
-- Use Garmin Devices & Apps metadata to identify HR source. If an MTB ride has no external `HEART_RATE` sensor, treat wrist-HR-derived HR zones, training load, and intensity analysis as lower confidence.
+- For MTB manual-lap interpretation, do not coach from lap max HR alone. Use `activity_loop_load` timeline fields to separate inherited HR from the previous section, long stops/rests, first moving work after rest, and `action_terrain_summary` categories before deciding whether a lap was recovery, descent stress, punchy standing/flat pedaling, or true high-intensity work.
+- Use Garmin activity Gear metadata to identify bike/source context. Flag any mountain bike activity tagged with `Elite Suito` because it likely needs its Gear field updated. Treat a partial Gear index as partial evidence, not a clear audit.
+- Use Garmin Devices & Apps metadata to identify HR source. If an MTB ride has no external `HEART_RATE` sensor, treat wrist-HR-derived HR zones, training load, and intensity analysis as lower confidence. Treat a partial device index as partial evidence, not a clear audit.
 
 ## Progression Rules
 - Current decisions are based on Garmin freshness, readiness, load, bike-specific continuity, session response, and coaching judgment.
+- For technical MTB decisions, current decisions also include CNS readiness. Treat it as a safety and quality ceiling, not a fitness score.
 - The historical left pinky fracture may explain old training gaps, but it must not gate current rides, gym, or intensity.
 - Treat the Body Battery tree as an explainable assistant, not an authority; the sample size is small and Garmin Body Battery is already a modeled metric.
 - Treat training-response prediction as experimental unless validation beats the majority baseline.

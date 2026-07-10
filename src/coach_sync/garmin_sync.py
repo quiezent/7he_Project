@@ -11,11 +11,11 @@ from .coach_packet import build_coach_packet
 from .data_quality import build_data_quality_report
 from .device_audit import build_device_audit, summarize_activity_devices
 from .data_inventory import build_data_inventory
-from .evidence import summarize_activity
+from .evidence import summarize_activity, wellness_snapshot_is_usable
 from .gear_audit import BIKE_GEAR_CATEGORIES, build_gear_audit, summarize_gear_items
-from .io import write_json
+from .io import read_json, write_json
 from .paths import activities_dir, ensure_layout, snapshots_dir
-from .planning import build_today_plan
+from .planning import build_today_plan, load_weekly_session
 from .predictive_training import build_predictive_training
 from .reports import review_block
 from .self_evaluation import build_self_evaluation_report, summarize_activity_self_evaluation
@@ -31,13 +31,51 @@ def _safe_call(label: str, func: Callable[..., Any], *args: Any) -> dict:
         return {"label": label, "ok": False, "error": str(exc)}
 
 
-def _write_wellness_payload(root: str | Path | None, day: str, payloads: list[dict]) -> None:
+def _write_wellness_payload(root: str | Path | None, day: str, payloads: list[dict]) -> dict:
     combined = {
         "date": day,
         "source": "garminconnect",
         "payloads": payloads,
     }
     write_json(snapshots_dir(root) / f"garmin_wellness_{day}.json", combined)
+    return combined
+
+
+def _write_merged_activity_index(
+    root: str | Path | None,
+    filename: str,
+    source: str,
+    rows: list[dict],
+    **metadata: Any,
+) -> dict:
+    path = snapshots_dir(root) / filename
+    existing = read_json(path, {})
+    merged: dict[str, dict] = {}
+    if isinstance(existing, dict):
+        for row in existing.get("activities") or []:
+            if not isinstance(row, dict):
+                continue
+            activity_id = str(row.get("activity_id") or row.get("id") or "")
+            if activity_id:
+                merged[activity_id] = row
+    for row in rows:
+        activity_id = str(row.get("activity_id") or row.get("id") or "")
+        if activity_id:
+            merged[activity_id] = row
+    artifact = {
+        "generated_at": iso_now(DEFAULT_TIMEZONE),
+        "source": source,
+        "last_sync_rows": len(rows),
+        "retained_rows": max(0, len(merged) - len(rows)),
+        **metadata,
+        "activities": sorted(
+            merged.values(),
+            key=lambda item: (item.get("date") or "", str(item.get("activity_id") or "")),
+            reverse=True,
+        ),
+    }
+    write_json(path, artifact)
+    return artifact
 
 
 def _write_activity_gear_index(
@@ -69,13 +107,12 @@ def _write_activity_gear_index(
                 "gear": summarize_gear_items(gear_payload),
             }
         )
-    artifact = {
-        "generated_at": iso_now(DEFAULT_TIMEZONE),
-        "source": "garminconnect.get_activity_gear",
-        "activities": rows,
-    }
-    write_json(snapshots_dir(root) / "activity_gear_index.json", artifact)
-    return artifact
+    return _write_merged_activity_index(
+        root,
+        "activity_gear_index.json",
+        "garminconnect.get_activity_gear",
+        rows,
+    )
 
 
 def _write_activity_device_index(
@@ -108,13 +145,12 @@ def _write_activity_device_index(
                 **device_summary,
             }
         )
-    artifact = {
-        "generated_at": iso_now(DEFAULT_TIMEZONE),
-        "source": "garminconnect.get_activity.metadataDTO",
-        "activities": rows,
-    }
-    write_json(snapshots_dir(root) / "activity_device_index.json", artifact)
-    return artifact
+    return _write_merged_activity_index(
+        root,
+        "activity_device_index.json",
+        "garminconnect.get_activity.metadataDTO",
+        rows,
+    )
 
 
 def _write_activity_self_evaluation_index(
@@ -145,14 +181,13 @@ def _write_activity_self_evaluation_index(
                 **summarize_activity_self_evaluation(detail_payload),
             }
         )
-    artifact = {
-        "generated_at": iso_now(DEFAULT_TIMEZONE),
-        "source": "garminconnect.get_activity.summaryDTO.directWorkoutFeel/directWorkoutRpe",
-        "max_detail_fetches": max_detail_fetches,
-        "activities": rows,
-    }
-    write_json(snapshots_dir(root) / "activity_self_evaluation_index.json", artifact)
-    return artifact
+    return _write_merged_activity_index(
+        root,
+        "activity_self_evaluation_index.json",
+        "garminconnect.get_activity.summaryDTO.directWorkoutFeel/directWorkoutRpe",
+        rows,
+        max_detail_fetches=max_detail_fetches,
+    )
 
 
 def _fetch_live(root: str | Path | None, wellness_days: int, activity_limit: int) -> dict:
@@ -195,6 +230,7 @@ def _fetch_live(root: str | Path | None, wellness_days: int, activity_limit: int
         }
     today = today_local(DEFAULT_TIMEZONE)
     wellness_written = []
+    wellness_unusable = []
     for offset in range(max(1, wellness_days)):
         day = (today - timedelta(days=offset)).isoformat()
         payloads = [
@@ -209,24 +245,40 @@ def _fetch_live(root: str | Path | None, wellness_days: int, activity_limit: int
             method = getattr(client, method_name, None)
             if method:
                 payloads.append(_safe_call(method_name, method, day))
-        _write_wellness_payload(root, day, payloads)
+        snapshot = _write_wellness_payload(root, day, payloads)
         wellness_written.append(day)
+        if not wellness_snapshot_is_usable(snapshot):
+            wellness_unusable.append(day)
 
     training_status = None
+    training_status_attempts = []
     for method_name in ("get_training_status", "get_training_readiness"):
         method = getattr(client, method_name, None)
         if method:
-            training_status = _safe_call(method_name, method, today.isoformat())
-            write_json(
-                snapshots_dir(root) / f"garmin_training_status_{today.isoformat()}.json",
-                {"date": today.isoformat(), "source": "garminconnect", "payload": training_status},
-            )
-            break
+            result = _safe_call(method_name, method, today.isoformat())
+            training_status_attempts.append(result)
+            if training_status is None:
+                training_status = result
+            if result.get("ok") and isinstance(result.get("data"), dict) and result.get("data"):
+                training_status = result
+                break
+    if training_status is not None:
+        write_json(
+            snapshots_dir(root) / f"garmin_training_status_{today.isoformat()}.json",
+            {"date": today.isoformat(), "source": "garminconnect", "payload": training_status},
+        )
+    training_status_usable = bool(
+        training_status
+        and training_status.get("ok")
+        and isinstance(training_status.get("data"), dict)
+        and training_status.get("data")
+    )
 
     activities_written = 0
     activity_gear_index = None
     activity_device_index = None
     activity_self_evaluation_index = None
+    activity_fetch_failure = None
     if activity_limit > 0 and hasattr(client, "get_activities"):
         result = _safe_call("get_activities", client.get_activities, 0, activity_limit)
         if result.get("ok") and isinstance(result.get("data"), list):
@@ -237,16 +289,33 @@ def _fetch_live(root: str | Path | None, wellness_days: int, activity_limit: int
             activity_gear_index = _write_activity_gear_index(root, client, result["data"])
             activity_device_index = _write_activity_device_index(root, client, result["data"])
             activity_self_evaluation_index = _write_activity_self_evaluation_index(root, client, result["data"])
+        else:
+            activity_fetch_failure = result.get("error") or "Garmin activities response was not a list."
+
+    failures = []
+    if wellness_unusable:
+        failures.append({"source": "wellness", "dates": wellness_unusable})
+    if training_status is not None and not training_status_usable:
+        failures.append(
+            {
+                "source": "training_status",
+                "attempts": training_status_attempts,
+            }
+        )
+    if activity_fetch_failure:
+        failures.append({"source": "activities", "message": activity_fetch_failure})
 
     return {
-        "status": "ok",
+        "status": "partial" if failures else "ok",
         "auth_method": auth_method,
         "wellness_written": wellness_written,
-        "training_status_written": training_status is not None,
+        "wellness_unusable_dates": wellness_unusable,
+        "training_status_written": training_status_usable,
         "activities_written": activities_written,
         "activity_gear_checked": len((activity_gear_index or {}).get("activities") or []),
         "activity_device_checked": len((activity_device_index or {}).get("activities") or []),
         "activity_self_evaluation_checked": len((activity_self_evaluation_index or {}).get("activities") or []),
+        "failures": failures,
     }
 
 
@@ -261,9 +330,15 @@ def sync_connect(
     ensure_layout(root)
     live = {"status": "skipped", "reason": "rebuild_only"} if rebuild_only else _fetch_live(root, wellness_days, activity_limit)
     state = build_current_state(root, refresh_models=not decision_only)
-    plan = build_today_plan(root, state=state)
     state_date = parse_date(state.get("date"))
-    weekly_plan = build_weekly_plan(root, state=state) if state_date and state_date.weekday() == 0 else None
+    weekly_session = load_weekly_session(root, state_date) if state_date else None
+    weekly_plan = (
+        build_weekly_plan(root, state=state)
+        if state_date and (state_date.weekday() == 0 or weekly_session is None)
+        else None
+    )
+    weekly_plan_available = weekly_plan is not None or weekly_session is not None
+    plan = build_today_plan(root, state=state)
     predictive = build_predictive_training(root, state=state, plan=plan)
     if decision_only:
         coach_packet = build_coach_packet(root, state=state, plan=plan)
@@ -272,7 +347,7 @@ def sync_connect(
             "mode": "decision_only",
             "live_sync": live,
             "state_file": str(snapshots_dir(root) / "current_state.json"),
-            "weekly_plan_file": str(snapshots_dir(root) / "weekly_plan.txt") if weekly_plan else None,
+            "weekly_plan_file": str(snapshots_dir(root) / "weekly_plan.txt") if weekly_plan_available else None,
             "coach_packet_file": str(snapshots_dir(root) / "coach_packet.txt"),
             "readiness_level": state.get("readiness", {}).get("readiness_level"),
             "session_title": plan.get("session", {}).get("title"),
@@ -290,9 +365,6 @@ def sync_connect(
                 "review_block",
                 "data_inventory",
                 "data_quality",
-                "fresh_body_battery_model",
-                "fresh_training_predictor_model",
-                "fresh_historical_baselines",
             ],
         }
         write_json(snapshots_dir(root) / "sync_status.json", status)
@@ -314,7 +386,7 @@ def sync_connect(
         "live_sync": live,
         "state_file": str(snapshots_dir(root) / "current_state.json"),
         "brief_file": str(snapshots_dir(root) / "daily_brief.txt"),
-        "weekly_plan_file": str(snapshots_dir(root) / "weekly_plan.txt") if weekly_plan else None,
+        "weekly_plan_file": str(snapshots_dir(root) / "weekly_plan.txt") if weekly_plan_available else None,
         "coach_packet_file": str(snapshots_dir(root) / "coach_packet.txt"),
         "review_block_file": str(snapshots_dir(root) / "review_block.txt"),
         "readiness_level": state.get("readiness", {}).get("readiness_level"),

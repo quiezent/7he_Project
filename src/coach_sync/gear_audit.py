@@ -83,6 +83,7 @@ def _text_report(report: dict) -> str:
         "",
         f"Checked activities: {report['checked_activities']}",
         f"MTB checked: {report['mtb_checked']}",
+        f"Coverage: {(report.get('coverage') or {}).get('status', 'unknown')}",
         "",
         "Flags:",
     ]
@@ -146,6 +147,25 @@ def build_gear_audit(
                     }
                 )
 
+    eligible = []
+    for activity in activities.values():
+        activity_date = parse_date(activity.get("date"))
+        if (
+            activity_date is not None
+            and start <= activity_date <= target
+            and activity.get("category") in BIKE_GEAR_CATEGORIES
+        ):
+            eligible.append(activity)
+    eligible_ids = {str(activity.get("id")) for activity in eligible if activity.get("id")}
+    covered_ids = {row["activity_id"] for row in rows if row.get("activity_id") in eligible_ids}
+    fetched_ok = sum(1 for row in rows if row.get("activity_id") in eligible_ids and row.get("gear_fetch_ok") is True)
+    coverage_status = (
+        "complete"
+        if eligible_ids and covered_ids == eligible_ids and fetched_ok == len(eligible_ids)
+        else "partial"
+        if covered_ids
+        else "missing"
+    )
     report = {
         "date": target.isoformat(),
         "generated_at": iso_now(DEFAULT_TIMEZONE),
@@ -153,6 +173,13 @@ def build_gear_audit(
         "lookback_days": lookback_days,
         "checked_activities": len(rows),
         "mtb_checked": sum(1 for row in rows if row.get("category") == "mtb"),
+        "coverage": {
+            "status": coverage_status,
+            "eligible_activities": len(eligible_ids),
+            "indexed_activities": len(covered_ids),
+            "successful_fetches": fetched_ok,
+            "missing_activities": max(0, len(eligible_ids) - len(covered_ids)),
+        },
         "recent_mtb_gear": sorted(recent_mtb, key=lambda item: item.get("date") or "", reverse=True)[:10],
         "flags": flags,
     }

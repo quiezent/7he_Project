@@ -1,4 +1,5 @@
 from coach_sync.context import load_context, save_context, set_event_date
+from coach_sync.io import read_json
 
 
 def test_default_context_keeps_finger_history_as_context_only(tmp_path):
@@ -22,3 +23,10 @@ def test_event_date_can_update_historical_context(tmp_path):
 
     reloaded = load_context(tmp_path)
     assert any(item["label"] == "sepang_logistics" for item in reloaded["medical"]["history"])
+
+
+def test_read_json_accepts_utf8_bom(tmp_path):
+    path = tmp_path / "bom.json"
+    path.write_bytes(b'\xef\xbb\xbf{"status": "ok"}')
+
+    assert read_json(path) == {"status": "ok"}

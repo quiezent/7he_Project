@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from pathlib import Path
 
 from .context import load_context
-from .evidence import load_activities, summarize_recent_training
+from .evidence import counts_for_training_load, load_activities, summarize_recent_training
 from .io import read_json, write_json, write_text
 from .paths import snapshots_dir
 from .state import build_current_state
@@ -24,17 +24,36 @@ def _recent_readiness(root: str | Path | None, days: int, target_date: date) -> 
     return sorted(out, key=lambda item: item.get("date") or "")
 
 
+def _training_window(activities: list[dict], target_date: date, days: int) -> dict:
+    start = target_date - timedelta(days=max(1, days) - 1)
+    rows = []
+    for activity in activities:
+        activity_date = parse_date(activity.get("date"))
+        if activity_date and start <= activity_date <= target_date and counts_for_training_load(activity):
+            rows.append(activity)
+    return {
+        "start_date": start.isoformat(),
+        "end_date": target_date.isoformat(),
+        "sessions": len(rows),
+        "duration_min": round(sum(float(row.get("duration_min") or 0) for row in rows), 1),
+        "training_load": round(sum(float(row.get("training_load") or 0) for row in rows), 1),
+        "outdoor_mtb_sessions": sum(1 for row in rows if row.get("category") == "mtb"),
+    }
+
+
 def weekly_report(root: str | Path | None = None, days: int = 7) -> dict:
     context = load_context(root)
     tz = context.get("athlete", {}).get("timezone", DEFAULT_TIMEZONE)
     target_date = today_local(tz)
     activities = load_activities(root)
     training = summarize_recent_training(activities, target_date)
+    requested_window = _training_window(activities, target_date, days)
     readiness = _recent_readiness(root, days, target_date)
     report = {
         "date": target_date.isoformat(),
         "days": days,
         "training": training,
+        "requested_window_training": requested_window,
         "readiness_days": readiness,
         "coach_focus": [
             "Keep bike-specific continuity stable before adding more intensity.",
@@ -48,9 +67,9 @@ def weekly_report(root: str | Path | None = None, days: int = 7) -> dict:
             [
                 f"Weekly Report - {target_date.isoformat()}",
                 f"Window: {days} days",
-                f"Sessions: {training['last_7_days']['sessions']}",
-                f"Duration: {training['last_7_days']['duration_min']} min",
-                f"Training load: {training['last_7_days']['training_load']}",
+                f"Sessions: {requested_window['sessions']}",
+                f"Duration: {requested_window['duration_min']} min",
+                f"Training load: {requested_window['training_load']}",
                 "",
                 "Coach focus:",
                 *[f"- {item}" for item in report["coach_focus"]],
@@ -117,7 +136,9 @@ def microcycle_forecast(root: str | Path | None = None, days: int = 24) -> dict:
     entries = []
     for offset in range(days):
         day = start + timedelta(days=offset)
-        if offset % 7 in {1, 3}:
+        if day.weekday() == 6:
+            focus = "Sabbath rest: no planned exercise"
+        elif offset % 7 in {1, 3}:
             focus = "structured quality if readiness and recent load support it"
         elif offset % 7 == 5:
             focus = "longer aerobic MTB or endurance ride"

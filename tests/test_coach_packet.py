@@ -163,6 +163,38 @@ def test_coach_packet_reuses_same_date_state_and_plan_artifacts(tmp_path, monkey
     assert packet["today_call"]["session"]["title"] == "Easy bike continuity"
 
 
+def test_coach_packet_does_not_promote_stale_predictive_artifact(tmp_path):
+    load_context(tmp_path)
+    state = {
+        "date": "2026-06-08",
+        "readiness": {"readiness_level": "yellow", "readiness_score": 65, "reasons": []},
+        "data_freshness": {"status": "current", "activity_data": {"status": "current"}},
+        "phase": {"name": "base_rebuild"},
+    }
+    plan = {
+        "date": "2026-06-08",
+        "session": {
+            "title": "Easy bike continuity",
+            "type": "outdoor_bike_optional",
+            "duration_min": 45,
+            "intensity": "easy",
+        },
+    }
+    write_json(
+        tmp_path / "snapshots" / "predictive_training.json",
+        {
+            "date": "2026-06-07",
+            "today_prescription": {"prediction": {"stale": "do not use"}},
+        },
+    )
+
+    packet = build_coach_packet(tmp_path, "2026-06-08", state=state, plan=plan)
+    signal = next(item for item in packet["evidence"]["trusted"] if item["name"] == "Predictive training twin")
+
+    assert signal["status"] == "stale"
+    assert signal["value"]["today_prediction"] is None
+
+
 def test_coach_packet_stance_shows_adaptive_upgrade_option(tmp_path):
     load_context(tmp_path)
     state = {

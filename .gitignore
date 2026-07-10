@@ -7,6 +7,11 @@ venv/
 env/
 .env
 .codex-remote-attachments/
+.garminconnect/
+oauth1_token.json
+oauth2_token.json
+garmin_tokens.json
+garth_tokens.json
 
 # Raw Garmin, derived artifacts, and transient local notes
 activities/

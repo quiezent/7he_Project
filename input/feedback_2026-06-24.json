@@ -1,0 +1,28 @@
+{
+  "date": "2026-06-24",
+  "entries": [
+    {
+      "time_local": "morning",
+      "subjective_report": "No PCP today. Stress and Body Battery are totally not normal. HRV is very low. Resting today and trying to return to riding on Friday.",
+      "subjective_sleep_context": {
+        "reported_bed_window": "2026-06-23 20:00 to 2026-06-24 09:00",
+        "interpretation": "Garmin likely under-detected sleep because stress stayed high through the night; use Garmin stress/HRV/Body Battery as recovery-quality evidence, not exact time-in-bed evidence.",
+        "suspected_trigger": "Air conditioning failure on Sunday contributed to heat-disrupted sleep and poor recovery, leading into systemic stress shutdown despite lower chronic load than prior high-load periods."
+      },
+      "garmin_context": {
+        "readiness_level": "red",
+        "readiness_score": 2,
+        "training_status": "STRAINED_4",
+        "sleep_score": 22,
+        "sleep_hours": 3.85,
+        "verified_morning_body_battery_anchor": 23,
+        "current_body_battery": 23,
+        "overnight_hrv": 35,
+        "hrv_status": "LOW",
+        "resting_hr": 51,
+        "avg_stress": 41
+      },
+      "coaching_decision": "Full recovery day. No ride, gym, intervals, activation session, or PCP. Friday ride is provisional and requires symptom resolution plus improved Garmin readiness."
+    }
+  ]
+}

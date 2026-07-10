@@ -605,6 +605,10 @@ def _daily_gates() -> list[dict[str, str]]:
             "rule": "Green executes, yellow caps or shortens, red replaces training with recovery.",
         },
         {
+            "gate": "CNS consequence",
+            "rule": "Impaired or compromised CNS readiness replaces technical, speed, jump, enduro-simulation, setup-test, and structured sessions with low-consequence recovery.",
+        },
+        {
             "gate": "density",
             "rule": "If a key MTB day drifts harder than written, the next non-key day becomes recovery.",
         },

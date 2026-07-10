@@ -1,0 +1,23 @@
+{
+  "date": "2026-06-29",
+  "entries": [
+    {
+      "time_local": "afternoon",
+      "subjective_report": "Back and feeling much better. No brain fog reported, motivation is improved, and considering Kiara tomorrow. Planned a 45 min indoor ride around 125 W.",
+      "garmin_context": {
+        "readiness_level": "red",
+        "readiness_score": 37,
+        "training_status": "STRAINED_3",
+        "sleep_score": 75,
+        "sleep_hours": 6.43,
+        "body_battery_wake": 78,
+        "current_body_battery": 40,
+        "overnight_hrv": 43,
+        "hrv_status": "LOW",
+        "resting_hr": 49,
+        "avg_stress": 28
+      },
+      "coaching_interpretation": "Subjective recovery and sleep/Body Battery have improved, but HRV remains low and Garmin still flags strained. Use Monday only as a low-cost system check before Tuesday Kiara."
+    }
+  ]
+}

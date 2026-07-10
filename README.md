@@ -10,6 +10,8 @@
 - Current phase is `base_rebuild`: the training focus is enduro repeatability.
 - Historical context: Clayton broke his left pinky in Aug 2025; this is retained as history only and is not a current decision gate.
 - Progression depends on readiness, load response, bike specificity, Garmin freshness, and subjective session quality.
+- Technical progression also depends on CNS readiness: brain fog, decision speed, HRV/stress/RHR context, and weak-feel/low-RPE mismatches can cap trail consequence even when load is low.
+- Every planned source is constrained before execution: explicit coach-authored sessions override weekly intent, but Sabbath, red readiness, stale evidence, Garmin downshifts, and CNS ceilings can still replace the session.
 - Sunday is Clayton's Sabbath hard-rest day: no planned exercise regardless of readiness.
 - Highest-impact coaching path: bike-specific continuity first, enduro repeatability second, expert skill execution under fatigue third.
 - Coaching architecture schema v3 combines directive enduro coaching with Garmin/digital-twin verification through a required session contract and density governor.
@@ -36,6 +38,7 @@
   `python tools/sync_connect.py --wellness-days 30 --activity-limit 200`
 - Same-day decision sync:
   `python tools/sync_connect.py --wellness-days 3 --activity-limit 5 --decision-only`
+- Sync creates a current-week plan when one is missing; daily planning then uses that matching weekly intent unless `input/planned_session_YYYY-MM-DD.json` provides an explicit coach adjustment.
 - Wellness + rebuild only:
   `python tools/sync_connect.py --wellness-days 30 --activity-limit 0`
 - Rebuild only:
@@ -68,7 +71,10 @@ Preferred direct commands:
 - Gear audit: `python tools/gear_audit.py --date <YYYY-MM-DD>`
 - Device audit: `python tools/device_audit.py --date <YYYY-MM-DD>`
 - Self evaluation: `python tools/self_evaluation.py --date <YYYY-MM-DD>`
+- CNS readiness: `python tools/cns_readiness.py --date <YYYY-MM-DD>`
 - Redacted activity index: `python tools/activity_index.py`
+- Manual lap/loop load and within-lap action analysis:
+  `python tools/loop_load.py --activity-id <GARMIN_ID> --date <YYYY-MM-DD> --loops 1,2 3,4`
 - Modality load rollups: `python tools/modality_rollups.py`
 - Data quality report: `python tools/data_quality.py`
 - Body Battery decision tree: `python tools/body_battery_model.py`
@@ -98,7 +104,7 @@ After editable install, the same stack is available through:
 
 ## Predictive Workflow
 - Use this before a planned key session to store a testable expectation in `snapshots/`, not in this README.
-- If `input/planned_session_YYYY-MM-DD.json` exists, the predictive loop uses that coach-authored session contract before falling back to the generic `today_plan`.
+- If `input/planned_session_YYYY-MM-DD.json` exists, the predictive loop uses that coach-authored session contract before the matching weekly intent or generic `today_plan`.
 - For a generic deterministic proposal:
   `python tools/predictive_training.py --date <YYYY-MM-DD>`
 - For a specific coached session, call `build_predictive_training(..., plan=<custom plan>)` with the schema v3 session contract fields:
@@ -109,7 +115,7 @@ After editable install, the same stack is available through:
   - `expected_result`
   - `stop_rules`
   - `post_session_review_fields`
-- If target-date Garmin wellness does not exist yet, the prediction should state the basis date and use the next Garmin sync as the final gate.
+- A prediction records separate state-basis, action, and next-day response dates. If target-date Garmin wellness does not exist yet, it states the prior wellness basis while still simulating the action on its planned date; the next Garmin sync remains the final gate.
 - After the session and next-day Garmin sync, run:
   `python tools/predictive_review.py --date <YYYY-MM-DD>`
 
@@ -140,6 +146,8 @@ Blank template fields are ignored.
   - merged coaching state
 - `snapshots/readiness_YYYY-MM-DD.json`
   - day-level readiness, confidence, reasons, subjective response, data freshness
+- `snapshots/cns_readiness.json` / `snapshots/cns_readiness_YYYY-MM-DD.json`
+  - CNS and technical-consequence readiness, including brain fog, HRV/stress/RHR/Body Battery, self-evaluation, recent MTB cost, and session ceiling
 - `snapshots/training_load.json`
   - recent load, prior-week comparison, load spike flags
 - `snapshots/wellness_daily.json`
@@ -152,14 +160,16 @@ Blank template fields are ignored.
   - training status, ACWR, load focus, VO2 max, and acclimation
 - `snapshots/activity_summary_index.json`
   - redacted activity rows without names or source paths
+- `snapshots/activity_loop_load_current.json` / `snapshots/activity_loop_load_YYYY-MM-DD_<activity_id>.json`
+  - manual lap/loop analysis for MTB files, including official-load redistribution, moving/stopped timeline, long-rest detection, boundary-HR carryover flags, and within-lap action-terrain categories such as punchy climb pedaling, flat pedaling, downhill pedaling, downhill coasting, and stopped/resting
 - `snapshots/activity_gear_index.json`
   - recent Garmin activity Gear metadata fetched from `get_activity_gear`
 - `snapshots/gear_audit.json` / `snapshots/gear_audit.txt`
-  - bike/source mismatch audit, including MTB activities still tagged with Elite Suito
+  - bike/source mismatch audit, including coverage status so a fast partial index is never presented as clear
 - `snapshots/activity_device_index.json`
   - recent Garmin Devices & Apps metadata fetched from `get_activity`
 - `snapshots/device_audit.json` / `snapshots/device_audit.txt`
-  - HR source confidence audit, including MTB rides without an external HEART_RATE sensor
+  - HR source confidence audit, including MTB rides without an external HEART_RATE sensor and partial-index coverage
 - `snapshots/activity_self_evaluation_index.json`
   - recent Garmin post-activity feel and RPE metadata fetched from activity details
 - `snapshots/self_evaluation_report.json` / `snapshots/self_evaluation_report.txt`
@@ -199,7 +209,7 @@ Blank template fields are ignored.
 - `snapshots/coach_packet.json` / `snapshots/coach_packet.txt`
   - coach-facing evidence triage: trusted signals, cautions, experimental models, ignored model output, and today's call
 - `snapshots/weekly_plan.json` / `snapshots/weekly_plan.txt`
-  - Monday weekly intent layer: objective, target load range, MTB exposure cap, daily gates, and schema v3 session contracts
+  - Monday weekly intent layer: objective, target load range, MTB exposure cap, daily gates, and schema v3 session contracts; the matching session becomes the daily template before same-day constraints are applied
 - `config/coaching_architecture.json`
   - schema v3 machine-readable coaching objective, integrated coaching model, session contract, density governor, session library, evidence priorities, and phase plan
 - `snapshots/today_plan.json`
@@ -212,15 +222,19 @@ Blank template fields are ignored.
 ## Architecture Boundary
 - Code answers: what data exists, what changed, what is stale, what rules are triggered.
 - Coach answers: what Clayton should actually do today and why.
+- CNS readiness answers: whether technical consequence, speed, jumps, enduro simulation, novelty, and setup testing should be capped even if physiological load looks manageable.
+- Constraint resolution answers: whether a weekly or explicit session must be replaced because Sabbath, physical readiness, data freshness, Garmin arbitration, or CNS readiness sets a lower ceiling.
 - Predictive loop answers: what response was expected from the prescribed session, what actually happened, and whether the miss was execution, external stress, or model error.
 - Weekly planner answers: what the week is trying to buy before daily readiness gates adjust execution.
 - Session contract answers: what adaptation the session is buying, what the dose is, when to stop, and what must be reviewed afterward.
 - Density governor answers: whether the ideal week should be downshifted so Friday/Saturday trail quality is protected.
+- Lap/loop analysis answers: what happened inside manual MTB laps, separating inherited HR, rest time, moving work, pedaling/coasting state, and terrain context before coaching from lap max HR or average load.
 - Predictive prescriptions now carry two branches: the written plan and the execution-drift stress test when similar Clayton sessions historically became longer or harder.
 - The stack should warn on stale or missing Garmin data before confident hard-session guidance.
 - Scheduled Sabbath rest overrides workout selection; the plan should become rest, not a training option.
 - Wake Body Battery and current Body Battery are separate signals; current Body Battery is time-of-day sensitive.
 - Interrupted sleep can make Garmin's wake Body Battery incomplete; the verifier checks the raw series before readiness scoring trusts the wake value.
+- Physical readiness and CNS readiness are separate. Body Battery can rebound while HRV, brain fog, weak feel, decision speed, or weighted 48-hour MTB neural cost still block high-consequence MTB work.
 - Read `config/coaching_architecture.json` before block planning, phase changes, race preparation, or major training recommendations.
 
 ## Clayton-Specific Coaching Rules
@@ -229,13 +243,15 @@ Blank template fields are ignored.
 - Protect 2 MTB exposures/week when possible: one quality/skill day and one durability/enduro-volume day.
 - Allow up to 3 MTB exposures/week when readiness, logistics, and load density support it; more than 3 is an event/race block, not a default build week.
 - Use the density governor: start from 3 good bike touches, do not stack threshold, repeatability, and two hard MTB days unless recovery is clearly green.
+- Use CNS readiness as the technical-quality governor: `impaired` or `compromised` replaces technical, structured, or high-consequence work with low-consequence recovery rather than merely adding a caution label.
 - Use one structured indoor tempo/torque session per week and progress `3x8 -> 3x10 -> 3x12` before raising watts.
 - Treat `222 W` as historical P20 from `2024-04-24`, not current FTP.
 - Elliptical is recovery/support during bike-performance blocks, not the backbone unless constraints require it.
 - Gym is useful only if it supports trail quality; reduce or move it if it creates DOMS before key rides.
 - In Kuala Lumpur heat, fuel skill quality early: late sloppy braking, weak pumping, timid jumps, or poor line choice can be under-fuelling or heat load.
 - Garmin Gear is the bike/source truth layer. Flag MTB activities tagged with `Elite Suito` so the Gear field can be corrected.
-- Garmin Devices & Apps is the HR-source truth layer. MTB activities without an external `HEART_RATE` sensor should have lower-confidence HR/load interpretation because Fenix wrist HR can under-read during technical riding.
+- Garmin Devices & Apps is the HR-source truth layer. MTB activities without an external `HEART_RATE` sensor should have lower-confidence HR/load interpretation because Fenix wrist HR can under-read during technical riding. Partial Gear/device coverage remains partial evidence.
+- For MTB manual-lap interpretation, do not coach from max HR alone. Check the lap timeline for `max_hr_likely_boundary_carryover`, long stops, `first_moving_after_longest_stop`, and `action_terrain_summary` before deciding whether a lap was a hard effort, recovery, technical descent, or enduro-specific standing/punchy pedaling work.
 
 ## Data Boundaries
 - Treat raw Garmin exports and `activities/` as preserved evidence.
@@ -245,6 +261,7 @@ Blank template fields are ignored.
 - Do not use normal GitHub commits as the backup for raw Garmin downloads, generated snapshots, archives, credentials, or transient `input/daily_checkin.md`; those remain ignored and should be redownloaded, rebuilt, or backed up separately if needed.
 - Cleanup only removes safe derived caches such as `__pycache__` and `.pytest_cache`.
 - Do not commit credentials, Garmin tokens, or private exports to a public location.
+- `.gitignore` excludes common Garmin token-store directories and token filenames in addition to environment files.
 
 ## Testing
 - Run:
@@ -257,7 +274,12 @@ Blank template fields are ignored.
   - normalized ACWR, VO2, and load-focus training status
   - simple Body Battery decision-tree training and output
   - bounded training-response predictor and CLI output
+  - CNS readiness parser/scoring and coach-packet integration
   - predictive training prescription and post-session calibration review
+  - weekly-intent daily handoff, explicit-plan precedence, and CNS/Garmin constraint enforcement
+  - causal action/state prediction dates and weekly MTB/tempo modality classification
+  - failed Garmin payload freshness rejection, BOM-tolerant JSON reads, and partial Gear/device audit coverage
+  - manual lap/loop load scaling, boundary-HR carryover detection, and within-lap action-terrain categorization
   - Clayton-specific training architecture generation, including schema v3 integrated coaching model, session contract, density governor, and Dinding setup session type
   - Garmin Gear audit and Elite Suito MTB mismatch flagging
   - Garmin Devices & Apps audit and wrist-HR MTB confidence flagging

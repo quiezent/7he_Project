@@ -11,7 +11,8 @@ def read_json(path: str | Path, default: Any = None) -> Any:
     path = Path(path)
     if not path.exists():
         return default
-    with path.open("r", encoding="utf-8") as handle:
+    # PowerShell-generated reports can carry a UTF-8 BOM; treat them as valid JSON.
+    with path.open("r", encoding="utf-8-sig") as handle:
         return json.load(handle)
 
 

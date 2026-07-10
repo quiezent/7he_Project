@@ -1,0 +1,19 @@
+{
+  "date": "2026-07-09",
+  "entries": [
+    {
+      "timestamp_local": "2026-07-09T15:04:00+08:00",
+      "source": "athlete_report",
+      "activity_id": "23531655671",
+      "subjective_report": "Kiara session completed and synced. Clayton reports 3 x 2K on laps 2, 4, and 6. Laps 4 and 6 included harder pedaling inside the trail. After resting, lap 7 included standing pedaling on the final climb section. Clayton felt this standing/on-trail pedaling is more enduro-specific than seated pedaling. Clipless and suspension settings felt good.",
+      "coaching_interpretation": "The enduro-specific insight is useful: short standing torque and on-trail acceleration are likely more transferable to stage riding than only seated road-style climbing. However, this session materially exceeded the recovery/CNS ceiling and should be classified as execution drift until next-day recovery response is known."
+    },
+    {
+      "timestamp_local": "2026-07-09T17:55:00+08:00",
+      "source": "garmin_activity_note",
+      "activity_id": "23533251221",
+      "subjective_report": "Trainer calibration ride. Activity note: Suito is accurate up to 200 W. Then about 10% error starts to creep in; power meter reads 300 W while Suito reads 270 W.",
+      "coaching_interpretation": "Use Elite Suito power normally for endurance and tempo under about 200 W. For high-power indoor targets above 200 W, account for Suito under-reading or validate against the bike power meter before making FTP/anaerobic conclusions."
+    }
+  ]
+}

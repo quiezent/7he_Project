@@ -1,0 +1,20 @@
+{
+  "date": "2026-06-23",
+  "entries": [
+    {
+      "time_local": "afternoon",
+      "context": "After prescribed easy indoor bike continuity session.",
+      "subjective_report": "Feel sick and need to recover ASAP.",
+      "session_summary": {
+        "type": "indoor_cycling",
+        "duration_min": 35.0,
+        "training_load": 16.4,
+        "avg_hr": 124,
+        "avg_power": 87,
+        "garmin_feel": "very_weak",
+        "garmin_rpe": "moderate"
+      },
+      "recovery_priority": "No more training today; treat Wednesday PCP as provisional until morning wellness and symptoms are clearly improved."
+    }
+  ]
+}

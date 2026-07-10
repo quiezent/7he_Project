@@ -12,6 +12,7 @@ from .checkin import import_checkin, write_checkin_template
 from .cleanup import cleanup_derived
 from .coach_packet import build_coach_packet
 from .context import handle_context_command, load_context, save_context
+from .cns_readiness import build_cns_readiness
 from .activity_profile import build_activity_profile
 from .athlete_questions import build_athlete_question_audit
 from .adaptation_profile import build_adaptation_profile
@@ -105,6 +106,7 @@ def build_parser() -> argparse.ArgumentParser:
         ("training-predictor", "Build bounded next-day training response predictor."),
         ("historical-baselines", "Build historical activity baseline artifact."),
         ("coach-packet", "Build coach-facing evidence triage packet."),
+        ("cns-readiness", "Build CNS and technical-consequence readiness artifact."),
         ("gear-audit", "Audit Garmin activity Gear metadata for bike/source mismatches."),
         ("device-audit", "Audit Garmin Devices & Apps metadata for HR source confidence."),
         ("self-evaluation", "Summarize Garmin post-activity feel and RPE self evaluations."),
@@ -307,6 +309,8 @@ def run(args: argparse.Namespace) -> Any:
         return build_historical_baselines(args.root, args.date)
     if args.command == "coach-packet":
         return build_coach_packet(args.root, args.date)
+    if args.command == "cns-readiness":
+        return build_cns_readiness(args.root, args.date)
     if args.command == "gear-audit":
         return build_gear_audit(args.root, args.date)
     if args.command == "device-audit":

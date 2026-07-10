@@ -1,10 +1,11 @@
 import json
+from datetime import date
 
 from coach_sync.cleanup import cleanup_derived
 from coach_sync.cli import main
 from coach_sync.context import load_context
 from coach_sync.io import write_json
-from coach_sync.state import build_current_state
+from coach_sync.state import _cached_or_build_report, build_current_state
 
 
 def test_current_state_writes_training_snapshots(tmp_path):
@@ -19,6 +20,29 @@ def test_current_state_writes_training_snapshots(tmp_path):
     assert state["phase"]["name"] == "base_rebuild"
     assert (tmp_path / "snapshots" / "training_load.json").exists()
     assert (tmp_path / "snapshots" / "current_state.json").exists()
+
+
+def test_decision_only_cache_rebuilds_when_target_date_changes(tmp_path):
+    write_json(
+        tmp_path / "snapshots" / "model.json",
+        {"date": "2026-04-28", "value": "stale"},
+    )
+    calls = []
+
+    def builder(root, target):
+        calls.append(target)
+        return {"date": target.isoformat(), "value": "fresh"}
+
+    report = _cached_or_build_report(
+        tmp_path,
+        "model.json",
+        builder,
+        date(2026, 4, 29),
+        refresh_models=False,
+    )
+
+    assert report["value"] == "fresh"
+    assert calls == [date(2026, 4, 29)]
 
 
 def test_cleanup_does_not_touch_activities(tmp_path):

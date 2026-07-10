@@ -65,3 +65,29 @@ def test_gear_audit_accepts_stumpjumper_mtb(tmp_path):
 
     assert report["mtb_checked"] == 1
     assert report["flags"] == []
+    assert report["coverage"]["status"] == "complete"
+
+
+def test_gear_audit_marks_partial_index_coverage(tmp_path):
+    write_json(tmp_path / "activities" / "mtb_one.json", _activity(3, "2026-05-22"))
+    write_json(tmp_path / "activities" / "mtb_two.json", _activity(4, "2026-05-23"))
+    write_json(
+        tmp_path / "snapshots" / "activity_gear_index.json",
+        {
+            "activities": [
+                {
+                    "activity_id": "3",
+                    "date": "2026-05-22",
+                    "category": "mtb",
+                    "gear_fetch_ok": True,
+                    "gear": [{"label": "Stumpjumper"}],
+                }
+            ]
+        },
+    )
+
+    report = build_gear_audit(tmp_path, "2026-05-26")
+
+    assert report["flags"] == []
+    assert report["coverage"]["status"] == "partial"
+    assert report["coverage"]["missing_activities"] == 1

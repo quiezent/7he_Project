@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 from .activity_profile import build_activity_profile
 from .body_battery_model import build_body_battery_model
 from .context import load_context
+from .cns_readiness import build_cns_readiness
 from .device_audit import build_device_audit
 from .evidence import load_activities, load_latest_training_status, load_latest_wellness, summarize_recent_training
 from .gear_audit import build_gear_audit
@@ -37,6 +38,31 @@ def build_training_load_snapshot(
     context: dict,
 ) -> dict:
     training = summarize_recent_training(activities, target_date)
+    technical_start = target_date - timedelta(days=2)
+    technical_rows = []
+    for activity in activities:
+        activity_date = parse_date(activity.get("date"))
+        if (
+            activity_date is None
+            or activity_date < technical_start
+            or activity_date > target_date
+            or activity.get("category") != "mtb"
+        ):
+            continue
+        technical_rows.append(
+            {
+                "date": activity_date.isoformat(),
+                "category": activity.get("category"),
+                "duration_min": activity.get("duration_min"),
+                "training_load": activity.get("training_load"),
+                "hr_zone_min": activity.get("hr_zone_min"),
+            }
+        )
+    training["recent_technical_activities"] = sorted(
+        technical_rows,
+        key=lambda item: item.get("date") or "",
+        reverse=True,
+    )
     threshold = context.get("training_rules", {}).get("acute_chronic_load_spike_ratio", 1.5)
     spike = training.get("acute_load_spike_ratio")
     training["flags"] = []
@@ -61,7 +87,8 @@ def _cached_or_build_report(
     if refresh_models:
         return builder(root, target_date)
     cached = read_json(snapshots_dir(root) / filename, {})
-    if isinstance(cached, dict) and cached:
+    cached_date = parse_date(cached.get("date")) if isinstance(cached, dict) else None
+    if isinstance(cached, dict) and cached and cached_date == target_date:
         return cached
     return builder(root, target_date)
 
@@ -109,6 +136,14 @@ def build_current_state(
     gear_audit = build_gear_audit(root, target_date)
     device_audit = build_device_audit(root, target_date)
     self_evaluation = build_self_evaluation_report(root, target_date)
+    cns_readiness = build_cns_readiness(
+        root,
+        target_date,
+        wellness_trends=wellness_trends,
+        training_status_current=training_status_current,
+        training_load=training_load,
+        self_evaluation=self_evaluation,
+    )
     athlete = dict(context.get("athlete", {}))
     latest_body_composition = wellness_trends.get("latest_body_composition") or {}
     if athlete.get("body_weight_kg") is None and latest_body_composition.get("body_weight_kg") is not None:
@@ -263,6 +298,7 @@ def build_current_state(
         "body_composition": latest_body_composition or None,
         "activity_profile": activity_profile,
         "training_status_current": training_status_current,
+        "cns_readiness": cns_readiness,
         "modality_load_rollups": modality_load_rollups,
         "body_battery_model": {
             "samples": body_battery_model.get("samples"),

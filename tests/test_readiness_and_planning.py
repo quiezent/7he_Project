@@ -190,6 +190,86 @@ def test_today_plan_uses_dated_planned_session_input(tmp_path):
     assert any("coach-authored planned session" in item for item in plan["guardrails"])
 
 
+def test_today_plan_uses_matching_weekly_intent_when_no_explicit_session_exists(tmp_path):
+    load_context(tmp_path)
+    target = "2026-06-16"
+    weekly_session = {
+        "date": target,
+        "title": "Weekly Kiara quality intent",
+        "type": "mtb_quality_skill",
+        "duration_min": 75,
+        "intensity": "moderate",
+        "schema_version": 3,
+        "contract_fields": SESSION_CONTRACT_FIELDS,
+        "purpose": "Build controlled cornering and climbing transfer.",
+        "dose": {"loops": 3},
+        "adaptation_hypothesis": "Repeatable loops improve quality without uncontrolled density.",
+        "execution_rules": ["Keep each descent technically deliberate."],
+        "expected_result": {"technical": "Consistent braking timing."},
+        "stop_rules": ["Stop if line choice becomes reactive."],
+        "post_session_review_fields": ["loop_count"],
+    }
+    write_json(
+        tmp_path / "snapshots" / "weekly_plan_2026-W25.json",
+        {
+            "artifact_type": "weekly_training_plan",
+            "week_key": "2026-W25",
+            "week_start": "2026-06-15",
+            "week_end": "2026-06-21",
+            "generated_at": "2026-06-15T08:00:00+08:00",
+            "status": "ready",
+            "sessions": [weekly_session],
+        },
+    )
+
+    plan = build_today_plan(tmp_path, target, state=_green_state(target))
+
+    assert plan["session"]["title"] == "Weekly Kiara quality intent"
+    assert plan["plan_source"]["type"] == "weekly_plan_session"
+    assert plan["plan_source"]["path"] == "snapshots/weekly_plan_2026-W25.json"
+    assert plan["session"]["schema_version"] == 3
+    assert any("week's intent session" in item for item in plan["guardrails"])
+
+
+def test_explicit_session_overrides_matching_weekly_intent(tmp_path):
+    load_context(tmp_path)
+    target = "2026-06-16"
+    write_json(
+        tmp_path / "snapshots" / "weekly_plan_2026-W25.json",
+        {
+            "artifact_type": "weekly_training_plan",
+            "week_start": "2026-06-15",
+            "week_end": "2026-06-21",
+            "sessions": [
+                {
+                    "date": target,
+                    "title": "Weekly intent",
+                    "type": "mtb_quality_skill",
+                    "duration_min": 75,
+                    "intensity": "moderate",
+                }
+            ],
+        },
+    )
+    write_json(
+        tmp_path / "input" / f"planned_session_{target}.json",
+        {
+            "date": target,
+            "session": {
+                "title": "Explicit coach adjustment",
+                "type": "outdoor_bike_optional",
+                "duration_min": 30,
+                "intensity": "easy",
+            },
+        },
+    )
+
+    plan = build_today_plan(tmp_path, target, state=_green_state(target))
+
+    assert plan["session"]["title"] == "Explicit coach adjustment"
+    assert plan["plan_source"]["type"] == "input_planned_session"
+
+
 def test_base_phase_green_day_gets_trainable_plan(tmp_path):
     load_context(tmp_path)
     write_wellness(tmp_path, "2026-04-29", sleepScore=90, hrvStatus="balanced", bodyBattery=80)
@@ -330,6 +410,63 @@ def test_garmin_non_optimal_acwr_downshifts_green_hard_day(tmp_path):
     assert plan["decision_inputs"]["garmin_arbitration"]["recommended_action"] == "downshift"
     assert plan["session"]["type"] == "outdoor_bike_optional"
     assert plan["session"]["intensity"] == "easy"
+    _assert_schema_v3_contract(plan["session"])
+
+
+def test_constraints_override_authored_hard_session_for_cns_impairment(tmp_path):
+    load_context(tmp_path)
+    target = "2026-04-30"
+    state = _green_state(target)
+    state["cns_readiness"] = {
+        "status": "compromised",
+        "interpretation": "CNS processing is not reliable enough for technical consequence.",
+        "session_ceiling": {"level": "low_consequence_repetition_only"},
+    }
+    write_json(
+        tmp_path / "input" / f"planned_session_{target}.json",
+        {
+            "date": target,
+            "session": {
+                "title": "Authored Kiara repeatability",
+                "type": "bike_quality",
+                "duration_min": 90,
+                "intensity": "hard",
+            },
+        },
+    )
+
+    plan = build_today_plan(tmp_path, target, state=state)
+
+    assert plan["session"]["type"] == "cns_recovery"
+    assert plan["constraint_resolution"]["applied"][0]["source"] == "cns_readiness"
+    _assert_schema_v3_contract(plan["session"])
+
+
+def test_constraints_override_authored_hard_session_for_garmin_downshift(tmp_path):
+    load_context(tmp_path)
+    target = "2026-04-30"
+    state = _with_training_status(
+        _green_state(target),
+        acwr_status="HIGH",
+        acwr_ratio=1.6,
+    )
+    write_json(
+        tmp_path / "input" / f"planned_session_{target}.json",
+        {
+            "date": target,
+            "session": {
+                "title": "Authored tempo work",
+                "type": "bike_quality",
+                "duration_min": 90,
+                "intensity": "hard",
+            },
+        },
+    )
+
+    plan = build_today_plan(tmp_path, target, state=state)
+
+    assert plan["session"]["type"] == "garmin_aerobic_continuity"
+    assert plan["constraint_resolution"]["applied"][0]["source"] == "garmin_diagnosis_arbitration"
     _assert_schema_v3_contract(plan["session"])
 
 

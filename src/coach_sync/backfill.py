@@ -6,6 +6,7 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, Callable
 
+from .evidence import wellness_snapshot_is_usable
 from .garmin_sync import _safe_call
 from .io import read_json, write_json
 from .paths import activities_dir, snapshots_dir
@@ -143,19 +144,22 @@ def backfill_wellness(
     for day in days[:max_days]:
         day_text = day.isoformat()
         path = snapshots_dir(root) / f"garmin_wellness_{day_text}.json"
-        if skip_existing and path.exists():
+        existing = read_json(path, {}) if path.exists() else {}
+        if skip_existing and wellness_snapshot_is_usable(existing):
             skipped.append(day_text)
             continue
         payloads = _wellness_payload(client, day_text)
-        if not any(payload.get("ok") for payload in payloads):
+        snapshot = {
+            "date": day_text,
+            "source": "garminconnect_backfill",
+            "payloads": payloads,
+        }
+        if not wellness_snapshot_is_usable(snapshot):
             failures.append({"date": day_text, "payloads": payloads})
+            continue
         write_json(
             path,
-            {
-                "date": day_text,
-                "source": "garminconnect_backfill",
-                "payloads": payloads,
-            },
+            snapshot,
         )
         written.append(day_text)
         if delay_seconds:
@@ -215,4 +219,3 @@ def historical_backfill(
         )
     write_json(snapshots_dir(root) / "historical_backfill_status.json", result)
     return result
-

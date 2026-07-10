@@ -50,7 +50,10 @@ def _compact_modalities(windows: dict) -> dict:
 def _coach_confidence(state: dict) -> str:
     readiness = state.get("readiness", {})
     freshness = state.get("data_freshness", {})
+    cns = state.get("cns_readiness") or {}
     if readiness.get("readiness_level") == "red":
+        return "high_for_downshift"
+    if cns.get("status") in {"impaired", "compromised"}:
         return "high_for_downshift"
     if freshness.get("status") != "current":
         return "limited"
@@ -85,6 +88,7 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
     freshness = state.get("data_freshness") or {}
     activity_freshness = freshness.get("activity_data") or {}
     readiness = state.get("readiness") or {}
+    cns = state.get("cns_readiness") or {}
     phase = state.get("phase") or {}
     training_status = state.get("training_status_current") or {}
     garmin_arbitration = (plan.get("decision_inputs") or {}).get("garmin_arbitration")
@@ -95,7 +99,24 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
     gear_audit = state.get("gear_audit") or {}
     device_audit = state.get("device_audit") or {}
     self_evaluation = state.get("self_evaluation") or {}
-    predictive = read_json(snapshots_dir(root) / "predictive_training.json", {})
+    gear_coverage = (gear_audit.get("coverage") or {}).get("status")
+    device_coverage = (device_audit.get("coverage") or {}).get("status")
+    gear_status = "flagged" if gear_audit.get("flags") else "clear" if gear_coverage == "complete" else gear_coverage or "unknown"
+    device_status = "flagged" if device_audit.get("flags") else "clear" if device_coverage == "complete" else device_coverage or "unknown"
+    raw_predictive = read_json(snapshots_dir(root) / "predictive_training.json", {})
+    target = parse_date(state.get("date"))
+    predictive = (
+        raw_predictive
+        if target is not None
+        and isinstance(raw_predictive, dict)
+        and parse_date(raw_predictive.get("date")) == target
+        else {}
+    )
+    predictive_status = (
+        "stale"
+        if isinstance(raw_predictive, dict) and raw_predictive and not predictive
+        else "missing"
+    )
     scheduled_rest = (plan.get("decision_inputs") or {}).get("scheduled_rest")
 
     trusted = []
@@ -141,6 +162,19 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
             },
             "daily_intensity_ceiling",
             "Use readiness to cap session ambition before adding MTB specificity.",
+        ),
+        _signal(
+            "CNS readiness",
+            cns.get("status") or "unknown",
+            {
+                "score": cns.get("score"),
+                "confidence": cns.get("confidence"),
+                "session_ceiling": cns.get("session_ceiling"),
+                "signals": cns.get("signals"),
+            },
+            "technical_consequence_ceiling",
+            cns.get("interpretation")
+            or "Use CNS readiness to cap speed, jumps, enduro simulation, novelty, and technical consequence.",
         ),
         _signal(
             "Current phase",
@@ -196,10 +230,11 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
         ),
         _signal(
             "Activity gear audit",
-            "flagged" if gear_audit.get("flags") else "clear",
+            gear_status,
             {
                 "checked_activities": gear_audit.get("checked_activities"),
                 "mtb_checked": gear_audit.get("mtb_checked"),
+                "coverage": gear_audit.get("coverage"),
                 "recent_mtb_gear": gear_audit.get("recent_mtb_gear"),
             },
             "power_source_and_bike_context",
@@ -207,10 +242,11 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
         ),
         _signal(
             "Activity device audit",
-            "flagged" if device_audit.get("flags") else "clear",
+            device_status,
             {
                 "checked_activities": device_audit.get("checked_activities"),
                 "mtb_checked": device_audit.get("mtb_checked"),
+                "coverage": device_audit.get("coverage"),
                 "recent_mtb_devices": device_audit.get("recent_mtb_devices"),
             },
             "heart_rate_source_confidence",
@@ -233,7 +269,7 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
                 predictive.get("today_prescription", {})
                 .get("model_confidence", {})
                 .get("status")
-                or "missing"
+                or predictive_status
             ),
             {
                 "today_prediction": (
@@ -269,6 +305,15 @@ def _build_cautions(state: dict) -> list[dict]:
                 "type": "hard_session_limiter",
                 "severity": "yellow",
                 "message": limiter,
+            }
+        )
+    for flag in (state.get("cns_readiness") or {}).get("flags") or []:
+        cautions.append(
+            {
+                "source": "cns_readiness",
+                "type": flag.get("type"),
+                "severity": flag.get("severity") or "yellow",
+                "message": flag.get("message"),
             }
         )
     for flag in (state.get("training_status_current") or {}).get("flags") or []:
@@ -377,13 +422,26 @@ def _build_experimental_evidence(state: dict) -> tuple[list[dict], list[dict]]:
 def _today_decision(state: dict, plan: dict, cautions: list[dict]) -> dict:
     session = plan.get("session") or {}
     garmin_arbitration = (plan.get("decision_inputs") or {}).get("garmin_arbitration") or {}
+    constraints = (plan.get("constraint_resolution") or {}).get("applied") or []
+    constraint_sources = {item.get("source") for item in constraints if isinstance(item, dict)}
     phase = (state.get("phase") or {}).get("name")
     readiness = state.get("readiness") or {}
+    cns = state.get("cns_readiness") or {}
+    cns_status = cns.get("status")
     confidence = _coach_confidence(state)
     if session.get("type") == "scheduled_rest":
         stance = "sabbath_rest"
     elif readiness.get("readiness_level") == "red":
         stance = "downshift"
+    elif "cns_readiness" in constraint_sources or (
+        cns_status in {"impaired", "compromised"}
+        and session.get("intensity") not in {"recovery", "easy"}
+    ):
+        stance = "cns_downshift"
+    elif "garmin_diagnosis_arbitration" in constraint_sources:
+        stance = "garmin_downshift"
+    elif "data_freshness" in constraint_sources:
+        stance = "data_limited"
     elif session.get("adaptive_upgrade_option"):
         stance = "controlled_upgrade_option"
     elif session.get("type") == "mtb_repeatability_controlled":
@@ -396,6 +454,8 @@ def _today_decision(state: dict, plan: dict, cautions: list[dict]) -> dict:
         "stance": stance,
         "coach_confidence": confidence,
         "session": session,
+        "plan_source": plan.get("plan_source"),
+        "constraint_resolution": plan.get("constraint_resolution"),
         "gym": plan.get("gym"),
         "nutrition": plan.get("nutrition"),
         "guardrails": plan.get("guardrails", []),
@@ -404,6 +464,8 @@ def _today_decision(state: dict, plan: dict, cautions: list[dict]) -> dict:
             f"Phase is {_value(phase)}.",
             f"Planned session is {session.get('title', 'unknown session')} at {session.get('intensity', 'unknown')} intensity.",
             f"Garmin arbitration recommends {_value(garmin_arbitration.get('recommended_action'))}.",
+            f"CNS readiness is {_value(cns_status)} with ceiling {_value((cns.get('session_ceiling') or {}).get('level'))}.",
+            f"{len(constraints)} session constraint(s) were applied.",
             f"{len(cautions)} caution item(s) are active.",
         ],
     }
@@ -427,6 +489,7 @@ def _next_data_needed(state: dict) -> list[str]:
         [
             "Keep live Garmin wellness and activity sync current before hard-session decisions.",
             "Label what the Fenix cannot see: ride purpose, trail condition, confidence, braking comfort, skill quality, fueling, and heat feel.",
+            "Label CNS/technical sharpness: brain fog, vision, braking timing, line choice, unclipping delay, confidence, and late-ride decision speed.",
         ]
     )
     if not (state.get("body_battery_model") or {}).get("samples"):
@@ -470,6 +533,10 @@ def _packet_text(packet: dict) -> str:
         for item in packet["evidence"]["ignored_for_decision"]
     ]
     today = packet["today_call"]
+    source = today.get("plan_source") or {}
+    source_text = source.get("type") or "unknown"
+    if source.get("path"):
+        source_text = f"{source_text} ({source['path']})"
     return "\n".join(
         [
             f"Coach Packet - {packet['date']}",
@@ -478,6 +545,7 @@ def _packet_text(packet: dict) -> str:
             packet["stack_path"]["why"],
             "",
             f"Today: {today['session'].get('title')} ({today['stance']}, confidence {today['coach_confidence']})",
+            f"Plan source: {source_text}",
             bullets(today.get("why") or []),
             "",
             "Trusted evidence:",

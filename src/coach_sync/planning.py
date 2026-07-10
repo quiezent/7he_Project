@@ -22,8 +22,10 @@ SESSION_CONTRACT_FIELDS = [
 
 TRAINABLE_SESSION_TYPES = {
     "bike_quality",
+    "cns_recovery",
     "endurance_data_limited",
     "endurance_skills",
+    "garmin_aerobic_continuity",
     "mtb_repeatability_controlled",
     "outdoor_bike_optional",
 }
@@ -31,6 +33,11 @@ TRAINABLE_SESSION_TYPES = {
 
 def _planned_session_path(target_date: date) -> str:
     return f"input/planned_session_{target_date.isoformat()}.json"
+
+
+def _weekly_plan_path(target_date: date) -> str:
+    iso = target_date.isocalendar()
+    return f"snapshots/weekly_plan_{iso.year}-W{iso.week:02d}.json"
 
 
 def _load_planned_session(root: str | Path | None, target_date: date) -> dict | None:
@@ -51,6 +58,34 @@ def _load_planned_session(root: str | Path | None, target_date: date) -> dict | 
             "path": _planned_session_path(target_date),
         },
     }
+
+
+def load_weekly_session(root: str | Path | None, target_date: date) -> dict | None:
+    """Return the matching weekly-intent session only when its date range is valid."""
+    dated_path = snapshots_dir(root) / Path(_weekly_plan_path(target_date)).name
+    current_path = snapshots_dir(root) / "weekly_plan.json"
+    for path in (dated_path, current_path):
+        payload = read_json(path, {})
+        if not isinstance(payload, dict) or payload.get("artifact_type") != "weekly_training_plan":
+            continue
+        week_start = parse_date(payload.get("week_start"))
+        week_end = parse_date(payload.get("week_end"))
+        if week_start is None or week_end is None or not week_start <= target_date <= week_end:
+            continue
+        for session in payload.get("sessions") or []:
+            if not isinstance(session, dict) or parse_date(session.get("date")) != target_date:
+                continue
+            return {
+                "session": dict(session),
+                "source": {
+                    "type": "weekly_plan_session",
+                    "path": f"snapshots/{path.name}",
+                    "week_key": payload.get("week_key"),
+                    "generated_at": payload.get("generated_at"),
+                    "weekly_plan_status": payload.get("status"),
+                },
+            }
+    return None
 
 
 def _nutrition_block(context: dict, session_intensity: str, duration_min: int) -> dict:
@@ -319,6 +354,111 @@ def _data_limited_base_plan(state: dict) -> dict:
     }
 
 
+def _cns_recovery_plan(cns: dict) -> dict:
+    ceiling = (cns.get("session_ceiling") or {}).get("level") or "low_consequence_only"
+    return {
+        "title": "CNS low-consequence recovery",
+        "type": "cns_recovery",
+        "duration_min": 20,
+        "intensity": "recovery",
+        "details": [
+            "Use a walk, mobility, or a very easy indoor spin only if it improves clarity and freshness.",
+            "No technical trail riding, speed, jumps, enduro simulation, setup testing, or stacked variables.",
+            f"CNS ceiling today: {ceiling}.",
+        ],
+    }
+
+
+def _garmin_aerobic_continuity_plan(arbitration: dict) -> dict:
+    return {
+        "title": "Garmin-capped aerobic continuity",
+        "type": "garmin_aerobic_continuity",
+        "duration_min": 45,
+        "intensity": "easy",
+        "details": [
+            "Keep the work conversational and bounded; preserve the next quality opportunity.",
+            "Use the indoor trainer or low-consequence terrain only.",
+            "No intervals, durability extension, speed hunting, jump progression, or setup testing.",
+            f"Garmin ceiling: {arbitration.get('ceiling') or 'aerobic continuity'}.",
+        ],
+    }
+
+
+def _session_is_already_low_consequence(session: dict) -> bool:
+    return (
+        str(session.get("intensity") or "").lower() in {"recovery", "easy"}
+        and session.get("type") not in {"mtb_quality_skill", "mtb_skill_transfer_optional"}
+    )
+
+
+def _session_summary(session: dict) -> dict:
+    return {
+        "title": session.get("title"),
+        "type": session.get("type"),
+        "duration_min": session.get("duration_min"),
+        "intensity": session.get("intensity"),
+    }
+
+
+def _apply_session_constraints(
+    session: dict,
+    state: dict,
+    arbitration: dict,
+) -> tuple[dict, list[dict]]:
+    """Apply safety ceilings after resolving the source session but before prediction."""
+    effective = dict(session)
+    constraints: list[dict] = []
+    cns = state.get("cns_readiness") or {}
+    cns_status = str(cns.get("status") or "").lower()
+    freshness = state.get("data_freshness") or {}
+
+    if cns_status in {"impaired", "compromised"} and effective.get("type") != "scheduled_rest":
+        replacement = _cns_recovery_plan(cns)
+        constraints.append(
+            {
+                "source": "cns_readiness",
+                "reason": cns.get("interpretation")
+                or "CNS status caps technical consequence and structured training today.",
+                "ceiling": (cns.get("session_ceiling") or {}).get("level"),
+                "original_session": _session_summary(effective),
+                "effective_session": _session_summary(replacement),
+            }
+        )
+        effective = replacement
+    elif (
+        freshness.get("status") in {"stale", "future", "missing"}
+        or freshness.get("hard_session_confidence") == "limited"
+    ) and not _session_is_already_low_consequence(effective):
+        replacement = _data_limited_base_plan(state)
+        constraints.append(
+            {
+                "source": "data_freshness",
+                "reason": freshness.get("message")
+                or "Hard-session evidence is stale, missing, or otherwise limited.",
+                "original_session": _session_summary(effective),
+                "effective_session": _session_summary(replacement),
+            }
+        )
+        effective = replacement
+    elif (
+        arbitration.get("recommended_action") in {"downshift", "no_hard_guidance"}
+        and not _session_is_already_low_consequence(effective)
+    ):
+        replacement = _garmin_aerobic_continuity_plan(arbitration)
+        constraints.append(
+            {
+                "source": "garmin_diagnosis_arbitration",
+                "reason": arbitration.get("summary") or "Garmin diagnosis lowers the session ceiling.",
+                "ceiling": arbitration.get("ceiling"),
+                "original_session": _session_summary(effective),
+                "effective_session": _session_summary(replacement),
+            }
+        )
+        effective = replacement
+
+    return effective, constraints
+
+
 def _green_base_plan(state: dict) -> dict:
     weekday = date.fromisoformat(state["date"]).weekday()
     if weekday in {1, 3}:
@@ -429,6 +569,8 @@ def build_today_plan(
         state.get("data_freshness", {}).get("hard_session_confidence") == "limited"
     )
     planned_session = _load_planned_session(root, target_date)
+    weekly_session = load_weekly_session(root, target_date)
+    selected_session = planned_session or weekly_session
     plan_source = {"type": "today_plan", "path": "snapshots/today_plan.json"}
     garmin_arbitration = build_garmin_arbitration(state)
 
@@ -436,10 +578,10 @@ def build_today_plan(
         session = _scheduled_rest_plan(scheduled_rest)
     elif level == "red" or hard_guidance == "avoid":
         session = _red_plan(state)
-    elif planned_session:
-        session = dict(planned_session["session"])
+    elif selected_session:
+        session = dict(selected_session["session"])
         session = _with_adaptive_upgrade_option(session, garmin_arbitration)
-        plan_source = planned_session["source"]
+        plan_source = selected_session["source"]
     elif level == "yellow" or stale:
         if not stale and garmin_arbitration.get("recommended_action") == "controlled_upgrade":
             session = _controlled_upgrade_plan(state, garmin_arbitration)
@@ -454,6 +596,7 @@ def build_today_plan(
             and garmin_arbitration.get("recommended_action") in {"downshift", "no_hard_guidance"}
         ):
             session = _yellow_base_plan(state)
+    session, applied_constraints = _apply_session_constraints(session, state, garmin_arbitration)
     session = _with_session_contract(session)
 
     nutrition_context = {
@@ -472,8 +615,14 @@ def build_today_plan(
         "Progression follows readiness, recent load, bike specificity, and next-day response.",
         "Downshift tomorrow if the session produces unusually poor recovery or skill quality.",
     ]
-    if planned_session and not scheduled_rest and not (level == "red" or hard_guidance == "avoid"):
-        guardrails.insert(0, f"Using coach-authored planned session from {plan_source['path']}.")
+    if selected_session and not scheduled_rest and not (level == "red" or hard_guidance == "avoid"):
+        if plan_source.get("type") == "input_planned_session":
+            guardrails.insert(0, f"Using coach-authored planned session from {plan_source['path']}.")
+        else:
+            guardrails.insert(
+                0,
+                f"Using this week's intent session from {plan_source['path']}; same-day readiness remains the execution gate.",
+            )
     if scheduled_rest:
         guardrails.insert(
             0,
@@ -490,6 +639,10 @@ def build_today_plan(
         for limiter in state.get("data_freshness", {}).get("hard_session_limiters", []):
             if limiter and limiter not in guardrails:
                 guardrails.append(limiter)
+    for constraint in applied_constraints:
+        reason = constraint.get("reason")
+        if reason and reason not in guardrails:
+            guardrails.insert(0, reason)
     if (
         not scheduled_rest
         and not (level == "red" or hard_guidance == "avoid")
@@ -519,6 +672,14 @@ def build_today_plan(
             "data_freshness": state.get("data_freshness"),
             "scheduled_rest": scheduled_rest,
             "garmin_arbitration": garmin_arbitration,
+            "cns_readiness": {
+                "status": (state.get("cns_readiness") or {}).get("status"),
+                "session_ceiling": (state.get("cns_readiness") or {}).get("session_ceiling"),
+            },
+        },
+        "constraint_resolution": {
+            "applied": applied_constraints,
+            "effective_session_source": "constraint" if applied_constraints else plan_source.get("type"),
         },
     }
     write_json(snapshots_dir(root) / "today_plan.json", plan)

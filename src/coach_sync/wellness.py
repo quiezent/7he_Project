@@ -5,7 +5,7 @@ from pathlib import Path
 from statistics import mean
 from typing import Any
 
-from .evidence import as_number, dated_snapshot_files
+from .evidence import as_number, dated_snapshot_files, wellness_snapshot_is_usable
 from .io import read_json, write_json
 from .paths import snapshots_dir
 from .time_utils import DEFAULT_TIMEZONE, iso_now, parse_date, today_local
@@ -221,10 +221,11 @@ def normalize_wellness_snapshot(path: Path) -> dict:
 
 
 def build_wellness_daily(root: str | Path | None = None) -> list[dict]:
-    rows = [
-        normalize_wellness_snapshot(path)
-        for _, path in dated_snapshot_files(root, "garmin_wellness")
-    ]
+    rows = []
+    for _, path in dated_snapshot_files(root, "garmin_wellness"):
+        snapshot = read_json(path, {})
+        if wellness_snapshot_is_usable(snapshot):
+            rows.append(normalize_wellness_payload(snapshot))
     rows = sorted(rows, key=lambda item: item.get("date") or "")
     for row in rows:
         if row.get("date"):

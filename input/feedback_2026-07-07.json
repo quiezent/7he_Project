@@ -1,0 +1,11 @@
+{
+  "date": "2026-07-07",
+  "entries": [
+    {
+      "timestamp_local": "2026-07-07T19:15:21+08:00",
+      "source": "athlete_report",
+      "subjective_report": "Indoor cycling completed for 60 minutes because it felt good.",
+      "coaching_interpretation": "Physiologically easy by RPE/HR, but materially longer than the prescribed recovery dose. Treat as execution drift until next-day Garmin wellness confirms whether the extra duration was absorbed."
+    }
+  ]
+}

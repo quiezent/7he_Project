@@ -19,6 +19,10 @@ DEFAULT_ZONE_BOUNDARIES = {
     4: 160,
     5: 174,
 }
+PEDALING_POWER_W = 40.0
+PEDALING_CADENCE_RPM = 20.0
+CLIMB_GRADE_PCT = 3.0
+DESCENT_GRADE_PCT = -3.0
 ZONE_WEIGHTS = {
     0: 0.35,
     1: 0.70,
@@ -27,6 +31,15 @@ ZONE_WEIGHTS = {
     4: 2.60,
     5: 3.60,
 }
+
+
+def _as_float(value: Any) -> float | None:
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def parse_lap_groups(values: list[str] | None) -> list[list[int]]:
@@ -211,6 +224,309 @@ def _safe_ratio(numerator: float, denominator: float) -> float | None:
     return numerator / denominator
 
 
+def _weighted_average(total: float, seconds: float) -> float | None:
+    if seconds <= 0:
+        return None
+    return total / seconds
+
+
+def _segment_is_moving(row: dict[str, Any], next_row: dict[str, Any] | None) -> bool | None:
+    speed = _as_float(row.get("directSpeed"))
+    if speed is not None and speed >= 0.5:
+        return True
+
+    distance = _as_float(row.get("sumDistance"))
+    next_distance = _as_float(next_row.get("sumDistance")) if next_row else None
+    if distance is not None and next_distance is not None:
+        if next_distance - distance >= 1.0:
+            return True
+        return False
+
+    if speed is not None:
+        return False
+    return None
+
+
+def _classify_action_terrain(moving: bool | None, power: float | None, cadence: float | None, grade_pct: float | None) -> str:
+    if moving is False:
+        return "stopped"
+    if moving is None:
+        return "unknown"
+
+    pedaling = (power is not None and power >= PEDALING_POWER_W) or (
+        cadence is not None and cadence >= PEDALING_CADENCE_RPM
+    )
+    if grade_pct is None:
+        return "pedaling_unknown_grade" if pedaling else "coasting_unknown_grade"
+    if grade_pct >= CLIMB_GRADE_PCT:
+        return "punchy_climb_pedaling" if pedaling else "uphill_low_power"
+    if grade_pct <= DESCENT_GRADE_PCT:
+        return "downhill_pedaling" if pedaling else "downhill_coasting"
+    return "flat_pedaling" if pedaling else "flat_coasting"
+
+
+def _empty_action_bucket() -> dict[str, Any]:
+    return {
+        "seconds": 0.0,
+        "distance_m": 0.0,
+        "elevation_delta_m": 0.0,
+        "hr_weight": 0.0,
+        "hr_seconds": 0.0,
+        "power_weight": 0.0,
+        "power_seconds": 0.0,
+        "max_power": None,
+    }
+
+
+def _summarize_action_terrain(segments: list[dict[str, Any]]) -> dict[str, Any]:
+    buckets: dict[str, dict[str, Any]] = {}
+    pedaling_seconds = 0.0
+    coasting_seconds = 0.0
+
+    for item in segments:
+        category = str(item.get("action_terrain") or "unknown")
+        bucket = buckets.setdefault(category, _empty_action_bucket())
+        seconds = float(item.get("duration_s") or 0.0)
+        distance = float(item.get("distance_delta_m") or 0.0)
+        elevation = float(item.get("elevation_delta_m") or 0.0)
+        bucket["seconds"] += seconds
+        bucket["distance_m"] += max(0.0, distance)
+        bucket["elevation_delta_m"] += elevation
+
+        hr = item.get("hr")
+        if hr is not None:
+            bucket["hr_weight"] += float(hr) * seconds
+            bucket["hr_seconds"] += seconds
+        power = item.get("power")
+        if power is not None:
+            bucket["power_weight"] += float(power) * seconds
+            bucket["power_seconds"] += seconds
+            bucket["max_power"] = float(power) if bucket["max_power"] is None else max(float(power), bucket["max_power"])
+
+        if "pedaling" in category:
+            pedaling_seconds += seconds
+        elif "coasting" in category or category in {"uphill_low_power", "stopped"}:
+            coasting_seconds += seconds
+
+    sections = {}
+    for category, bucket in sorted(buckets.items()):
+        avg_hr = _weighted_average(bucket["hr_weight"], bucket["hr_seconds"])
+        avg_power = _weighted_average(bucket["power_weight"], bucket["power_seconds"])
+        grade = _safe_ratio(bucket["elevation_delta_m"] * 100.0, bucket["distance_m"])
+        speed = _safe_ratio(bucket["distance_m"], bucket["seconds"])
+        sections[category] = {
+            "duration_s": round(bucket["seconds"], 1),
+            "distance_m": round(bucket["distance_m"], 1),
+            "avg_hr": round(avg_hr, 1) if avg_hr is not None else None,
+            "avg_power": round(avg_power, 1) if avg_power is not None else None,
+            "max_power": round(bucket["max_power"], 1) if bucket["max_power"] is not None else None,
+            "elevation_delta_m": round(bucket["elevation_delta_m"], 1),
+            "avg_grade_pct": round(grade, 1) if grade is not None else None,
+            "avg_speed_kmh": round(speed * 3.6, 1) if speed is not None else None,
+        }
+
+    active_sections = {
+        key: value
+        for key, value in sections.items()
+        if key != "stopped" and value.get("duration_s", 0.0) > 0
+    }
+    dominant_active_category = None
+    if active_sections:
+        dominant_active_category = max(active_sections.items(), key=lambda item: item[1]["duration_s"])[0]
+
+    return {
+        "thresholds": {
+            "pedaling_power_w": PEDALING_POWER_W,
+            "pedaling_cadence_rpm": PEDALING_CADENCE_RPM,
+            "climb_grade_pct": CLIMB_GRADE_PCT,
+            "descent_grade_pct": DESCENT_GRADE_PCT,
+        },
+        "pedaling_sec": round(pedaling_seconds, 1),
+        "coasting_or_stopped_sec": round(coasting_seconds, 1),
+        "dominant_active_category": dominant_active_category,
+        "sections": sections,
+    }
+
+
+def _summarize_run(run: dict[str, Any]) -> dict[str, Any]:
+    hr_avg = _weighted_average(run["hr_weight"], run["hr_seconds"])
+    power_avg = _weighted_average(run["power_weight"], run["power_seconds"])
+    return {
+        "start_offset_s": round(run["start_offset_s"], 1),
+        "end_offset_s": round(run["end_offset_s"], 1),
+        "duration_s": round(run["duration_s"], 1),
+        "avg_hr": round(hr_avg, 1) if hr_avg is not None else None,
+        "start_hr": run.get("start_hr"),
+        "end_hr": run.get("end_hr"),
+        "max_hr": run.get("max_hr"),
+        "avg_power": round(power_avg, 1) if power_avg is not None else None,
+        "max_power": run.get("max_power"),
+    }
+
+
+def _summarize_lap_timeline(
+    rows: list[dict[str, Any]],
+    interval: dict[str, Any],
+    boundaries: dict[int, float],
+) -> dict[str, Any]:
+    lap_start = float(interval["start"])
+    lap_end = float(interval["end"])
+    if lap_end <= lap_start:
+        return {"samples": 0, "flags": ["invalid_lap_interval"]}
+
+    segments: list[dict[str, Any]] = []
+    for index, row in enumerate(rows):
+        timestamp = _as_float(row.get("directTimestamp"))
+        if timestamp is None:
+            continue
+        next_row = rows[index + 1] if index < len(rows) - 1 else None
+        next_timestamp = _as_float(next_row.get("directTimestamp")) if next_row else lap_end
+        if next_timestamp is None:
+            next_timestamp = lap_end
+        start = max(timestamp, lap_start)
+        end = min(next_timestamp, lap_end)
+        if end <= start:
+            continue
+        moving = _segment_is_moving(row, next_row)
+        duration_s = (end - start) / 1000.0
+        full_duration_s = max(0.0, (next_timestamp - timestamp) / 1000.0)
+        scale = duration_s / full_duration_s if full_duration_s > 0 else 0.0
+        distance = _as_float(row.get("sumDistance"))
+        next_distance = _as_float(next_row.get("sumDistance")) if next_row else None
+        elevation = _as_float(row.get("directElevation"))
+        next_elevation = _as_float(next_row.get("directElevation")) if next_row else None
+        distance_delta_m = None
+        elevation_delta_m = None
+        if distance is not None and next_distance is not None:
+            distance_delta_m = max(0.0, next_distance - distance) * scale
+        if elevation is not None and next_elevation is not None:
+            elevation_delta_m = (next_elevation - elevation) * scale
+        grade_pct = None
+        if distance is not None and next_distance is not None and elevation is not None and next_elevation is not None:
+            raw_distance_delta = next_distance - distance
+            if raw_distance_delta > 1.0:
+                grade_pct = (next_elevation - elevation) * 100.0 / raw_distance_delta
+        power = _as_float(row.get("directPower"))
+        cadence = _as_float(row.get("directBikeCadence"))
+        segments.append(
+            {
+                "offset_s": (start - lap_start) / 1000.0,
+                "end_offset_s": (end - lap_start) / 1000.0,
+                "duration_s": duration_s,
+                "moving": moving,
+                "hr": _as_float(row.get("directHeartRate")),
+                "power": power,
+                "cadence": cadence,
+                "distance_delta_m": distance_delta_m,
+                "elevation_delta_m": elevation_delta_m,
+                "grade_pct": grade_pct,
+                "action_terrain": _classify_action_terrain(moving, power, cadence, grade_pct),
+            }
+        )
+
+    if not segments:
+        return {"samples": 0, "flags": ["missing_lap_timeline_samples"]}
+
+    moving_seconds = sum(item["duration_s"] for item in segments if item["moving"] is True)
+    stopped_seconds = sum(item["duration_s"] for item in segments if item["moving"] is False)
+    unknown_seconds = sum(item["duration_s"] for item in segments if item["moving"] is None)
+    hr_segments = [item for item in segments if item["hr"] is not None]
+    first_hr = hr_segments[0]["hr"] if hr_segments else None
+    last_hr = hr_segments[-1]["hr"] if hr_segments else None
+    max_hr = max((item["hr"] for item in hr_segments), default=None)
+
+    moving_hr_weight = sum(item["hr"] * item["duration_s"] for item in segments if item["moving"] is True and item["hr"] is not None)
+    moving_hr_seconds = sum(item["duration_s"] for item in segments if item["moving"] is True and item["hr"] is not None)
+    stopped_hr_weight = sum(item["hr"] * item["duration_s"] for item in segments if item["moving"] is False and item["hr"] is not None)
+    stopped_hr_seconds = sum(item["duration_s"] for item in segments if item["moving"] is False and item["hr"] is not None)
+
+    runs: list[dict[str, Any]] = []
+    for item in segments:
+        if item["moving"] is None:
+            continue
+        if not runs or runs[-1]["moving"] != item["moving"]:
+            runs.append(
+                {
+                    "moving": item["moving"],
+                    "start_offset_s": item["offset_s"],
+                    "end_offset_s": item["end_offset_s"],
+                    "duration_s": item["duration_s"],
+                    "hr_weight": 0.0,
+                    "hr_seconds": 0.0,
+                    "power_weight": 0.0,
+                    "power_seconds": 0.0,
+                    "start_hr": item["hr"],
+                    "end_hr": item["hr"],
+                    "max_hr": item["hr"],
+                    "max_power": item["power"],
+                }
+            )
+        else:
+            runs[-1]["end_offset_s"] = item["end_offset_s"]
+            runs[-1]["duration_s"] += item["duration_s"]
+            runs[-1]["end_hr"] = item["hr"] if item["hr"] is not None else runs[-1]["end_hr"]
+            if item["hr"] is not None:
+                current_max_hr = runs[-1].get("max_hr")
+                runs[-1]["max_hr"] = item["hr"] if current_max_hr is None else max(current_max_hr, item["hr"])
+            if item["power"] is not None:
+                current_max_power = runs[-1].get("max_power")
+                runs[-1]["max_power"] = item["power"] if current_max_power is None else max(current_max_power, item["power"])
+
+        if item["hr"] is not None:
+            runs[-1]["hr_weight"] += item["hr"] * item["duration_s"]
+            runs[-1]["hr_seconds"] += item["duration_s"]
+        if item["power"] is not None:
+            runs[-1]["power_weight"] += item["power"] * item["duration_s"]
+            runs[-1]["power_seconds"] += item["duration_s"]
+
+    stop_runs = [run for run in runs if run["moving"] is False]
+    longest_stop = max(stop_runs, key=lambda row: row["duration_s"], default=None)
+    moving_after_longest_stop = None
+    if longest_stop:
+        for run in runs:
+            if run["moving"] is True and run["start_offset_s"] >= longest_stop["end_offset_s"]:
+                moving_after_longest_stop = run
+                break
+
+    flags: list[str] = []
+    high_start_boundary = boundaries.get(4, 160.0)
+    if longest_stop and first_hr is not None:
+        hr_drop = None
+        if longest_stop.get("start_hr") is not None and longest_stop.get("end_hr") is not None:
+            hr_drop = float(longest_stop["start_hr"]) - float(longest_stop["end_hr"])
+        if (
+            first_hr >= high_start_boundary
+            and longest_stop["start_offset_s"] <= 60.0
+            and longest_stop["duration_s"] >= 180.0
+            and (hr_drop is None or hr_drop >= 25.0)
+        ):
+            flags.append("max_hr_likely_boundary_carryover")
+    if stopped_seconds >= 180.0:
+        flags.append("contains_long_rest")
+    if unknown_seconds > 0 and moving_seconds == 0 and stopped_seconds == 0:
+        flags.append("movement_timeline_unavailable")
+
+    moving_hr_avg = _weighted_average(moving_hr_weight, moving_hr_seconds)
+    stopped_hr_avg = _weighted_average(stopped_hr_weight, stopped_hr_seconds)
+    return {
+        "samples": len(segments),
+        "first_hr": round(first_hr, 1) if first_hr is not None else None,
+        "last_hr": round(last_hr, 1) if last_hr is not None else None,
+        "max_hr": round(max_hr, 1) if max_hr is not None else None,
+        "moving_sec": round(moving_seconds, 1),
+        "stopped_sec": round(stopped_seconds, 1),
+        "movement_unknown_sec": round(unknown_seconds, 1),
+        "moving_avg_hr": round(moving_hr_avg, 1) if moving_hr_avg is not None else None,
+        "stopped_avg_hr": round(stopped_hr_avg, 1) if stopped_hr_avg is not None else None,
+        "longest_stop": _summarize_run(longest_stop) if longest_stop else None,
+        "first_moving_after_longest_stop": _summarize_run(moving_after_longest_stop)
+        if moving_after_longest_stop
+        else None,
+        "action_terrain_summary": _summarize_action_terrain(segments),
+        "flags": flags,
+    }
+
+
 def build_loop_load(
     root: str | Path | None,
     activity_id: str,
@@ -295,6 +611,7 @@ def build_loop_load(
         calories = float(lap.get("calories") or 0.0)
         elapsed_min = float(lap.get("elapsedDuration") or 0.0) / 60.0
         moving_min = float(lap.get("movingDuration") or 0.0) / 60.0
+        interval = next((item for item in intervals if int(item["lap"].get("lapIndex")) == lap_index), None)
         lap_rows.append(
             {
                 "lap": lap_index,
@@ -335,6 +652,7 @@ def build_loop_load(
                     for key, value in lap_zone_seconds[lap_index].items()
                     if value > 0
                 },
+                "timeline": _summarize_lap_timeline(rows, interval, boundaries) if interval else {"samples": 0},
             }
         )
 
@@ -410,6 +728,7 @@ def build_loop_load(
             "limits": [
                 "Downhill arm pump, braking fatigue, impacts, heat skill-cost, and grip confidence are not fully captured by HR-based load.",
                 "Loop estimates are best used for repeatability tracking within similar routes and sensor conditions.",
+                "Manual lap boundaries can inherit HR from the previous trail; use the timeline flags before interpreting max HR or lap load.",
             ],
         },
         "weather": weather,
