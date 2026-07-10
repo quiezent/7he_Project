@@ -160,7 +160,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                     "Subjective CNS notes: brain fog, vision narrowing, delayed line choice, braking timing, unclipping delay, motivation, and confidence.",
                     "Garmin wellness context: HRV status, overnight HRV versus baseline, resting HR, stress, sleep score, wake Body Battery, and current Body Battery.",
                     "Post-activity self-evaluation: weak or very weak feel, especially when RPE is low.",
-                    "Recent MTB neural cost: long technical duration, meaningful trail load, high-HR trail minutes, and back-to-back technical exposure.",
+                    "Recent MTB neural cost: long technical duration, meaningful trail load, high-HR trail minutes, and back-to-back technical exposure, carried into the following 48 hours with declining weight.",
                 ],
                 "decision_role": "Use CNS readiness as a technical-consequence ceiling after Sabbath and physical readiness, not as a replacement for Garmin readiness.",
                 "status_meaning": {
@@ -254,6 +254,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             "operating_loop": [
                 "Diagnose the current limiter from Garmin history plus recent subjective trail evidence.",
                 "Choose the highest-specificity session that fits the week and recovery state.",
+                "Resolve session provenance: explicit coach-authored plan overrides matching weekly intent, but Sabbath, physical readiness, data freshness, Garmin arbitration, and CNS ceilings can still replace or cap either source.",
                 "Prescribe purpose, dose, adaptation hypothesis, execution rules, expected result, and stop rules.",
                 "After sync, compare expected versus actual load, CNS readiness, self-evaluation, skill notes, and next-day response.",
                 "Update the next prescription and the athlete model only when the evidence changes the coaching call.",
@@ -315,6 +316,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             "adaptation_hypothesis": "State what should improve and what next-day response would mean the dose was absorbed.",
             "execution_rules": "Describe how to ride the session and what not to chase.",
             "expected_result": "Store expected Garmin load/range, high-intensity minutes, RPE/feel, and next-day readiness expectation before training when the predictive loop is used.",
+            "post_session_review": "Record the required review fields after the session. For a calibratable session, record an explicit stop_rule_outcome. MTB/technical work must also record technical_quality_notes and late_session_skill_fade; a triggered-but-continued stop rule, degraded technical quality, or an incomplete review blocks full digital-twin calibration.",
             "stop_rules": [
                 "End technical work if braking timing gets lazy or line choice becomes reactive.",
                 "End DH/jump quality if arm pump changes grip, brake modulation, or body position.",
@@ -330,13 +332,14 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                 "Store the adaptation hypothesis and the execution stop rules so the review can judge quality, not only load.",
                 "Store the expected CNS and technical sharpness state for MTB sessions when recent stress, illness, or brain fog is part of the decision.",
                 "Store an execution-drift stress test when similar Clayton prescriptions historically became longer or harder than written.",
+                "Record separate state-basis, action, and next-day response dates; if target-day wellness is absent, use the prior wellness row only as an explicitly labelled state basis while simulating the action on its planned date.",
                 "Use the coaching-adjusted strain response for the practical call while keeping the raw tree output visible for audit.",
                 "Mark model confidence from validation; experimental predictions can guide questions but should not govern training automatically.",
             ],
             "post_session": [
                 "After Garmin sync, compare actual load, self-evaluation, and next-day response with the stored expectation.",
                 "If actual load differs materially, classify execution/adherence before judging adaptation.",
-                "Only matched-load sessions are eligible for digital-twin calibration; drifted sessions update execution-risk rules first.",
+                "Only complete contract-quality sessions are eligible for digital-twin calibration: matched load, modality/session-count/duration alignment, explicit stop-rule outcome, complete relevant review fields, clean technical outcome when applicable, and next-day Garmin response. Keep physiology-only matches visible but do not use them as full calibration rows.",
                 "If actual load matches but response misses, treat the miss as a model-calibration signal and inspect heat, fueling, sleep, stress, trail violence, and sensor quality.",
                 "If load matches but trail skill faded, treat the workout as under-fuelled, under-recovered, too technically dense, or poorly targeted until notes prove otherwise.",
                 "If CNS readiness misses the plan, update the technical-consequence gate before changing the physical load model.",
@@ -567,6 +570,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             "snapshot": "snapshots/training_architecture.json is the dated generated copy for audit.",
             "daily_decision_surface": "snapshots/coach_packet.json remains the same-day decision surface after sync/rebuild.",
             "cns_readiness": "snapshots/cns_readiness.json is the current technical-consequence ceiling after current_state rebuild.",
+            "weekly_plan": "snapshots/weekly_plan.json is the weekly intent layer; a matching session feeds today_plan unless an explicit coach-authored plan overrides it, and all sources still pass through freshness, Garmin, CNS, and Sabbath constraints.",
         },
         "caveats": [
             "This architecture is observational and personal to Clayton's Garmin record.",

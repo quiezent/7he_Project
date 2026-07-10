@@ -66,6 +66,11 @@ next_morning_response:
 ride_purpose:
 trail_condition:
 skill_quality:
+technical_quality_notes:
+late_session_skill_fade:
+stop_rule_outcome:
+actual_rpe:
+workout_feel:
 fueling:
 heat_feel:
 notes:

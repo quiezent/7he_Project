@@ -90,6 +90,84 @@ def _seed_history(root, days: int = 28) -> date:
     return start + timedelta(days=days - 1)
 
 
+def _contract_prescription(
+    day: date,
+    *,
+    session_type: str,
+    modality: str,
+    categories: dict[str, int],
+    review_fields: list[str],
+) -> dict:
+    mtb = int(bool(categories.get("mtb")))
+    return {
+        "date": day.isoformat(),
+        "prediction": {
+            "expected_session": {
+                "title": "Contract calibration test",
+                "type": session_type,
+                "modality": modality,
+                "intensity": "easy",
+                "duration_min": 35,
+                "sessions": 1,
+                "expected_training_load": 25,
+                "expected_training_load_range": [20, 30],
+                "expected_high_intensity_min": 0,
+                "expected_rpe_score_range": [20, 40],
+                "expected_feel": "normal",
+                "mtb_sessions": mtb,
+                "gym_sessions": 0,
+                "categories": categories,
+                "schema_version": 3,
+                "contract_fields": SESSION_CONTRACT_FIELDS,
+                "purpose": "Test whether the delivered session is evidence-complete enough to calibrate.",
+                "dose": {"duration_min": 35, "load_cap": 30},
+                "adaptation_hypothesis": "A matched low-cost session should leave a normal next-day response.",
+                "execution_rules": ["Hold the planned dose and record the review outcome."],
+                "expected_result": {"garmin_load": "20-30"},
+                "stop_rules": ["Stop if the session no longer matches its purpose."],
+                "post_session_review_fields": review_fields,
+            },
+            "coaching_adjusted_next_day_response": {"score": 70},
+            "expected_next_day_response": {"score": 70},
+        },
+    }
+
+
+def _write_self_evaluation(root, day: date, activity_id: int = 27) -> None:
+    write_json(
+        root / "snapshots" / "activity_self_evaluation_index.json",
+        {
+            "activities": [
+                {
+                    "activity_id": str(activity_id),
+                    "date": day.isoformat(),
+                    "has_self_evaluation": True,
+                    "rpe_score": 40,
+                    "feel_score": 75,
+                }
+            ]
+        },
+    )
+
+
+def _write_mtb_activity(root, day: date, activity_id: int = 27) -> None:
+    write_json(
+        root / "activities" / f"activity_{activity_id}.json",
+        {
+            "activityId": activity_id,
+            "activityName": "Kiara MTB contract test",
+            "activityType": {"typeKey": "mountain_biking"},
+            "startTimeLocal": f"{day.isoformat()} 10:00:00",
+            "duration": 2100,
+            "activityTrainingLoad": 25,
+            "averageHR": 118,
+            "maxHeartRate": 140,
+            "hrTimeInZone_4": 0,
+            "hrTimeInZone_5": 0,
+        },
+    )
+
+
 def test_predictive_training_builds_prescription_and_latest_review(tmp_path):
     target = _seed_history(tmp_path)
     build_predictive_training(tmp_path, target - timedelta(days=1))
@@ -232,8 +310,170 @@ def test_predictive_review_compares_dated_prescription_to_actuals(tmp_path):
         "model_miss",
         "execution_changed_input",
         "not_calibratable",
+        "contract_missing",
+        "contract_action_mismatch",
+        "contract_dose_stopped",
+        "contract_unreliable",
+        "technical_quality_degraded",
+        "contract_incomplete",
     }
     assert "execution_risk_stress_test" in review["comparison"]
+
+
+def test_contract_quality_requires_complete_technical_review_for_full_calibration(tmp_path):
+    target = _seed_history(tmp_path)
+    review_day = target - timedelta(days=1)
+    _write_mtb_activity(tmp_path, review_day)
+    _write_self_evaluation(tmp_path, review_day)
+    review_fields = [
+        "actual_duration_min",
+        "actual_training_load",
+        "actual_rpe",
+        "workout_feel",
+        "next_morning_response",
+        "stop_rule_outcome",
+        "fueling_carbs_g_per_hour",
+        "fluid_ml_per_hour",
+        "sodium_mg_per_hour",
+        "technical_quality_notes",
+        "late_session_skill_fade",
+        "actual_repeats_completed",
+    ]
+    prescription = _contract_prescription(
+        review_day,
+        session_type="outdoor_mtb",
+        modality="mtb",
+        categories={"mtb": 1},
+        review_fields=review_fields,
+    )
+    write_json(
+        tmp_path / "input" / f"feedback_{review_day.isoformat()}.json",
+        {
+            "date": review_day.isoformat(),
+            "entries": [
+                {
+                    "activity_id": "27",
+                    "session_contract_review": {
+                        "stop_rule_outcome": "not_triggered",
+                        "technical_quality_notes": "Braking and line choice stayed deliberate through the final descent.",
+                        "late_session_skill_fade": "none",
+                        "fueling_carbs_g_per_hour": 45,
+                        "fluid_ml_per_hour": 650,
+                        "sodium_mg_per_hour": 600,
+                        "actual_repeats_completed": 3,
+                    },
+                }
+            ],
+        },
+    )
+
+    review = build_predictive_review(tmp_path, review_day, prescription=prescription)
+    comparison = review["comparison"]
+    quality = comparison["contract_quality"]
+
+    assert comparison["physiology_calibration_eligible"] is True
+    assert quality["status"] == "complete"
+    assert quality["feedback"]["scope"] == "activity_matched"
+    assert quality["technical_quality"]["status"] == "clean"
+    assert quality["stop_rule_outcome"]["status"] == "not_triggered"
+    assert quality["review_field_completion"]["missing"] == []
+    assert comparison["calibration_eligible"] is True
+    assert comparison["calibration_status"] in {"calibrated", "model_miss"}
+
+
+def test_contract_quality_keeps_physiology_match_out_of_calibration_when_review_is_incomplete(tmp_path):
+    target = _seed_history(tmp_path)
+    review_day = target - timedelta(days=1)
+    _write_mtb_activity(tmp_path, review_day)
+    _write_self_evaluation(tmp_path, review_day)
+    prescription = _contract_prescription(
+        review_day,
+        session_type="outdoor_mtb",
+        modality="mtb",
+        categories={"mtb": 1},
+        review_fields=[
+            "actual_duration_min",
+            "actual_training_load",
+            "actual_rpe",
+            "workout_feel",
+            "next_morning_response",
+            "technical_quality_notes",
+            "late_session_skill_fade",
+        ],
+    )
+    write_json(
+        tmp_path / "input" / f"feedback_{review_day.isoformat()}.json",
+        {
+            "date": review_day.isoformat(),
+            "entries": [
+                {
+                    "activity_id": "27",
+                    "session_contract_review": {
+                        "technical_quality_notes": "The final descent stayed controlled.",
+                    },
+                }
+            ],
+        },
+    )
+
+    review = build_predictive_review(tmp_path, review_day, prescription=prescription)
+    comparison = review["comparison"]
+    quality = comparison["contract_quality"]
+
+    assert comparison["physiology_calibration_eligible"] is True
+    assert quality["status"] == "incomplete"
+    assert quality["stop_rule_outcome"]["status"] == "not_logged"
+    assert "late_session_skill_fade" in quality["review_field_completion"]["missing"]
+    assert comparison["calibration_status"] == "contract_incomplete"
+    assert comparison["calibration_eligible"] is False
+
+
+def test_contract_quality_rejects_stop_rule_overrun_even_with_complete_review_fields(tmp_path):
+    target = _seed_history(tmp_path)
+    review_day = target - timedelta(days=1)
+    _write_mtb_activity(tmp_path, review_day)
+    _write_self_evaluation(tmp_path, review_day)
+    prescription = _contract_prescription(
+        review_day,
+        session_type="outdoor_mtb",
+        modality="mtb",
+        categories={"mtb": 1},
+        review_fields=[
+            "actual_duration_min",
+            "actual_training_load",
+            "actual_rpe",
+            "workout_feel",
+            "next_morning_response",
+            "technical_quality_notes",
+            "late_session_skill_fade",
+        ],
+    )
+    write_json(
+        tmp_path / "input" / f"feedback_{review_day.isoformat()}.json",
+        {
+            "date": review_day.isoformat(),
+            "entries": [
+                {
+                    "activity_id": "27",
+                    "session_contract_review": {
+                        "stop_rule_outcome": "triggered_but_continued",
+                        "technical_quality_notes": "Line choice became reactive late in the session.",
+                        "late_session_skill_fade": "present",
+                    },
+                }
+            ],
+        },
+    )
+
+    review = build_predictive_review(tmp_path, review_day, prescription=prescription)
+    comparison = review["comparison"]
+    quality = comparison["contract_quality"]
+
+    assert comparison["physiology_calibration_eligible"] is True
+    assert quality["status"] == "unsafe_stop_rule_continued"
+    assert quality["stop_rule_outcome"]["status"] == "triggered_but_continued"
+    assert comparison["calibration_status"] == "contract_unreliable"
+    assert comparison["calibration_eligible"] is False
 
 
 def test_predictive_prescription_adds_execution_risk_from_backtest(tmp_path):

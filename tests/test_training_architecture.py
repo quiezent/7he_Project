@@ -63,10 +63,12 @@ def test_training_architecture_builds_config_and_snapshot(tmp_path):
     assert artifact["schema_version"] == 3
     assert artifact["integrated_coaching_model"]["purpose"].startswith("Combine directive")
     assert artifact["session_contract"]["required_fields"][0] == "purpose"
+    assert "stop_rule_outcome" in artifact["session_contract"]["post_session_review"]
     assert artifact["athlete_model"]["highest_return_sequence"][0] == "bike-specific continuity"
     assert artifact["equipment_model"]["trainer"]["model"] == "Elite Suito"
     assert artifact["macrocycle"][0]["phase"] == "base_rebuild"
     assert "density_governor" in artifact["weekly_architecture"]
+    assert "weekly_plan" in artifact["artifact_contract"]
     assert "bukit_dinding_dh_setup" in artifact["session_library"]
     assert (tmp_path / "config" / "coaching_architecture.json").exists()
     assert (tmp_path / "snapshots" / "training_architecture.json").exists()

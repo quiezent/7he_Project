@@ -41,7 +41,7 @@
     "Modern HRV/wake Body Battery is strongest from March 2026 onward.",
     "Subjective trail notes are required for expert-skill decisions."
   ],
-  "date": "2026-06-30",
+  "date": "2026-07-10",
   "decision_hierarchy": [
     "Sabbath hard rest and current readiness.",
     "CNS readiness: cap technical consequence, novelty, speed, jumps, enduro simulation, and setup testing when nervous-system processing is not restored.",
@@ -258,29 +258,29 @@
       }
     },
     "full_range": {
-      "activity_end": "2026-06-30",
+      "activity_end": "2026-07-10",
       "activity_start": "2021-06-18",
-      "counted_sessions": 1362,
-      "duration_min": 104040.0,
+      "counted_sessions": 1371,
+      "duration_min": 104551.8,
       "elliptical_load": 7241.4,
       "elliptical_sessions": 71,
-      "indoor_bike_load": 38007.5,
-      "indoor_bike_sessions": 592,
-      "mtb_load": 97110.3,
-      "mtb_sessions": 478,
-      "training_load": 157830.0
+      "indoor_bike_load": 38205.2,
+      "indoor_bike_sessions": 597,
+      "mtb_load": 97469.4,
+      "mtb_sessions": 480,
+      "training_load": 158432.0
     },
     "hypothesis_support": {
-      "bike_specificity": "strong",
+      "bike_specificity": "moderate",
       "consistency_detraining": "strong",
       "nonbike_substitution": "moderate",
-      "recent_365_bike_specific_corr_to_p20": 0.398,
-      "recent_365_elliptical_corr_to_p20": -0.142,
-      "recent_365_indoor_bike_corr_to_p20": 0.488
+      "recent_365_bike_specific_corr_to_p20": 0.232,
+      "recent_365_elliptical_corr_to_p20": null,
+      "recent_365_indoor_bike_corr_to_p20": 0.52
     },
     "nutrition_targets": {
-      "latest_weight_date": "2026-06-28",
-      "latest_weight_kg": 76.4,
+      "latest_weight_date": "2026-07-09",
+      "latest_weight_kg": 76.5,
       "mtb_90_to_150_min": {
         "carbs_g_per_hour": [
           45,
@@ -312,19 +312,19 @@
       "note": "Use the upper end in Kuala Lumpur heat or when skill quality drops late; gut-train before race day."
     },
     "recent_28d": {
-      "bike_specific_load": 1702.9,
-      "bike_specific_ratio": 0.96,
-      "elliptical_ratio": 0.008,
-      "indoor_bike_sessions": 5,
-      "mtb_sessions": 9,
-      "training_load": 1774.3
+      "bike_specific_load": 1585.7,
+      "bike_specific_ratio": 0.962,
+      "elliptical_ratio": 0.009,
+      "indoor_bike_sessions": 9,
+      "mtb_sessions": 8,
+      "training_load": 1648.3
     },
     "recent_7d": {
-      "bike_specific_load": 158.9,
-      "bike_specific_ratio": 1.0,
-      "indoor_bike_sessions": 1,
-      "mtb_sessions": 1,
-      "training_load": 158.9
+      "bike_specific_load": 506.6,
+      "bike_specific_ratio": 0.925,
+      "indoor_bike_sessions": 3,
+      "mtb_sessions": 2,
+      "training_load": 547.6
     },
     "weekly_continuity_blocks": {
       "current_rebuild_apr_to_may_2026": {
@@ -406,7 +406,7 @@
     },
     "heat_rule": "In Kuala Lumpur, treat fuel/hydration as skill protection: sloppy braking, weak pumping, timid jumps, or poor line choice late can be carb/sodium/heat failure."
   },
-  "generated_at": "2026-06-30T22:26:51+08:00",
+  "generated_at": "2026-07-10T11:17:48+08:00",
   "integrated_coaching_model": {
     "cns_readiness_model": {
       "decision_role": "Use CNS readiness as a technical-consequence ceiling after Sabbath and physical readiness, not as a replacement for Garmin readiness.",
@@ -668,7 +668,7 @@
     "post_session": [
       "After Garmin sync, compare actual load, self-evaluation, and next-day response with the stored expectation.",
       "If actual load differs materially, classify execution/adherence before judging adaptation.",
-      "Only matched-load sessions are eligible for digital-twin calibration; drifted sessions update execution-risk rules first.",
+      "Only complete contract-quality sessions are eligible for digital-twin calibration: matched load, modality/session-count/duration alignment, explicit stop-rule outcome, complete relevant review fields, clean technical outcome when applicable, and next-day Garmin response. Keep physiology-only matches visible but do not use them as full calibration rows.",
       "If actual load matches but response misses, treat the miss as a model-calibration signal and inspect heat, fueling, sleep, stress, trail violence, and sensor quality.",
       "If load matches but trail skill faded, treat the workout as under-fuelled, under-recovered, too technically dense, or poorly targeted until notes prove otherwise.",
       "If CNS readiness misses the plan, update the technical-consequence gate before changing the physical load model."
@@ -703,6 +703,7 @@
     "dose": "Specify duration, repeats, descents/stages, load cap, RPE/HR/power cap where useful, and what makes the session complete.",
     "execution_rules": "Describe how to ride the session and what not to chase.",
     "expected_result": "Store expected Garmin load/range, high-intensity minutes, RPE/feel, and next-day readiness expectation before training when the predictive loop is used.",
+    "post_session_review": "Record the required review fields after the session. For a calibratable session, record an explicit stop_rule_outcome. MTB/technical work must also record technical_quality_notes and late_session_skill_fade; a triggered-but-continued stop rule, degraded technical quality, or an incomplete review blocks full digital-twin calibration.",
     "purpose": "Every prescription must state exactly what adaptation it is buying: continuity, torque/threshold, repeatability, braking durability, fork setup, jump timing, wet-tech confidence, or recovery.",
     "required_fields": [
       "purpose",

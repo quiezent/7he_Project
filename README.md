@@ -118,6 +118,24 @@ After editable install, the same stack is available through:
 - A prediction records separate state-basis, action, and next-day response dates. If target-date Garmin wellness does not exist yet, it states the prior wellness basis while still simulating the action on its planned date; the next Garmin sync remains the final gate.
 - After the session and next-day Garmin sync, run:
   `python tools/predictive_review.py --date <YYYY-MM-DD>`
+- A full calibration requires more than a matched Garmin load: modality, session count, and duration must match; the schema v3 review fields must be complete; stop-rule outcome must be explicit; and MTB sessions must document technical quality and late-session skill fade. The review keeps a physiology-only match separate from a full calibration sample.
+- Record the manual evidence either at the top level of `input/feedback_YYYY-MM-DD.json` or in a matching `entries[]` item. A minimal MTB example is:
+
+```json
+{
+  "date": "YYYY-MM-DD",
+  "session_contract_review": {
+    "stop_rule_outcome": "not_triggered",
+    "technical_quality_notes": "Braking and line choice stayed deliberate through the final quality descent.",
+    "late_session_skill_fade": "none",
+    "fueling_carbs_g_per_hour": 45,
+    "fluid_ml_per_hour": 650,
+    "sodium_mg_per_hour": 600
+  }
+}
+```
+
+- Use `triggered_and_stopped`, `triggered_and_downshifted`, or `triggered_but_continued` when a stop rule fires. The last value is an unsafe/uncalibratable session, not a successful completion.
 
 ## Context Updates
 - Set goal phase:
@@ -191,7 +209,7 @@ Blank template fields are ignored.
 - `snapshots/predictive_session_plan.json` / `snapshots/predictive_session_YYYY-MM-DD.json`
   - pre-session digital-twin expectation for planned duration, load, RPE, next-day response, execution-risk drift, and coaching-adjusted strain response
 - `snapshots/predictive_session_review.json` / `snapshots/predictive_session_review_YYYY-MM-DD.json`
-  - post-session comparison of expected versus actual Garmin load, self-evaluation, next-day response, and calibration eligibility
+  - post-session comparison of expected versus actual Garmin load, action alignment, self-evaluation, technical/stop-rule evidence, next-day response, and calibration eligibility
 - `snapshots/predictive_training.json`
   - current predictive loop: today's prescription plus the latest completed-session calibration review
 - `snapshots/predictive_backtest_10_dates.json`
@@ -287,7 +305,7 @@ Blank template fields are ignored.
 ## Modeling Rules
 - ML outputs are coaching evidence, not instructions.
 - Use the coaching-adjusted response for the practical prescription call; keep the raw tree output visible for audit.
-- Only matched-load sessions calibrate the digital twin. Drifted sessions update execution-risk rules before model blame.
+- Only complete contract-quality sessions calibrate the digital twin: matched load, action alignment, explicit stop-rule outcome, complete relevant review fields, clean technical outcome where applicable, and next-day Garmin response. Physiology-only matches remain useful evidence but do not update calibration confidence.
 - More is not better; better is better. The coach packet is the preferred decision surface.
 - Use long activity history for modality/load baselines and block labels.
 - Use modern complete wellness only for HRV/wake Body Battery models.

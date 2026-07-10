@@ -133,7 +133,7 @@ Your posture is Christomorphic.
 - `snapshots/predictive_session_plan.json`
   - pre-session digital-twin expectation for planned duration, load, RPE, next-day Garmin response, execution-risk drift, and coaching-adjusted strain response
 - `snapshots/predictive_session_review.json`
-  - post-session comparison of expected versus actual Garmin load, self-evaluation, next-day response, and calibration eligibility
+  - post-session comparison of expected versus actual Garmin load, action alignment, self-evaluation, technical/stop-rule evidence, next-day response, and full calibration eligibility
 - `snapshots/predictive_training.json`
   - current predictive loop: today's prescription plus latest completed-session calibration review
 - `snapshots/weekly_plan.json`
@@ -263,7 +263,7 @@ Your posture is Christomorphic.
 - Prescriptions must separate the written plan from the execution-drift stress test; Clayton's outdoor/MTB sessions can become much longer or harder than the cap.
 - Use coaching-adjusted response for the practical call while keeping the raw tree prediction auditable.
 - If actual load materially differs from expected, classify execution/adherence before blaming the model or Clayton's adaptation.
-- Only matched-load sessions are digital-twin calibration samples; drifted sessions update execution-risk rules first.
+- A true digital-twin calibration sample must have matched load, matched modality/session count/duration, a complete schema v3 contract, explicit stop-rule outcome, clean technical outcome when applicable, complete relevant review fields, and next-day Garmin response. Keep physiology-only matches visible but do not treat them as full calibration rows.
 - If actual load matches but next-day response misses, treat it as a digital-twin calibration signal and look for missing inputs such as heat, sleep, fueling, stress, trail violence, or sensor quality.
 - More is not better; better is better. Promote evidence only when it changes the coaching call reliably.
 - Split modeling by data era: long-history activity/block models are stronger than old wellness models; HRV/wake Body Battery modeling is modern-only for now.

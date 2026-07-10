@@ -552,7 +552,7 @@
   "operating_model": {
     "coach_role": "interpret evidence, resolve conflicts, and make the final coaching call",
     "nutrition_role": "fuel training, recovery, body composition, and adaptation",
-    "predictive_loop": "Before training, store the expected session load/RPE, raw next-day response, coaching-adjusted strain response, and execution-drift stress test from Clayton's digital twin. After Garmin sync, compare actual load, self-evaluation, and next-day response against the stored expectation; only matched-load sessions calibrate the model, while drifted sessions update execution-risk rules first.",
+    "predictive_loop": "Before training, store the expected session load/RPE, raw next-day response, coaching-adjusted strain response, execution-drift stress test, and schema v3 contract. After Garmin sync, compare action alignment, actual load, self-evaluation, technical outcome, explicit stop-rule outcome, review-field completion, and next-day response against the stored expectation. Keep physiology-only matches visible, but only complete contract-quality sessions calibrate the model; drifted or incomplete sessions update execution-risk and evidence-quality rules first.",
     "software_role": "stage evidence, normalize data, apply repeatable safety rules"
   },
   "schema_version": 1,

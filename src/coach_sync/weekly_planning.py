@@ -167,6 +167,7 @@ def _review_fields() -> list[str]:
         "actual_rpe",
         "workout_feel",
         "next_morning_response",
+        "stop_rule_outcome",
         "fueling_carbs_g_per_hour",
         "fluid_ml_per_hour",
         "sodium_mg_per_hour",

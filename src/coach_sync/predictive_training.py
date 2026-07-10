@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from datetime import date, timedelta
+import hashlib
 from pathlib import Path
+import re
 from statistics import median
 from typing import Any
 
@@ -60,6 +62,70 @@ INDOOR_BIKE_SESSION_TYPES = {
     "garmin_aerobic_continuity",
 }
 MIN_EXECUTION_PROFILE_SAMPLES = 3
+
+CONTRACT_REVIEW_KEYS = (
+    "session_contract_review",
+    "contract_review",
+    "post_session_review",
+    "review",
+)
+FUELING_REVIEW_FIELDS = {
+    "fueling_carbs_g_per_hour",
+    "fluid_ml_per_hour",
+    "sodium_mg_per_hour",
+}
+TECHNICAL_REVIEW_FIELDS = {
+    "technical_quality_notes",
+    "late_session_skill_fade",
+}
+REVIEW_FIELD_ALIASES = {
+    "actual_rpe": ("actual_rpe", "rpe", "rpe_score", "direct_workout_rpe"),
+    "workout_feel": ("workout_feel", "feel", "feel_score", "direct_workout_feel"),
+    "technical_quality_notes": (
+        "technical_quality_notes",
+        "technical_notes",
+        "skill_quality",
+        "technical_quality",
+    ),
+    "late_session_skill_fade": (
+        "late_session_skill_fade",
+        "late_skill_fade",
+        "skill_fade",
+        "late_ride_skill_fade",
+    ),
+}
+TECHNICAL_NOTE_KEYS = {
+    "technical_quality_notes",
+    "technical_notes",
+    "skill_quality",
+    "technical_focus",
+    "session_notes",
+    "rider_report",
+    "subjective_report",
+    "coaching_interpretation",
+}
+TECHNICAL_NOTE_MARKERS = (
+    "brak",
+    "line",
+    "corner",
+    "jump",
+    "drop",
+    "root",
+    "traction",
+    "clipless",
+    "pedal",
+    "suspension",
+    "fork",
+    "shock",
+    "chute",
+    "descent",
+    "berm",
+    "body position",
+    "arm pump",
+    "technical",
+    "skill",
+)
+MISSING_REVIEW_VALUES = {"", "unknown", "not_logged", "missing", "not_recorded", "n_a", "na", "null"}
 
 
 def _planned_session_path(target: date) -> str:
@@ -455,7 +521,7 @@ def _session_expectation(plan: dict) -> dict:
         elif gym_sessions:
             categories["gym"] = 1
         elif is_bike:
-            categories["bike_indoor"] = 1
+            categories["bike_outdoor" if modality in {"bike_outdoor", "outdoor_bike"} else "bike_indoor"] = 1
         else:
             categories["other"] = 1
     load_low = training_load * 0.7
@@ -704,6 +770,484 @@ def _actual_next_day_response(root: str | Path | None, target: date) -> dict:
     }
 
 
+def _normalized_key(value: object) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", str(value).strip().lower()).strip("_")
+
+
+def _review_value_present(value: Any) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return _normalized_key(value) not in MISSING_REVIEW_VALUES
+    if isinstance(value, (list, tuple, dict)):
+        return bool(value)
+    return True
+
+
+def _activity_ref_for_feedback_id(activity_id: Any) -> str | None:
+    if not _review_value_present(activity_id):
+        return None
+    return hashlib.sha256(str(activity_id).encode("utf-8")).hexdigest()[:12]
+
+
+def _text_values(value: Any) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        return [item for value_item in value for item in _text_values(value_item)]
+    if isinstance(value, dict):
+        return [item for value_item in value.values() for item in _text_values(value_item)]
+    return []
+
+
+def _technical_note_sources(blocks: list[dict]) -> list[str]:
+    sources = []
+    direct_keys = {
+        "technical_quality_notes",
+        "technical_notes",
+        "skill_quality",
+        "technical_quality",
+    }
+    for block in blocks:
+        payload = block.get("payload") or {}
+        source = block.get("source") or "feedback"
+        for key, value in payload.items():
+            normalized = _normalized_key(key)
+            if normalized not in TECHNICAL_NOTE_KEYS:
+                continue
+            text = " ".join(_text_values(value)).lower()
+            if normalized in direct_keys and _review_value_present(value):
+                sources.append(f"{source}:{normalized}")
+            elif any(marker in text for marker in TECHNICAL_NOTE_MARKERS):
+                sources.append(f"{source}:{normalized}")
+    return sorted(set(sources))
+
+
+def _feedback_evidence_for_actual(
+    root: str | Path | None,
+    target: date,
+    actual: dict,
+) -> tuple[dict, list[dict]]:
+    path = input_dir(root) / f"feedback_{target.isoformat()}.json"
+    payload = read_json(path, {})
+    if not isinstance(payload, dict):
+        payload = {}
+    actual_refs = {
+        str(row.get("activity_ref"))
+        for row in actual.get("activities") or []
+        if isinstance(row, dict) and row.get("activity_ref")
+    }
+    blocks: list[dict] = []
+    matched_entries = 0
+    unscoped_entries = 0
+    ignored_entries = 0
+    root_included = False
+
+    def add_block(container: dict, source: str) -> None:
+        blocks.append({"source": source, "payload": container})
+        for key in CONTRACT_REVIEW_KEYS:
+            nested = container.get(key)
+            if isinstance(nested, dict):
+                blocks.append({"source": f"{source}.{key}", "payload": nested})
+
+    root_activity_ref = _activity_ref_for_feedback_id(payload.get("activity_id"))
+    if not root_activity_ref or not actual_refs or root_activity_ref in actual_refs:
+        add_block(payload, "feedback")
+        root_included = True
+
+    entries = payload.get("entries") or []
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict):
+            continue
+        entry_activity_ref = _activity_ref_for_feedback_id(entry.get("activity_id"))
+        if entry_activity_ref:
+            if actual_refs and entry_activity_ref not in actual_refs:
+                ignored_entries += 1
+                continue
+            if not actual_refs:
+                ignored_entries += 1
+                continue
+            matched_entries += 1
+        else:
+            unscoped_entries += 1
+        add_block(entry, f"feedback.entries[{index}]")
+
+    scope = "none"
+    if matched_entries:
+        scope = "activity_matched"
+    elif root_included or unscoped_entries:
+        scope = "date_scoped"
+    evidence = {
+        "available": bool(payload),
+        "file": f"input/feedback_{target.isoformat()}.json" if payload else None,
+        "scope": scope,
+        "root_included": root_included,
+        "matched_activity_entries": matched_entries,
+        "unscoped_entries": unscoped_entries,
+        "ignored_other_activity_entries": ignored_entries,
+        "technical_note_sources": _technical_note_sources(blocks),
+    }
+    return evidence, blocks
+
+
+def _manual_review_value(blocks: list[dict], field: str) -> tuple[Any, str | None]:
+    aliases = REVIEW_FIELD_ALIASES.get(field, (field,))
+    normalized_aliases = {_normalized_key(item) for item in aliases}
+    for block in reversed(blocks):
+        payload = block.get("payload") or {}
+        for key, value in payload.items():
+            if _normalized_key(key) in normalized_aliases and _review_value_present(value):
+                return value, str(block.get("source") or "feedback")
+    return None, None
+
+
+def _expected_contract_status(expected: dict) -> dict:
+    declared = expected.get("contract_fields")
+    declared_fields = set(declared) if isinstance(declared, list) else set()
+    missing = [
+        field
+        for field in SESSION_CONTRACT_FIELDS
+        if field not in declared_fields or not _review_value_present(expected.get(field))
+    ]
+    schema_version = _number(expected.get("schema_version"))
+    valid = schema_version >= 3 and not missing
+    return {
+        "schema_version": int(schema_version) if schema_version else None,
+        "declared_fields": sorted(declared_fields),
+        "missing_fields": missing,
+        "status": "complete" if valid else "missing_or_incomplete",
+        "valid": valid,
+    }
+
+
+def _is_technical_session(expected: dict) -> bool:
+    categories = expected.get("categories") or {}
+    session_type = str(expected.get("type") or "").lower()
+    modality = str(expected.get("modality") or "").lower()
+    return bool(
+        categories.get("mtb")
+        or _number(expected.get("mtb_sessions")) > 0
+        or modality == "mtb"
+        or "mtb" in session_type
+        or "enduro" in session_type
+    )
+
+
+def _review_field_is_applicable(field: str, expected: dict) -> bool:
+    normalized = _normalized_key(field)
+    technical = _is_technical_session(expected)
+    duration = _number(expected.get("duration_min"))
+    if normalized in TECHNICAL_REVIEW_FIELDS:
+        return technical
+    if normalized in FUELING_REVIEW_FIELDS:
+        return technical or duration >= 60
+    return True
+
+
+def _automatic_review_source(field: str, actual: dict, self_eval: dict, response: dict) -> str | None:
+    normalized = _normalized_key(field)
+    if normalized == "actual_duration_min":
+        return "garmin_activity" if actual.get("sessions", 0) and actual.get("duration_min") is not None else None
+    if normalized == "actual_training_load":
+        return "garmin_activity" if actual.get("sessions", 0) and actual.get("training_load") is not None else None
+    if normalized == "actual_rpe":
+        return "garmin_self_evaluation" if self_eval.get("avg_rpe_score") is not None else None
+    if normalized == "workout_feel":
+        return "garmin_self_evaluation" if self_eval.get("avg_feel_score") is not None else None
+    if normalized == "next_morning_response":
+        return "garmin_next_day_response" if response.get("status") == "available" else None
+    return None
+
+
+def _review_field_rows(
+    expected: dict,
+    actual: dict,
+    self_eval: dict,
+    response: dict,
+    feedback: dict,
+    blocks: list[dict],
+) -> list[dict]:
+    fields = []
+    seen = set()
+    for value in expected.get("post_session_review_fields") or []:
+        if not isinstance(value, str) or not value.strip():
+            continue
+        normalized = _normalized_key(value)
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        fields.append(normalized)
+
+    rows = []
+    technical_sources = feedback.get("technical_note_sources") or []
+    for field in fields:
+        applicable = _review_field_is_applicable(field, expected)
+        automatic_source = _automatic_review_source(field, actual, self_eval, response)
+        manual_value, manual_source = _manual_review_value(blocks, field)
+        source = automatic_source or (f"{manual_source}" if manual_source else None)
+        if automatic_source:
+            status = "completed"
+        elif manual_source:
+            status = "completed"
+        elif field == "technical_quality_notes" and applicable and technical_sources:
+            status = "completed"
+            source = "feedback_technical_note"
+        elif not applicable:
+            status = "not_applicable"
+        else:
+            status = "missing"
+        rows.append(
+            {
+                "field": field,
+                "required_for_calibration": applicable,
+                "status": status,
+                "source": source,
+                "manual_value_logged": manual_value is not None,
+            }
+        )
+    return rows
+
+
+def _stop_rule_review(expected: dict, blocks: list[dict]) -> dict:
+    stop_rules = expected.get("stop_rules") or []
+    if not stop_rules or not expected.get("sessions"):
+        return {
+            "required": False,
+            "status": "not_applicable",
+            "source": None,
+            "calibration_effect": "not_applicable",
+        }
+    value, source = _manual_review_value(blocks, "stop_rule_outcome")
+    if value is None:
+        triggered, triggered_source = _manual_review_value(blocks, "stop_rule_triggered")
+        triggered_status = _normalized_key(triggered) if triggered is not None else ""
+        if isinstance(triggered, bool) or triggered_status in {"yes", "no", "true", "false", "0", "1"}:
+            triggered_now = triggered is True or triggered_status in {"yes", "true", "1"}
+            if not triggered_now:
+                return {
+                    "required": True,
+                    "status": "not_triggered",
+                    "source": triggered_source,
+                    "calibration_effect": "compatible",
+                }
+            action, action_source = _manual_review_value(blocks, "stop_rule_action")
+            value = action
+            source = action_source or triggered_source
+        if value is None:
+            return {
+                "required": True,
+                "status": "not_logged",
+                "source": None,
+                "calibration_effect": "missing",
+            }
+    normalized = _normalized_key(value)
+    if normalized in {"not_triggered", "no", "false", "0", "none", "no_stop_rule_triggered"}:
+        status = "not_triggered"
+        effect = "compatible"
+    elif normalized in {"triggered_and_stopped", "stopped", "stopped_when_triggered", "triggered_stop"}:
+        status = "triggered_and_stopped"
+        effect = "dose_changed"
+    elif normalized in {"triggered_and_downshifted", "downshifted", "modified_after_trigger"}:
+        status = "triggered_and_downshifted"
+        effect = "dose_changed"
+    elif normalized in {"triggered_but_continued", "continued", "ignored", "overrode_stop_rule"}:
+        status = "triggered_but_continued"
+        effect = "unsafe"
+    else:
+        status = "unknown"
+        effect = "unclassified"
+    return {
+        "required": True,
+        "status": status,
+        "source": source,
+        "calibration_effect": effect,
+    }
+
+
+def _technical_quality_review(expected: dict, blocks: list[dict]) -> dict:
+    if not _is_technical_session(expected):
+        return {
+            "required": False,
+            "status": "not_applicable",
+            "source": None,
+            "calibration_effect": "not_applicable",
+        }
+    value, source = _manual_review_value(blocks, "technical_quality")
+    source_field = "technical_quality"
+    if value is None:
+        value, source = _manual_review_value(blocks, "late_session_skill_fade")
+        source_field = "late_session_skill_fade"
+    if value is None:
+        return {
+            "required": True,
+            "status": "not_logged",
+            "source": None,
+            "calibration_effect": "missing",
+        }
+    normalized = _normalized_key(value)
+    clean_values = {"clean", "good", "stable", "controlled", "acceptable", "pass", "passed"}
+    if source_field == "late_session_skill_fade":
+        clean_values.update({"none", "no", "false", "0", "not_present", "no_fade", "no_skill_fade"})
+    degraded_values = {
+        "degraded",
+        "faded",
+        "poor",
+        "reactive",
+        "sloppy",
+        "aborted",
+        "unsafe",
+        "yes",
+        "true",
+        "1",
+        "present",
+    }
+    if normalized in clean_values:
+        status = "clean"
+        effect = "compatible"
+    elif normalized in degraded_values:
+        status = "degraded"
+        effect = "quality_limited"
+    else:
+        status = "documented_unclassified"
+        effect = "needs_interpretation"
+    return {
+        "required": True,
+        "status": status,
+        "source": source,
+        "calibration_effect": effect,
+    }
+
+
+def _action_alignment(expected: dict, actual: dict) -> dict:
+    expected_sessions = int(_number(expected.get("sessions")))
+    actual_sessions = int(_number(actual.get("sessions")))
+    expected_categories = sorted(
+        str(category)
+        for category, count in (expected.get("categories") or {}).items()
+        if _number(count) > 0
+    )
+    actual_categories = sorted(
+        str(category)
+        for category, count in (actual.get("categories") or {}).items()
+        if _number(count) > 0
+    )
+    if expected_sessions == 0:
+        modality_status = "not_applicable" if actual_sessions == 0 else "mismatched"
+        session_count_status = "not_applicable" if actual_sessions == 0 else "mismatched"
+    elif actual_sessions == 0:
+        modality_status = "missing"
+        session_count_status = "missing"
+    else:
+        modality_status = "matched" if expected_categories == actual_categories else "mismatched"
+        session_count_status = "matched" if expected_sessions == actual_sessions else "mismatched"
+
+    expected_duration = _number(expected.get("duration_min"))
+    actual_duration = _number(actual.get("duration_min"))
+    duration_ratio = actual_duration / expected_duration if expected_duration else None
+    if expected_duration <= 0:
+        duration_status = "not_applicable" if actual_sessions == 0 else "mismatched"
+    elif actual_sessions == 0:
+        duration_status = "missing"
+    elif duration_ratio is None:
+        duration_status = "unknown"
+    elif 0.7 <= duration_ratio <= 1.35:
+        duration_status = "matched"
+    else:
+        duration_status = "drifted"
+    component_statuses = (modality_status, session_count_status, duration_status)
+    if expected_sessions == 0:
+        overall = "not_applicable" if actual_sessions == 0 else "mismatched"
+    elif all(status == "matched" for status in component_statuses):
+        overall = "matched"
+    elif "missing" in component_statuses:
+        overall = "missing"
+    else:
+        overall = "mismatched"
+    return {
+        "status": overall,
+        "expected_categories": expected_categories,
+        "actual_categories": actual_categories,
+        "modality_status": modality_status,
+        "expected_sessions": expected_sessions,
+        "actual_sessions": actual_sessions,
+        "session_count_status": session_count_status,
+        "expected_duration_min": _round(expected_duration),
+        "actual_duration_min": _round(actual_duration),
+        "duration_ratio": _round(duration_ratio, 2),
+        "duration_status": duration_status,
+    }
+
+
+def _contract_quality_review(
+    root: str | Path | None,
+    target: date,
+    expected: dict,
+    actual: dict,
+    self_eval: dict,
+    response: dict,
+) -> dict:
+    contract = _expected_contract_status(expected)
+    feedback, blocks = _feedback_evidence_for_actual(root, target, actual)
+    field_rows = _review_field_rows(expected, actual, self_eval, response, feedback, blocks)
+    required_rows = [row for row in field_rows if row.get("required_for_calibration")]
+    completed = [row["field"] for row in required_rows if row.get("status") == "completed"]
+    missing = [row["field"] for row in required_rows if row.get("status") == "missing"]
+    not_applicable = [row["field"] for row in field_rows if row.get("status") == "not_applicable"]
+    completion_ratio = len(completed) / len(required_rows) if required_rows else 1.0
+    action = _action_alignment(expected, actual)
+    stop_rule = _stop_rule_review(expected, blocks)
+    technical_quality = _technical_quality_review(expected, blocks)
+    reasons = []
+    if not expected.get("sessions"):
+        status = "not_applicable"
+        reasons.append("No trainable session was prescribed.")
+    elif not contract.get("valid"):
+        status = "contract_missing"
+        reasons.append("The stored prediction does not contain a complete schema v3 session contract.")
+    elif action.get("status") != "matched":
+        status = "action_mismatch"
+        reasons.append("Actual modality, session count, or duration does not match the stored action closely enough.")
+    elif stop_rule.get("status") == "triggered_but_continued":
+        status = "unsafe_stop_rule_continued"
+        reasons.append("A stop rule was triggered but the session continued, so the nominal action is not trustworthy.")
+    elif stop_rule.get("status") in {"triggered_and_stopped", "triggered_and_downshifted"}:
+        status = "execution_dose_stopped"
+        reasons.append("A stop rule changed the delivered dose; retain this as safety evidence, not a nominal calibration row.")
+    elif stop_rule.get("status") in {"not_logged", "unknown"}:
+        status = "incomplete"
+        reasons.append("Stop-rule outcome was not logged explicitly.")
+    elif technical_quality.get("status") == "degraded":
+        status = "technical_quality_degraded"
+        reasons.append("Technical quality degraded, so the session did not represent the intended action cleanly.")
+    elif technical_quality.get("status") in {"not_logged", "documented_unclassified"}:
+        status = "incomplete"
+        reasons.append("Technical quality outcome was not recorded in a calibratable form.")
+    elif missing:
+        status = "incomplete"
+        reasons.append(f"Required review fields are missing: {', '.join(missing)}.")
+    else:
+        status = "complete"
+        reasons.append("Action, review fields, technical outcome, and stop-rule outcome are complete enough for calibration.")
+    return {
+        "status": status,
+        "calibration_eligible": status == "complete",
+        "contract": contract,
+        "action_alignment": action,
+        "stop_rule_outcome": stop_rule,
+        "technical_quality": technical_quality,
+        "review_field_completion": {
+            "required": [row["field"] for row in required_rows],
+            "completed": completed,
+            "missing": missing,
+            "not_applicable": not_applicable,
+            "completion_ratio": _round(completion_ratio, 2),
+            "fields": field_rows,
+        },
+        "feedback": feedback,
+        "reasons": reasons,
+    }
+
+
 def _stress_test_comparison(prediction: dict, actual_response: float | None) -> dict:
     risk = prediction.get("execution_risk") or {}
     stress_adjusted = risk.get("stress_test_coaching_adjusted_next_day_response") or {}
@@ -731,7 +1275,13 @@ def _stress_test_comparison(prediction: dict, actual_response: float | None) -> 
     }
 
 
-def _compare_prediction(prediction: dict, actual: dict, self_eval: dict, response: dict) -> dict:
+def _compare_prediction(
+    prediction: dict,
+    actual: dict,
+    self_eval: dict,
+    response: dict,
+    contract_quality: dict | None = None,
+) -> dict:
     expected = prediction.get("expected_session") or {}
     expected_range = expected.get("expected_training_load_range") or [None, None]
     expected_load = expected.get("expected_training_load")
@@ -771,37 +1321,69 @@ def _compare_prediction(prediction: dict, actual: dict, self_eval: dict, respons
         response_status = _response_status_from_delta(response_delta)
 
     if response_status == "pending_next_day":
+        physiology_calibration_status = "pending_next_day"
+        physiology_calibration_weight = 0.0
+        physiology_calibration_eligible = False
+    elif response_status == "no_expected_response":
+        physiology_calibration_status = "not_calibratable"
+        physiology_calibration_weight = 0.0
+        physiology_calibration_eligible = False
+    elif adherence != "matched_expected_load":
+        physiology_calibration_status = "execution_changed_input"
+        physiology_calibration_weight = 0.0
+        physiology_calibration_eligible = False
+    elif response_status == "within_expected_band":
+        physiology_calibration_status = "calibrated"
+        physiology_calibration_weight = 1.0
+        physiology_calibration_eligible = True
+    else:
+        physiology_calibration_status = "model_miss"
+        physiology_calibration_weight = 1.0
+        physiology_calibration_eligible = True
+
+    quality = contract_quality or {
+        "status": "not_reviewed",
+        "calibration_eligible": False,
+        "reasons": ["Contract-quality evidence was not built for this review."],
+    }
+    if not physiology_calibration_eligible:
+        calibration_status = physiology_calibration_status
+        calibration_weight = 0.0
+        calibration_eligible = False
+    elif quality.get("calibration_eligible"):
+        calibration_status = physiology_calibration_status
+        calibration_weight = physiology_calibration_weight
+        calibration_eligible = True
+    else:
+        quality_status = quality.get("status")
+        calibration_status = {
+            "contract_missing": "contract_missing",
+            "action_mismatch": "contract_action_mismatch",
+            "execution_dose_stopped": "contract_dose_stopped",
+            "unsafe_stop_rule_continued": "contract_unreliable",
+            "technical_quality_degraded": "technical_quality_degraded",
+        }.get(quality_status, "contract_incomplete")
+        calibration_weight = 0.0
+        calibration_eligible = False
+
+    if response_status == "pending_next_day":
         interpretation = "Await next-day Garmin wellness before judging model calibration."
     elif response_status == "no_expected_response":
         interpretation = "Actual next-day response exists, but the model did not produce a comparable expectation."
     elif adherence != "matched_expected_load":
         interpretation = "The actual session changed the input; judge prescription execution before judging the model."
+    elif not calibration_eligible:
+        reason = next(iter(quality.get("reasons") or []), "The session contract review is incomplete.")
+        interpretation = (
+            "The physiological load-response pair is comparable, but this is not a full digital-twin calibration sample: "
+            f"{reason}"
+        )
     elif response_status == "within_expected_band":
-        interpretation = "The model was acceptably calibrated for this session-response pair."
+        interpretation = "The model was acceptably calibrated for this complete session-response pair."
     elif response_status == "worse_than_expected":
-        interpretation = "Either the model overestimated recovery or non-training stress, heat, fueling, sleep, or trail cost was higher than represented."
+        interpretation = "The model overestimated recovery, or non-training stress, heat, fueling, sleep, or trail cost was higher than represented."
     else:
         interpretation = "The model was conservative or adaptation/recovery was better than expected."
-    if response_status == "pending_next_day":
-        calibration_status = "pending_next_day"
-        calibration_weight = 0.0
-        calibration_eligible = False
-    elif response_status == "no_expected_response":
-        calibration_status = "not_calibratable"
-        calibration_weight = 0.0
-        calibration_eligible = False
-    elif adherence != "matched_expected_load":
-        calibration_status = "execution_changed_input"
-        calibration_weight = 0.0
-        calibration_eligible = False
-    elif response_status == "within_expected_band":
-        calibration_status = "calibrated"
-        calibration_weight = 1.0
-        calibration_eligible = True
-    else:
-        calibration_status = "model_miss"
-        calibration_weight = 1.0
-        calibration_eligible = True
 
     return {
         "adherence_status": adherence,
@@ -820,6 +1402,10 @@ def _compare_prediction(prediction: dict, actual: dict, self_eval: dict, respons
         "response_status": response_status,
         "response_delta": _round(response_delta),
         "execution_risk_stress_test": _stress_test_comparison(prediction, actual_response),
+        "physiology_calibration_status": physiology_calibration_status,
+        "physiology_calibration_eligible": physiology_calibration_eligible,
+        "physiology_calibration_weight": physiology_calibration_weight,
+        "contract_quality": quality,
         "calibration_status": calibration_status,
         "calibration_eligible": calibration_eligible,
         "calibration_weight": calibration_weight,
@@ -855,6 +1441,10 @@ def _prediction_text(artifact: dict) -> str:
 def _review_text(review: dict) -> str:
     comparison = review.get("comparison") or {}
     response = review.get("actual_next_day_response") or {}
+    quality = comparison.get("contract_quality") or {}
+    review_fields = quality.get("review_field_completion") or {}
+    stop_rule = quality.get("stop_rule_outcome") or {}
+    technical = quality.get("technical_quality") or {}
     return "\n".join(
         [
             f"Predictive Session Review - {review['date']}",
@@ -862,6 +1452,9 @@ def _review_text(review: dict) -> str:
             f"Adherence: {comparison.get('adherence_status')}",
             f"Load delta: {comparison.get('training_load_delta')} ({comparison.get('training_load_delta_pct')}%)",
             f"Next-day response: {response.get('score')} / {response.get('readiness_level')} / {comparison.get('response_status')}",
+            f"Physiology calibration: {comparison.get('physiology_calibration_status')} (eligible: {comparison.get('physiology_calibration_eligible')})",
+            f"Contract quality: {quality.get('status')} (review fields: {len(review_fields.get('completed') or [])}/{len(review_fields.get('required') or [])})",
+            f"Stop-rule outcome: {stop_rule.get('status')}; technical quality: {technical.get('status')}",
             f"Calibration: {comparison.get('calibration_status')} (eligible: {comparison.get('calibration_eligible')})",
             f"Interpretation: {comparison.get('interpretation')}",
             "",
@@ -941,12 +1534,26 @@ def build_predictive_review(
     actual = _actual_activity_summary(root, target)
     self_eval = _self_evaluation_for_date(root, target)
     response = _actual_next_day_response(root, target)
+    expected = prediction.get("expected_session") or {}
+    contract_quality = (
+        _contract_quality_review(root, target, expected, actual, self_eval, response)
+        if prediction
+        else {
+            "status": "not_applicable",
+            "calibration_eligible": False,
+            "reasons": ["No dated pre-session prescription was stored for this date."],
+        }
+    )
     comparison = (
-        _compare_prediction(prediction, actual, self_eval, response)
+        _compare_prediction(prediction, actual, self_eval, response, contract_quality)
         if prediction
         else {
             "adherence_status": "no_stored_prescription",
             "response_status": "not_reviewed",
+            "physiology_calibration_status": "not_calibratable",
+            "physiology_calibration_eligible": False,
+            "physiology_calibration_weight": 0.0,
+            "contract_quality": contract_quality,
             "calibration_status": "not_calibratable",
             "calibration_eligible": False,
             "calibration_weight": 0.0,
@@ -995,7 +1602,7 @@ def build_predictive_training(
             "Read the execution-risk branch: it estimates what happens if the session drifts beyond the written cap.",
             "After Garmin sync next day: build predictive_session_review for that date.",
             "If actual load differs materially, classify execution/adherence first.",
-            "Only matched-load sessions are eligible for digital-twin calibration; drifted sessions update execution-risk rules first.",
+            "Only matched-load, action-aligned sessions with complete review fields, explicit stop-rule outcome, and clean technical evidence are eligible for digital-twin calibration.",
         ],
         "artifacts": {
             "prescription": "snapshots/predictive_session_plan.json",

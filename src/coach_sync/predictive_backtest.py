@@ -23,6 +23,7 @@ from .predictive_training import (
     _actual_activity_summary,
     _actual_next_day_response,
     _compare_prediction,
+    _contract_quality_review,
     _self_evaluation_for_date,
     build_predictive_prescription,
 )
@@ -441,7 +442,8 @@ def _row_for_date(
     actual = _actual_activity_summary(root, target)
     self_eval = _self_evaluation_for_date(root, target)
     response = _actual_next_day_response(root, target)
-    comparison = _compare_prediction(prediction, actual, self_eval, response)
+    contract_quality = _contract_quality_review(root, target, prediction.get("expected_session") or {}, actual, self_eval, response)
+    comparison = _compare_prediction(prediction, actual, self_eval, response, contract_quality)
     comparison["calibration_note"] = comparison.get("interpretation")
     next_day = target + timedelta(days=1)
     recovery = {
@@ -488,13 +490,21 @@ def _coverage(rows: list[dict]) -> dict:
             1 for row in rows if row.get("training_status_next_day", {}).get("available")
         ),
         "device_confidence_dates": sum(1 for row in rows if row.get("device_confidence", {}).get("available")),
+        "physiology_calibratable_dates": sum(
+            1 for row in rows if row.get("comparison", {}).get("physiology_calibration_eligible")
+        ),
+        "contract_calibratable_dates": sum(
+            1 for row in rows if row.get("comparison", {}).get("calibration_eligible")
+        ),
     }
 
 
 def _calibration_summary(rows: list[dict]) -> dict:
     adherence_counts: dict[str, int] = {}
     response_counts: dict[str, int] = {}
+    contract_quality_counts: dict[str, int] = {}
     matched_errors = []
+    contract_calibratable_errors = []
     all_errors = []
     stress_errors = []
     for row in rows:
@@ -505,11 +515,16 @@ def _calibration_summary(rows: list[dict]) -> dict:
             adherence_counts[adherence] = adherence_counts.get(adherence, 0) + 1
         if response_status:
             response_counts[response_status] = response_counts.get(response_status, 0) + 1
+        contract_status = (comparison.get("contract_quality") or {}).get("status")
+        if contract_status:
+            contract_quality_counts[contract_status] = contract_quality_counts.get(contract_status, 0) + 1
         delta = comparison.get("response_delta")
         if delta is not None:
             all_errors.append(abs(delta))
             if adherence == "matched_expected_load":
                 matched_errors.append(abs(delta))
+            if comparison.get("calibration_eligible"):
+                contract_calibratable_errors.append(abs(delta))
         stress = comparison.get("execution_risk_stress_test") or {}
         stress_delta = stress.get("response_delta")
         if stress.get("available") and adherence == "harder_than_predicted" and stress_delta is not None:
@@ -517,15 +532,22 @@ def _calibration_summary(rows: list[dict]) -> dict:
     return {
         "adherence_counts": dict(sorted(adherence_counts.items())),
         "response_status_counts": dict(sorted(response_counts.items())),
+        "contract_quality_status_counts": dict(sorted(contract_quality_counts.items())),
         "mean_abs_response_error_all": _round(sum(all_errors) / len(all_errors), 1) if all_errors else None,
         "mean_abs_response_error_matched_load": (
             _round(sum(matched_errors) / len(matched_errors), 1) if matched_errors else None
+        ),
+        "mean_abs_response_error_contract_calibratable": (
+            _round(sum(contract_calibratable_errors) / len(contract_calibratable_errors), 1)
+            if contract_calibratable_errors
+            else None
         ),
         "mean_abs_stress_test_error_for_drifted_sessions": (
             _round(sum(stress_errors) / len(stress_errors), 1) if stress_errors else None
         ),
         "stress_test_drifted_count": len(stress_errors),
         "matched_load_count": len(matched_errors),
+        "contract_calibratable_count": len(contract_calibratable_errors),
     }
 
 
@@ -544,12 +566,13 @@ def _text_report(artifact: dict) -> str:
         actual = row.get("actual_session") or {}
         comparison = row.get("comparison") or {}
         stress = comparison.get("execution_risk_stress_test") or {}
+        quality = comparison.get("contract_quality") or {}
         recovery = row.get("next_day_recovery") or {}
         lines.append(
             "- {date}: prescribed {title} ({intensity}, {duration} min, load {expected_load}); "
             "actual {actual_categories}, {actual_duration} min, load {actual_load}; "
             "next-day {actual_score} vs expected {expected_score} / adjusted {adjusted_score}; "
-            "stress-test {stress_score} ({stress_status}); {response_status}; {adherence}".format(
+            "stress-test {stress_score} ({stress_status}); {response_status}; {adherence}; contract {contract_status}".format(
                 date=row.get("date"),
                 title=expected.get("title"),
                 intensity=expected.get("intensity"),
@@ -565,6 +588,7 @@ def _text_report(artifact: dict) -> str:
                 stress_status=stress.get("response_status"),
                 response_status=comparison.get("response_status"),
                 adherence=comparison.get("adherence_status"),
+                contract_status=quality.get("status"),
             )
         )
     lines.extend(
@@ -621,6 +645,7 @@ def build_predictive_backtest(
             "Review uses actual target-day activities plus following-day Garmin wellness.",
             "The response target is Garmin-derived recovery/readiness, not direct trail skill execution.",
             "If actual load differs from prescribed load, adherence is judged before model calibration.",
+            "Only rows with a complete session contract, action alignment, explicit stop-rule outcome, and complete relevant review fields are full digital-twin calibration samples.",
         ],
         "rows": rows,
     }
