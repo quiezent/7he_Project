@@ -8,5 +8,21 @@
     "primary_sleep_hours": 4.93,
     "athlete_reported_cause": "Intentional sleep-opportunity truncation for work, not unexplained insomnia or failed overnight recovery.",
     "coaching_interpretation": "The cause explains the short sleep and separates it from delayed post-hike autonomic strain. It does not erase the independent short-sleep CNS and reaction-time constraint for today's open-water and travel context."
+  },
+  "rest_recharge_window": {
+    "date": "2026-08-06",
+    "nap_status": "completed",
+    "nap_start_local": "14:30",
+    "nap_end_local": "15:10",
+    "time_in_bed_minutes": 40,
+    "nap_source": "athlete_report",
+    "post_nap_clarity_10": 8,
+    "sleep_inertia_status": "not_tracked_unknown",
+    "post_nap_response_qualitative": "Clearer mind.",
+    "follow_on_activity": {
+      "type": "recreational_swim_or_snorkelling",
+      "duration_minutes": 30,
+      "purpose": "Looked at fish after the nap; family-holiday recreation rather than a prescribed training session."
+    }
   }
 }
