@@ -14,7 +14,7 @@ from .evidence import (
     load_latest_wellness,
     summarize_recent_training,
 )
-from .io import write_json
+from .io import read_json, write_json
 from .paths import snapshots_dir
 from .training_status import normalize_training_status_payload
 from .time_utils import DEFAULT_TIMEZONE, iso_now, now_local, parse_date, today_local
@@ -59,9 +59,25 @@ def _latest_feedback(root: str | Path | None = None) -> dict:
     files = sorted(Path(root or ".").resolve().joinpath("input").glob("feedback_*.json"))
     if not files:
         return {}
-    from .io import read_json
-
     return read_json(files[-1], {})
+
+
+def _feedback_for_date(root: str | Path | None, target_date: date) -> dict:
+    path = (
+        Path(root or ".")
+        .resolve()
+        .joinpath("input", f"feedback_{target_date.isoformat()}.json")
+    )
+    payload = read_json(path, {})
+    if not isinstance(payload, dict):
+        return {}
+    try:
+        payload_date = parse_date(payload.get("date"))
+    except (TypeError, ValueError):
+        payload_date = None
+    if payload_date != target_date:
+        return {}
+    return payload
 
 
 def _dated_subjective_context(
@@ -69,6 +85,19 @@ def _dated_subjective_context(
     target_date: date,
 ) -> tuple[dict, dict | None]:
     daily = load_daily_checkin(root, target_date.isoformat())
+    try:
+        daily_date = parse_date(daily.get("date")) if daily else None
+    except (TypeError, ValueError):
+        daily_date = None
+    if daily and daily_date == target_date:
+        return daily, None
+
+    # A stale convenience markdown file must not mask the explicitly dated,
+    # structured feedback for the decision date.
+    dated_feedback = _feedback_for_date(root, target_date)
+    if dated_feedback:
+        return dated_feedback, None
+
     latest = daily or _latest_feedback(root)
     if not latest:
         return {}, None
@@ -252,6 +281,9 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
     data_blockers: list[dict] = []
     body_battery_current = None
     reasons: list[dict] = []
+    core_sleep_hours: float | None = None
+    core_sleep_guidance: str | None = None
+    core_sleep_score_ceiling: float | None = None
 
     if subjective_warning:
         reasons.append(subjective_warning)
@@ -356,6 +388,55 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
                 )
             elif sleep_score >= 80:
                 score += 5
+
+        core_sleep_hours = as_number(normalized_wellness.get("sleep_hours"))
+        if core_sleep_hours is None:
+            sleep_seconds = as_number(find_value(wellness, ("sleepTimeSeconds", "sleep_time_seconds")))
+            if sleep_seconds is not None:
+                core_sleep_hours = round(sleep_seconds / 3600, 2)
+        if core_sleep_hours is not None and core_sleep_hours < 6:
+            if core_sleep_hours < 5:
+                score -= 20
+                hard_block = True
+                core_sleep_guidance = "avoid"
+                core_sleep_score_ceiling = 44
+                band = "under_5_hours"
+                message = (
+                    f"Primary sleep was only {core_sleep_hours:g} h. This is a strong limiter: "
+                    "avoid hard training and technical consequence."
+                )
+            elif core_sleep_hours < 5.5:
+                score -= 15
+                core_sleep_guidance = "caution"
+                core_sleep_score_ceiling = 69
+                band = "5_to_under_5_5_hours"
+                message = (
+                    f"Primary sleep was only {core_sleep_hours:g} h. Treat readiness as acute "
+                    "short-sleep amber: require a consequence-sensitive field gate and do not "
+                    "give unrestricted hard-session clearance."
+                )
+            else:
+                score -= 8
+                core_sleep_guidance = "caution"
+                core_sleep_score_ceiling = 69
+                band = "5_5_to_under_6_hours"
+                message = (
+                    f"Primary sleep was only {core_sleep_hours:g} h. Keep hard and technical work "
+                    "capped even when sleep score, HRV, or Body Battery look reassuring."
+                )
+            reasons.append(
+                {
+                    "type": "primary_short_sleep",
+                    "severity": "yellow",
+                    "message": (
+                        f"{message} A reported nap may improve alertness, but it does not erase "
+                        "the uncertainty from short primary sleep."
+                    ),
+                    "core_sleep_hours": core_sleep_hours,
+                    "duration_band": band,
+                    "hard_session_effect": core_sleep_guidance,
+                }
+            )
 
         body_battery_current = normalized_wellness.get("body_battery_current") or as_number(
             find_value(wellness, ("bodyBattery", "body_battery", "bb"))
@@ -468,7 +549,7 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
                 }
             )
         acwr_status = _text(normalized_training_status.get("acute_chronic", {}).get("status"))
-        if acwr_status and acwr_status not in {"optimal"}:
+        if acwr_status and acwr_status not in {"optimal", "low"}:
             score -= 8
             reasons.append(
                 {
@@ -573,6 +654,10 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
             }
         )
 
+    if core_sleep_score_ceiling is not None:
+        # Duration is an independent gate. Strong modeled signals must not turn
+        # a sub-six-hour primary sleep into unrestricted green clearance.
+        score = min(score, core_sleep_score_ceiling)
     score = max(0, min(100, round(score, 1)))
     is_today = target_date == today_local(tz)
     readiness_accuracy = _readiness_accuracy_plan(
@@ -584,6 +669,8 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
     )
     level = readiness_level(score, hard_block)
     hard_session_guidance = "ok" if level == "green" else "caution" if level == "yellow" else "avoid"
+    if core_sleep_guidance == "avoid":
+        hard_session_guidance = "avoid"
 
     artifact = {
         "date": target_date.isoformat(),
@@ -595,6 +682,14 @@ def build_readiness(root: str | Path | None = None, for_date: str | date | None 
         "reasons": reasons,
         "subjective": {
             "next_morning_response": next_morning or None,
+        },
+        "sleep_duration_gate": {
+            "core_sleep_hours": core_sleep_hours,
+            "hard_session_effect": core_sleep_guidance or "none",
+            "nap_rule": (
+                "A nap may improve alertness but does not remove a primary short-sleep gate "
+                "without independently verified total-sleep and post-nap clarity evidence."
+            ),
         },
         "evidence": {
             "wellness_date": wellness_date.isoformat() if wellness_date else None,

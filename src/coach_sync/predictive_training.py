@@ -8,11 +8,11 @@ import re
 from statistics import median
 from typing import Any
 
-from .evidence import as_number
+from .evidence import as_number, find_value, load_activities
 from .io import read_json, write_json, write_text
 from .load_model import build_activity_summary_index
-from .paths import input_dir, snapshots_dir
-from .planning import SESSION_CONTRACT_FIELDS, build_today_plan
+from .paths import activities_dir, input_dir, snapshots_dir
+from .planning import SESSION_CONTRACT_FIELDS, _nutrition_block, build_today_plan
 from .state import build_current_state
 from .time_utils import DEFAULT_TIMEZONE, iso_now, parse_date, today_local
 from .training_predictor import (
@@ -46,6 +46,53 @@ RPE_RANGES = {
     "hard": [50, 80],
 }
 
+_PREDICTION_PRIVATE_IDENTIFIER_KEYS = {
+    "deviceid",
+    "devicetypepk",
+    "deviceversionpk",
+    "serial",
+    "serialnumber",
+    "unitid",
+    "applicationid",
+    "userprofilepk",
+    "profilepk",
+    "userpk",
+}
+
+
+def _privacy_safe_prediction(value: Any, path: str = "expected") -> tuple[Any, list[str]]:
+    """Copy a prediction while omitting device/profile identifiers from review surfaces."""
+    if isinstance(value, dict):
+        cleaned = {}
+        removed = []
+        for key, child in value.items():
+            normalized = re.sub(r"[^a-z0-9]", "", str(key).lower())
+            child_path = f"{path}.{key}"
+            if normalized in _PREDICTION_PRIVATE_IDENTIFIER_KEYS:
+                removed.append(child_path)
+                continue
+            safe_child, child_removed = _privacy_safe_prediction(child, child_path)
+            cleaned[key] = safe_child
+            removed.extend(child_removed)
+        return cleaned, removed
+    if isinstance(value, list):
+        cleaned_list = []
+        removed = []
+        for index, child in enumerate(value):
+            safe_child, child_removed = _privacy_safe_prediction(
+                child, f"{path}[{index}]"
+            )
+            cleaned_list.append(safe_child)
+            removed.extend(child_removed)
+        return cleaned_list, removed
+    return value, []
+INTENSITY_ALIASES = {
+    "easy_skill": "skill",
+    "skill_easy": "skill",
+    "skill_moderate": "moderate",
+    "skill_moderate_hard": "moderate_hard",
+}
+
 MTB_SESSION_TYPES = {
     "endurance_skills",
     "mtb_durability_enduro",
@@ -55,6 +102,7 @@ MTB_SESSION_TYPES = {
     "outdoor_bike_optional",
     "outdoor_mtb",
 }
+HIKING_MODALITIES = {"hike", "hiking"}
 INDOOR_BIKE_SESSION_TYPES = {
     "bike_quality",
     "easy_bike_continuity",
@@ -77,6 +125,13 @@ FUELING_REVIEW_FIELDS = {
 TECHNICAL_REVIEW_FIELDS = {
     "technical_quality_notes",
     "late_session_skill_fade",
+}
+OBJECTIVE_ACTIVITY_REVIEW_FIELDS = {
+    "average_power_w": "avg_power",
+    "normalized_power_w": "normalized_power",
+    "average_hr": "avg_hr",
+    "aerobic_training_effect": "aerobic_te",
+    "anaerobic_training_effect": "anaerobic_te",
 }
 REVIEW_FIELD_ALIASES = {
     "actual_rpe": ("actual_rpe", "rpe", "rpe_score", "direct_workout_rpe"),
@@ -481,16 +536,282 @@ def _response_status_from_delta(delta: float | None) -> str:
     return "within_expected_band"
 
 
+def _training_load_range(value: Any) -> tuple[list[float] | None, float | None, str | None]:
+    explicit_value = None
+    range_values = None
+    if isinstance(value, dict):
+        for key in ("value", "expected", "target"):
+            parsed = as_number(value.get(key))
+            if parsed is not None:
+                explicit_value = parsed
+                break
+        for key in ("range", "expected_range", "target_range"):
+            candidate = value.get(key)
+            if isinstance(candidate, (list, tuple)) and len(candidate) == 2:
+                range_values = [as_number(candidate[0]), as_number(candidate[1])]
+                break
+        if range_values is None:
+            low = next(
+                (
+                    as_number(value.get(key))
+                    for key in ("min", "minimum", "low", "lower")
+                    if as_number(value.get(key)) is not None
+                ),
+                None,
+            )
+            high = next(
+                (
+                    as_number(value.get(key))
+                    for key in ("max", "maximum", "high", "upper")
+                    if as_number(value.get(key)) is not None
+                ),
+                None,
+            )
+            if low is not None and high is not None:
+                range_values = [low, high]
+    elif isinstance(value, (list, tuple)):
+        if len(value) == 2:
+            range_values = [as_number(value[0]), as_number(value[1])]
+        elif len(value) == 1:
+            explicit_value = as_number(value[0])
+    elif isinstance(value, str):
+        normalized_text = value.replace(",", "")
+        range_match = re.search(
+            r"(?<![\w.])(\d+(?:\.\d+)?)\s*(?:-|–|\bto\b)\s*(\d+(?:\.\d+)?)",
+            normalized_text,
+            flags=re.IGNORECASE,
+        )
+        if range_match:
+            range_values = [float(range_match.group(1)), float(range_match.group(2))]
+        else:
+            numbers = [
+                float(match)
+                for match in re.findall(r"(?<![\w.])\d+(?:\.\d+)?", normalized_text)
+            ]
+            if numbers:
+                explicit_value = numbers[0]
+    else:
+        explicit_value = as_number(value)
+
+    if range_values is not None:
+        low, high = range_values
+        if low is None or high is None or low < 0 or high < low:
+            return None, None, None
+        selected_value = (
+            explicit_value
+            if explicit_value is not None and low <= explicit_value <= high
+            else (low + high) / 2.0
+        )
+        if selected_value < 0:
+            return None, None, None
+        return [_round(low), _round(high)], _round(selected_value), "explicit_range"
+    if explicit_value is None or explicit_value < 0:
+        return None, None, None
+    return (
+        [_round(explicit_value * 0.7), _round(explicit_value * 1.35)],
+        _round(explicit_value),
+        "contract_value_with_default_tolerance",
+    )
+
+
+def _contract_training_load_expectation(expected: dict) -> dict | None:
+    if _number(expected.get("schema_version")) < 3:
+        return None
+    expected_result = expected.get("expected_result")
+    if not isinstance(expected_result, dict):
+        return None
+    for key in ("garmin_training_load", "garmin_load"):
+        if key not in expected_result:
+            continue
+        raw_value = expected_result.get(key)
+        expected_range, expected_value, range_basis = _training_load_range(raw_value)
+        if expected_range is None or expected_value is None:
+            continue
+        return {
+            "source": f"schema_v3_contract.expected_result.{key}",
+            "raw_value": raw_value,
+            "expected_value": expected_value,
+            "expected_range": expected_range,
+            "range_basis": range_basis,
+        }
+    return None
+
+
+def _selected_training_load_expectation(expected: dict) -> dict:
+    generic_range = expected.get("expected_training_load_range")
+    if not isinstance(generic_range, (list, tuple)) or len(generic_range) != 2:
+        generic_range = [None, None]
+    else:
+        generic_range = [as_number(generic_range[0]), as_number(generic_range[1])]
+    generic = {
+        "source": "generic_deterministic_duration_intensity",
+        "expected_value": as_number(expected.get("expected_training_load")),
+        "expected_range": generic_range,
+    }
+    contract = _contract_training_load_expectation(expected)
+    selected = contract or generic
+    return {
+        "selected_source": selected.get("source"),
+        "expected_value": selected.get("expected_value"),
+        "expected_range": selected.get("expected_range"),
+        "contract": contract,
+        "generic_deterministic": generic,
+    }
+
+
+def _rpe_score_range(
+    value: Any,
+    *,
+    require_rpe_label: bool = False,
+) -> list[float] | None:
+    range_values: list[float | None] | None = None
+    if isinstance(value, dict):
+        for key in (
+            "range",
+            "expected_range",
+            "target_range",
+            "rpe_range",
+            "rpe_range_out_of_10",
+            "whole_session_rpe_range",
+        ):
+            candidate = value.get(key)
+            if isinstance(candidate, (list, tuple)) and len(candidate) == 2:
+                range_values = [as_number(candidate[0]), as_number(candidate[1])]
+                break
+        if range_values is None:
+            low = next(
+                (
+                    as_number(value.get(key))
+                    for key in ("min", "minimum", "low", "lower")
+                    if as_number(value.get(key)) is not None
+                ),
+                None,
+            )
+            high = next(
+                (
+                    as_number(value.get(key))
+                    for key in ("max", "maximum", "high", "upper")
+                    if as_number(value.get(key)) is not None
+                ),
+                None,
+            )
+            if low is not None and high is not None:
+                range_values = [low, high]
+    elif isinstance(value, (list, tuple)) and len(value) == 2:
+        range_values = [as_number(value[0]), as_number(value[1])]
+    elif isinstance(value, str):
+        if require_rpe_label:
+            matches = list(
+                re.finditer(
+                    (
+                        r"(?P<label>(?:whole[\s-]*session[\s-]*)?rpe)\s*"
+                        r"(?:(?:approximately|about|around)\s*)?"
+                        r"(?P<low>\d+(?:\.\d+)?)\s*(?:-|–|—|\bto\b)\s*"
+                        r"(?P<high>\d+(?:\.\d+)?)"
+                    ),
+                    value,
+                    flags=re.IGNORECASE,
+                )
+            )
+            if matches:
+                match = next(
+                    (
+                        candidate
+                        for candidate in matches
+                        if "whole" in candidate.group("label").lower()
+                    ),
+                    matches[0],
+                )
+                range_values = [
+                    float(match.group("low")),
+                    float(match.group("high")),
+                ]
+        else:
+            match = re.search(
+                r"(?<![\w.])(\d+(?:\.\d+)?)\s*(?:-|–|—|\bto\b)\s*(\d+(?:\.\d+)?)",
+                value,
+                flags=re.IGNORECASE,
+            )
+            if match:
+                range_values = [float(match.group(1)), float(match.group(2))]
+
+    if range_values is None:
+        return None
+    low, high = range_values
+    if low is None or high is None or low < 0 or high < low or high > 100:
+        return None
+    scale = 10.0 if high <= 10 else 1.0
+    return [_round(low * scale), _round(high * scale)]
+
+
+def _contract_rpe_expectation(expected: dict) -> dict | None:
+    if _number(expected.get("schema_version")) < 3:
+        return None
+    expected_result = expected.get("expected_result")
+    if not isinstance(expected_result, dict):
+        return None
+
+    direct_keys = (
+        "rpe_range_out_of_10",
+        "whole_session_rpe_range",
+        "session_rpe_range",
+        "rpe_range",
+        "whole_session_rpe",
+        "session_rpe",
+    )
+    for key in direct_keys:
+        if key not in expected_result:
+            continue
+        raw_value = expected_result.get(key)
+        expected_range = _rpe_score_range(raw_value)
+        if expected_range is not None:
+            return {
+                "source": f"schema_v3_contract.expected_result.{key}",
+                "raw_value": raw_value,
+                "expected_score_range": expected_range,
+                "scale": "garmin_rpe_score_0_to_100",
+            }
+
+    physiology = expected_result.get("physiology")
+    if isinstance(physiology, dict):
+        for key in direct_keys:
+            if key not in physiology:
+                continue
+            raw_value = physiology.get(key)
+            expected_range = _rpe_score_range(raw_value)
+            if expected_range is not None:
+                return {
+                    "source": f"schema_v3_contract.expected_result.physiology.{key}",
+                    "raw_value": raw_value,
+                    "expected_score_range": expected_range,
+                    "scale": "garmin_rpe_score_0_to_100",
+                }
+    elif isinstance(physiology, str):
+        expected_range = _rpe_score_range(
+            physiology,
+            require_rpe_label=True,
+        )
+        if expected_range is not None:
+            return {
+                "source": "schema_v3_contract.expected_result.physiology",
+                "raw_value": physiology,
+                "expected_score_range": expected_range,
+                "scale": "garmin_rpe_score_0_to_100",
+            }
+    return None
+
+
 def _session_expectation(plan: dict) -> dict:
     session = plan.get("session") or {}
     session_type = str(session.get("type") or "unknown")
     intensity = str(session.get("intensity") or "easy")
+    generic_intensity = INTENSITY_ALIASES.get(intensity, intensity)
     duration = int(session.get("duration_min") or 0)
     modality = str(session.get("modality") or "").lower()
     if session_type == "scheduled_rest":
         duration = 0
     session_count = 1 if duration > 0 else 0
-    base_load_per_hour = LOAD_PER_HOUR.get(intensity, LOAD_PER_HOUR["easy"])
+    base_load_per_hour = LOAD_PER_HOUR.get(generic_intensity, LOAD_PER_HOUR["easy"])
     is_mtb = modality == "mtb" or session_type in MTB_SESSION_TYPES
     is_bike = (
         is_mtb
@@ -499,16 +820,17 @@ def _session_expectation(plan: dict) -> dict:
         or "bike" in session_type
         or "cycling" in session_type
     )
+    is_hike = modality in HIKING_MODALITIES or session_type.lower() in HIKING_MODALITIES
     if is_mtb:
         base_load_per_hour += 10
     elif session_type == "bike_quality":
         base_load_per_hour += 15
     training_load = (duration / 60.0) * base_load_per_hour if duration > 0 else 0.0
-    if intensity == "hard":
+    if generic_intensity == "hard":
         high_intensity_min = duration * 0.25
-    elif intensity == "moderate_hard":
+    elif generic_intensity == "moderate_hard":
         high_intensity_min = duration * 0.16
-    elif intensity == "moderate":
+    elif generic_intensity == "moderate":
         high_intensity_min = duration * 0.08
     else:
         high_intensity_min = 0.0
@@ -522,6 +844,8 @@ def _session_expectation(plan: dict) -> dict:
             categories["gym"] = 1
         elif is_bike:
             categories["bike_outdoor" if modality in {"bike_outdoor", "outdoor_bike"} else "bike_indoor"] = 1
+        elif is_hike:
+            categories["hike"] = 1
         else:
             categories["other"] = 1
     load_low = training_load * 0.7
@@ -530,13 +854,20 @@ def _session_expectation(plan: dict) -> dict:
         "title": session.get("title"),
         "type": session_type,
         "intensity": intensity,
-        "modality": modality or ("mtb" if is_mtb else "bike" if is_bike else "other"),
+        "modality": (
+            "hike"
+            if is_hike
+            else modality or ("mtb" if is_mtb else "bike" if is_bike else "other")
+        ),
         "duration_min": duration,
         "sessions": session_count,
         "expected_training_load": _round(training_load),
         "expected_training_load_range": [_round(load_low), _round(load_high)],
         "expected_high_intensity_min": _round(high_intensity_min),
-        "expected_rpe_score_range": RPE_RANGES.get(intensity, RPE_RANGES["easy"]),
+        "expected_rpe_score_range": RPE_RANGES.get(
+            generic_intensity,
+            RPE_RANGES["easy"],
+        ),
         "expected_feel": "normal",
         "mtb_sessions": mtb_sessions,
         "gym_sessions": gym_sessions,
@@ -553,17 +884,40 @@ def _session_expectation(plan: dict) -> dict:
         expected["schema_version"] = session.get("schema_version")
     if session.get("contract_fields"):
         expected["contract_fields"] = session.get("contract_fields")
+    if generic_intensity != intensity:
+        expected["generic_intensity_alias"] = {
+            "raw": intensity,
+            "normalized": generic_intensity,
+        }
+    if isinstance(plan.get("nutrition"), dict):
+        expected["planned_nutrition"] = plan.get("nutrition")
+    contract_load = _contract_training_load_expectation(expected)
+    if contract_load:
+        expected["contract_training_load_expectation"] = contract_load
+    contract_rpe = _contract_rpe_expectation(expected)
+    if contract_rpe:
+        expected["generic_expected_rpe_score_range"] = expected[
+            "expected_rpe_score_range"
+        ]
+        expected["expected_rpe_score_range"] = contract_rpe[
+            "expected_score_range"
+        ]
+        expected["contract_rpe_expectation"] = contract_rpe
     return expected
 
 
 def _simulate_activity_day(activity_by_day: dict[str, dict], target: date, expected: dict) -> dict[str, dict]:
     simulated = {day: dict(row) for day, row in activity_by_day.items()}
+    selected_load = _selected_training_load_expectation(expected)
+    simulated_training_load = selected_load.get("expected_value")
+    if simulated_training_load is None:
+        simulated_training_load = expected.get("expected_training_load") or 0
     row = _activity_empty()
     row.update(
         {
             "sessions": expected.get("sessions") or 0,
             "duration_min": float(expected.get("duration_min") or 0),
-            "training_load": float(expected.get("expected_training_load") or 0),
+            "training_load": float(simulated_training_load),
             "distance_km": 0.0,
             "high_intensity_min": float(expected.get("expected_high_intensity_min") or 0),
             "mtb_sessions": expected.get("mtb_sessions") or 0,
@@ -628,11 +982,41 @@ def _prediction_from_plan(
     simulated = _simulate_activity_day(activity_by_day, target, expected)
     features = _features_for_day(target, feature_wellness_by_date, feature_wellness_rows, simulated)
     if features is None:
+        feature_row = feature_wellness_by_date.get(target.isoformat()) or {}
+        raw_avg_stress = as_number(feature_row.get("avg_stress"))
+        coverage_eligible = feature_row.get(
+            "all_day_stress_low_positive_reward_eligible"
+        )
+        if raw_avg_stress is not None and raw_avg_stress <= 30 and coverage_eligible is not True:
+            issues = feature_row.get("all_day_stress_sufficiency_issues") or []
+            issue_text = ", ".join(str(item) for item in issues) or "coverage gate not passed"
+            stress_basis_label = (
+                "Target-date"
+                if basis_date == target
+                else f"State-basis {basis_date.isoformat()}"
+            )
+            reason = (
+                f"{stress_basis_label} low average stress was withheld from the digital twin because "
+                f"all-day coverage was not sufficient for positive use ({issue_text}). "
+                "No stale or partial low-stress value was imputed."
+            )
+        elif as_number(feature_row.get("sleep_stress")) is None:
+            reason = (
+                "Target-date observed sleep stress is unavailable; the digital twin does "
+                "not manufacture a sleep-stress proxy."
+            )
+        else:
+            reason = (
+                "One or more required target-date digital-twin features are unavailable."
+            )
         return {
             "status": "unavailable",
             "basis_date": basis_date.isoformat(),
             "expected_session": expected,
-            "warnings": ["Could not build digital-twin feature vector."],
+            "warnings": [
+                "Could not build digital-twin feature vector.",
+                reason,
+            ],
         }
     tree = model.get("tree") or {}
     prediction = _predict(tree, features)
@@ -901,6 +1285,86 @@ def _manual_review_value(blocks: list[dict], field: str) -> tuple[Any, str | Non
     return None, None
 
 
+def _planned_fueling_ranges(expected: dict) -> tuple[dict[str, list[float]], dict]:
+    nutrition = expected.get("planned_nutrition") or {}
+    target_block = nutrition.get("during_session_targets") or {}
+    ranges: dict[str, list[float]] = {}
+    for field in ("carbs_g_per_hour", "fluid_ml_per_hour", "sodium_mg_per_hour"):
+        values = target_block.get(field)
+        if not isinstance(values, (list, tuple)) or len(values) != 2:
+            continue
+        low = as_number(values[0])
+        high = as_number(values[1])
+        if low is None or high is None or low > high:
+            continue
+        ranges[field] = [low, high]
+    return ranges, target_block if isinstance(target_block, dict) else {}
+
+
+def _fueling_adequacy_review(expected: dict, blocks: list[dict]) -> dict:
+    ranges, target_block = _planned_fueling_ranges(expected)
+    if not ranges:
+        return {
+            "applicable": False,
+            "status": "planned_ranges_unavailable",
+            "metrics": {},
+            "calibration_effect": "audit_only",
+            "affects_calibration_eligibility": False,
+            "interpretation": "No explicit numeric fueling ranges were stored with the prescription.",
+        }
+
+    field_map = {
+        "carbs_g_per_hour": "fueling_carbs_g_per_hour",
+        "fluid_ml_per_hour": "fluid_ml_per_hour",
+        "sodium_mg_per_hour": "sodium_mg_per_hour",
+    }
+    metrics = {}
+    for target_field, feedback_field in field_map.items():
+        planned = ranges.get(target_field)
+        if planned is None:
+            continue
+        raw_value, source = _manual_review_value(blocks, feedback_field)
+        actual_value = as_number(raw_value)
+        if raw_value is None:
+            status = "not_logged"
+        elif actual_value is None or actual_value < 0:
+            status = "invalid"
+        elif actual_value < planned[0]:
+            status = "below_planned_range"
+        elif actual_value > planned[1]:
+            status = "above_planned_range"
+        else:
+            status = "within_planned_range"
+        metrics[target_field] = {
+            "planned_range": planned,
+            "actual": actual_value,
+            "status": status,
+            "source": source,
+        }
+
+    statuses = {row.get("status") for row in metrics.values()}
+    if statuses <= {"within_planned_range"}:
+        status = "within_planned_ranges"
+        interpretation = "Logged carbohydrate, fluid, and sodium rates sit within the stored prescription ranges."
+    elif statuses & {"not_logged", "invalid"}:
+        status = "incomplete"
+        interpretation = "At least one planned fueling rate is missing or invalid; retain fueling as an unresolved response confounder."
+    else:
+        status = "outside_planned_range"
+        interpretation = "At least one logged fueling rate sits outside the stored prescription range; inspect it as a response confounder."
+    return {
+        "applicable": True,
+        "status": status,
+        "target_profile": target_block.get("profile"),
+        "target_source": target_block.get("source"),
+        "selection_reason": target_block.get("selection_reason"),
+        "metrics": metrics,
+        "calibration_effect": "audit_only",
+        "affects_calibration_eligibility": False,
+        "interpretation": interpretation,
+    }
+
+
 def _expected_contract_status(expected: dict) -> dict:
     declared = expected.get("contract_fields")
     declared_fields = set(declared) if isinstance(declared, list) else set()
@@ -950,6 +1414,16 @@ def _automatic_review_source(field: str, actual: dict, self_eval: dict, response
         return "garmin_activity" if actual.get("sessions", 0) and actual.get("duration_min") is not None else None
     if normalized == "actual_training_load":
         return "garmin_activity" if actual.get("sessions", 0) and actual.get("training_load") is not None else None
+    activity_field = OBJECTIVE_ACTIVITY_REVIEW_FIELDS.get(normalized)
+    activities = actual.get("activities") or []
+    if (
+        activity_field
+        and actual.get("sessions") == 1
+        and len(activities) == 1
+        and isinstance(activities[0], dict)
+        and activities[0].get(activity_field) is not None
+    ):
+        return f"garmin_activity.activities[0].{activity_field}"
     if normalized == "actual_rpe":
         return "garmin_self_evaluation" if self_eval.get("avg_rpe_score") is not None else None
     if normalized == "workout_feel":
@@ -1118,13 +1592,103 @@ def _technical_quality_review(expected: dict, blocks: list[dict]) -> dict:
     }
 
 
-def _action_alignment(expected: dict, actual: dict) -> dict:
-    expected_sessions = int(_number(expected.get("sessions")))
-    actual_sessions = int(_number(actual.get("sessions")))
-    expected_categories = sorted(
+def _structured_feedback_action_alignment(blocks: list[dict]) -> dict:
+    field_name = "action_alignment"
+    container_names = {"coach_contract_audit", "contract_audit"}
+    for block in reversed(blocks):
+        payload = block.get("payload") or {}
+        source = str(block.get("source") or "feedback")
+        candidates: list[tuple[Any, str]] = []
+        for key, value in payload.items():
+            normalized_key = _normalized_key(key)
+            if normalized_key == field_name:
+                candidates.append((value, f"{source}.{key}"))
+            elif normalized_key in container_names and isinstance(value, dict):
+                for nested_key, nested_value in value.items():
+                    if _normalized_key(nested_key) == field_name:
+                        candidates.append(
+                            (
+                                nested_value,
+                                f"{source}.{key}.{nested_key}",
+                            )
+                        )
+        for value, value_source in candidates:
+            if not _review_value_present(value):
+                continue
+            if isinstance(value, bool):
+                status = "matched" if value else "mismatched"
+                normalized = str(value).lower()
+            elif isinstance(value, str):
+                normalized = _normalized_key(value)
+                tokens = set(normalized.split("_"))
+                if tokens & {"mismatch", "mismatched", "drift", "drifted"}:
+                    status = "mismatched"
+                elif tokens & {"match", "matched", "align", "aligned"}:
+                    status = "matched"
+                else:
+                    status = "unknown"
+            else:
+                normalized = _normalized_key(value)
+                status = "unknown"
+            return {
+                "available": True,
+                "status": status,
+                "value": value,
+                "normalized_value": normalized,
+                "source": value_source,
+            }
+    return {
+        "available": False,
+        "status": "not_logged",
+        "value": None,
+        "normalized_value": None,
+        "source": None,
+    }
+
+
+def _expected_categories_for_action_alignment(expected: dict) -> tuple[list[str], dict]:
+    stored_categories = sorted(
         str(category)
         for category, count in (expected.get("categories") or {}).items()
         if _number(count) > 0
+    )
+    session_type = _normalized_key(expected.get("type"))
+    modality = _normalized_key(expected.get("modality"))
+    explicit_hike = session_type in HIKING_MODALITIES or modality in HIKING_MODALITIES
+    if stored_categories == ["other"] and explicit_hike:
+        comparison_categories = ["hike"]
+        return comparison_categories, {
+            "applied": True,
+            "source": "review_time_legacy_expected_category_normalization",
+            "reason": (
+                "The immutable stored expected_session explicitly identifies a hike/hiking "
+                "action but was created before hike had a canonical predictive category, so "
+                "its legacy ['other'] category is compared as ['hike']."
+            ),
+            "stored_categories": stored_categories,
+            "comparison_categories": comparison_categories,
+            "evidence": {
+                "expected_session.type": expected.get("type"),
+                "expected_session.modality": expected.get("modality"),
+                "expected_session.categories": expected.get("categories"),
+            },
+            "stored_prediction_mutated": False,
+        }
+    return stored_categories, {
+        "applied": False,
+        "source": None,
+        "reason": None,
+        "stored_categories": stored_categories,
+        "comparison_categories": stored_categories,
+        "stored_prediction_mutated": False,
+    }
+
+
+def _action_alignment(expected: dict, actual: dict, blocks: list[dict] | None = None) -> dict:
+    expected_sessions = int(_number(expected.get("sessions")))
+    actual_sessions = int(_number(actual.get("sessions")))
+    expected_categories, expected_category_normalization = (
+        _expected_categories_for_action_alignment(expected)
     )
     actual_categories = sorted(
         str(category)
@@ -1154,9 +1718,12 @@ def _action_alignment(expected: dict, actual: dict) -> dict:
         duration_status = "matched"
     else:
         duration_status = "drifted"
+    structured_feedback = _structured_feedback_action_alignment(blocks or [])
     component_statuses = (modality_status, session_count_status, duration_status)
     if expected_sessions == 0:
         overall = "not_applicable" if actual_sessions == 0 else "mismatched"
+    elif structured_feedback.get("status") == "mismatched":
+        overall = "mismatched"
     elif all(status == "matched" for status in component_statuses):
         overall = "matched"
     elif "missing" in component_statuses:
@@ -1166,6 +1733,10 @@ def _action_alignment(expected: dict, actual: dict) -> dict:
     return {
         "status": overall,
         "expected_categories": expected_categories,
+        "stored_expected_categories": expected_category_normalization.get(
+            "stored_categories"
+        ),
+        "expected_category_normalization": expected_category_normalization,
         "actual_categories": actual_categories,
         "modality_status": modality_status,
         "expected_sessions": expected_sessions,
@@ -1175,6 +1746,7 @@ def _action_alignment(expected: dict, actual: dict) -> dict:
         "actual_duration_min": _round(actual_duration),
         "duration_ratio": _round(duration_ratio, 2),
         "duration_status": duration_status,
+        "structured_feedback_alignment": structured_feedback,
     }
 
 
@@ -1194,9 +1766,10 @@ def _contract_quality_review(
     missing = [row["field"] for row in required_rows if row.get("status") == "missing"]
     not_applicable = [row["field"] for row in field_rows if row.get("status") == "not_applicable"]
     completion_ratio = len(completed) / len(required_rows) if required_rows else 1.0
-    action = _action_alignment(expected, actual)
+    action = _action_alignment(expected, actual, blocks)
     stop_rule = _stop_rule_review(expected, blocks)
     technical_quality = _technical_quality_review(expected, blocks)
+    fueling_adequacy = _fueling_adequacy_review(expected, blocks)
     reasons = []
     if not expected.get("sessions"):
         status = "not_applicable"
@@ -1206,7 +1779,10 @@ def _contract_quality_review(
         reasons.append("The stored prediction does not contain a complete schema v3 session contract.")
     elif action.get("status") != "matched":
         status = "action_mismatch"
-        reasons.append("Actual modality, session count, or duration does not match the stored action closely enough.")
+        reasons.append(
+            "Actual modality, session count, duration, or explicitly logged route/stage execution "
+            "does not match the stored action closely enough."
+        )
     elif stop_rule.get("status") == "triggered_but_continued":
         status = "unsafe_stop_rule_continued"
         reasons.append("A stop rule was triggered but the session continued, so the nominal action is not trustworthy.")
@@ -1235,6 +1811,7 @@ def _contract_quality_review(
         "action_alignment": action,
         "stop_rule_outcome": stop_rule,
         "technical_quality": technical_quality,
+        "fueling_adequacy": fueling_adequacy,
         "review_field_completion": {
             "required": [row["field"] for row in required_rows],
             "completed": completed,
@@ -1245,6 +1822,426 @@ def _contract_quality_review(
         },
         "feedback": feedback,
         "reasons": reasons,
+    }
+
+
+def _index_activities(root: str | Path | None, name: str) -> list[dict]:
+    payload = read_json(snapshots_dir(root) / name, {})
+    if isinstance(payload, dict):
+        rows = payload.get("activities") or []
+    elif isinstance(payload, list):
+        rows = payload
+    else:
+        rows = []
+    return [row for row in rows if isinstance(row, dict)]
+
+
+def _activity_metadata_context(
+    activity_id: str,
+    device_rows: list[dict],
+    gear_rows: list[dict],
+) -> dict:
+    device = next((row for row in device_rows if str(row.get("activity_id")) == activity_id), None)
+    gear = next((row for row in gear_rows if str(row.get("activity_id")) == activity_id), None)
+    def cached_after_refresh_failure(row: dict | None) -> bool:
+        if not isinstance(row, dict) or row.get("last_attempt_ok") is not False:
+            return False
+        attempt = row.get("latest_attempt") if isinstance(row.get("latest_attempt"), dict) else {}
+        return attempt.get("status") in {"failed", "unsupported", "success_empty"}
+
+    device_cached = cached_after_refresh_failure(device)
+    gear_cached = cached_after_refresh_failure(gear)
+    if device is None:
+        hr_confidence = "unknown_not_indexed"
+    elif not device.get("device_fetch_ok"):
+        hr_confidence = "unknown_fetch_failed"
+    elif device.get("external_hr_sensor"):
+        hr_confidence = "external_hr_confirmed"
+    else:
+        hr_confidence = "no_external_hr_reported"
+    if gear is None:
+        gear_confidence = "unknown_not_indexed"
+        gear_labels = []
+    elif not gear.get("gear_fetch_ok"):
+        gear_confidence = "unknown_fetch_failed"
+        gear_labels = []
+    else:
+        gear_confidence = "garmin_gear_confirmed"
+        gear_labels = [
+            item.get("label")
+            for item in gear.get("gear") or []
+            if isinstance(item, dict) and item.get("label")
+        ]
+    return {
+        "device_fetch_status": "not_indexed"
+        if device is None
+        else "cached_after_refresh_failure"
+        if device_cached
+        else "ok"
+        if device.get("device_fetch_ok")
+        else "failed",
+        "hr_source_confidence": hr_confidence,
+        "sensor_types": sorted(
+            {
+                str(item.get("sensor_type"))
+                for item in (device or {}).get("sensors") or []
+                if isinstance(item, dict) and item.get("sensor_type")
+            }
+        ),
+        "gear_fetch_status": "not_indexed"
+        if gear is None
+        else "cached_after_refresh_failure"
+        if gear_cached
+        else "ok"
+        if gear.get("gear_fetch_ok")
+        else "failed",
+        "gear_confidence": gear_confidence,
+        "gear_labels": gear_labels,
+    }
+
+
+def _raw_activity_context(root: str | Path | None, target: date, actual: dict) -> tuple[list[dict], dict[str, str]]:
+    actual_refs = {
+        str(row.get("activity_ref"))
+        for row in actual.get("activities") or []
+        if isinstance(row, dict) and row.get("activity_ref")
+    }
+    device_rows = _index_activities(root, "activity_device_index.json")
+    gear_rows = _index_activities(root, "activity_gear_index.json")
+    rows = []
+    id_to_ref: dict[str, str] = {}
+    for activity in load_activities(root):
+        if parse_date(activity.get("date")) != target or not activity.get("counts_for_training_load"):
+            continue
+        activity_id = str(activity.get("id") or "")
+        activity_ref = _activity_ref_for_feedback_id(activity_id)
+        if not activity_ref or (actual_refs and activity_ref not in actual_refs):
+            continue
+        payload = read_json(activity.get("source_file"), {}) if activity.get("source_file") else {}
+        if not isinstance(payload, dict):
+            payload = {}
+        elapsed_sec = as_number(find_value(payload, ("elapsedDuration", "duration")))
+        moving_sec = as_number(find_value(payload, ("movingDuration",)))
+        stopped_sec = (
+            max(0.0, elapsed_sec - moving_sec)
+            if elapsed_sec is not None and moving_sec is not None
+            else None
+        )
+        entry = {
+            "activity_ref": activity_ref,
+            "category": activity.get("category"),
+            "duration_min": activity.get("duration_min"),
+            "moving_duration_min": _round(moving_sec / 60.0) if moving_sec is not None else None,
+            "stopped_duration_min": _round(stopped_sec / 60.0) if stopped_sec is not None else None,
+            "elevation_gain_m": _round(as_number(find_value(payload, ("elevationGain",))), 1),
+            "elevation_loss_m": _round(as_number(find_value(payload, ("elevationLoss",))), 1),
+            "temperature": {
+                "device_min_c": _round(as_number(find_value(payload, ("minTemperature",))), 1),
+                "device_max_c": _round(as_number(find_value(payload, ("maxTemperature",))), 1),
+                "source": "garmin_activity_summary_device_temperature",
+                "decision_use": "historical_device_exposure_context_not_air_temperature_or_forecast",
+            },
+            "water_estimated_ml": _round(as_number(find_value(payload, ("waterEstimated",))), 0),
+            "water_estimate_guardrail": "Garmin water estimate is modeled loss, not measured sweat or logged intake.",
+            "power": {
+                "average_w": _round(as_number(find_value(payload, ("avgPower", "averagePower"))), 1),
+                "normalized_w": _round(as_number(find_value(payload, ("normPower", "normalizedPower"))), 1),
+                "max_w": _round(as_number(find_value(payload, ("maxPower",))), 1),
+                "max_20_min_w": _round(as_number(find_value(payload, ("max20MinPower",))), 1),
+                "garmin_detected_ftp_w": _round(as_number(find_value(payload, ("maxFtp",))), 0),
+                "decision_use": (
+                    "Session power and P20 are context only. A non-null maxFtp is Garmin's sparse "
+                    "FTP-detection surface and may update the current operational FTP when dated and sensor-backed."
+                ),
+            },
+            "training_effect": {
+                "aerobic": _round(as_number(find_value(payload, ("aerobicTrainingEffect",))), 1),
+                "anaerobic": _round(as_number(find_value(payload, ("anaerobicTrainingEffect",))), 1),
+                "label": find_value(payload, ("trainingEffectLabel",)),
+            },
+            "training_stress_score": _round(as_number(find_value(payload, ("trainingStressScore",))), 1),
+            "metadata_confidence": _activity_metadata_context(activity_id, device_rows, gear_rows),
+        }
+        rows.append(entry)
+        id_to_ref[activity_id] = activity_ref
+    return rows, id_to_ref
+
+
+def _detail_context(root: str | Path | None, id_to_ref: dict[str, str]) -> list[dict]:
+    rows = []
+    for activity_id, activity_ref in id_to_ref.items():
+        preserved_path = activities_dir(root) / "details" / f"garmin_{activity_id}_detail.json"
+        legacy_path = snapshots_dir(root) / f"activity_detail_{activity_id}.json"
+        detail = read_json(preserved_path, {})
+        source = f"activities/details/garmin_{activity_id}_detail.json"
+        if not isinstance(detail, dict) or not detail:
+            detail = read_json(legacy_path, {})
+            source = f"snapshots/activity_detail_{activity_id}.json"
+        if not isinstance(detail, dict) or not detail:
+            continue
+        calls = detail.get("calls") or {}
+        details_call = calls.get("details") or {}
+        details_data = details_call.get("data") or {}
+        weather_call = calls.get("weather") or {}
+        weather = weather_call.get("data") or {}
+        rows.append(
+            {
+                "activity_ref": activity_ref,
+                "source": source,
+                "details_fetch_ok": bool(details_call.get("ok")),
+                "metric_descriptor_count": details_data.get("measurementCount"),
+                "sample_count": details_data.get("metricsCount"),
+                "total_metric_values": details_data.get("totalMetricsCount"),
+                "weather": {
+                    "temperature_raw": weather.get("temp") if isinstance(weather, dict) else None,
+                    "apparent_temperature_raw": weather.get("apparentTemp") if isinstance(weather, dict) else None,
+                    "relative_humidity_pct": weather.get("relativeHumidity") if isinstance(weather, dict) else None,
+                    "unit_status": "unknown_do_not_use_quantitatively",
+                    "coaching_rule": "Historical activity weather is context only, not a forecast.",
+                }
+                if weather_call.get("ok")
+                else None,
+            }
+        )
+    return rows
+
+
+def _loop_context(
+    root: str | Path | None,
+    target: date,
+    id_to_ref: dict[str, str],
+    allowed_activity_refs: set[str] | None = None,
+) -> dict:
+    artifacts = []
+    for path in snapshots_dir(root).glob(f"activity_loop_load_{target.isoformat()}_*.json"):
+        payload = read_json(path, {})
+        if not isinstance(payload, dict):
+            continue
+        activity_id = str(payload.get("activity_id") or (payload.get("activity") or {}).get("activity_id") or "")
+        activity_ref = id_to_ref.get(activity_id)
+        if not activity_ref or (
+            allowed_activity_refs is not None
+            and activity_ref not in allowed_activity_refs
+        ):
+            continue
+        action_seconds: dict[str, float] = defaultdict(float)
+        timeline_flags = set()
+        for lap in payload.get("laps") or []:
+            if not isinstance(lap, dict):
+                continue
+            timeline = lap.get("timeline") or {}
+            timeline_flags.update(str(value) for value in timeline.get("flags") or [])
+            action_summary = timeline.get("action_terrain_summary") or {}
+            for name, section in (action_summary.get("sections") or {}).items():
+                if isinstance(section, dict):
+                    action_seconds[str(name)] += _number(section.get("duration_s"))
+        loops = []
+        for loop in (payload.get("loops") or [])[:24]:
+            if not isinstance(loop, dict):
+                continue
+            estimated = loop.get("estimated_load") or {}
+            loops.append(
+                {
+                    "loop": loop.get("loop"),
+                    "label": loop.get("label"),
+                    "lap_kinds": loop.get("lap_kinds") or [],
+                    "elapsed_min": loop.get("elapsed_min"),
+                    "moving_min": loop.get("moving_min"),
+                    "stop_min": loop.get("stop_min"),
+                    "elevation_gain_m": loop.get("elevation_gain_m"),
+                    "elevation_loss_m": loop.get("elevation_loss_m"),
+                    "estimated_primary_load": estimated.get("primary_continuous_hr"),
+                }
+            )
+        artifacts.append(
+            {
+                "activity_ref": activity_ref,
+                "official_activity_training_load": payload.get("official_activity_training_load"),
+                "loop_count": len(payload.get("loops") or []),
+                "lap_count": len(payload.get("laps") or []),
+                "loops": loops,
+                "action_terrain_minutes": {
+                    name: _round(seconds / 60.0)
+                    for name, seconds in sorted(action_seconds.items())
+                },
+                "timeline_flags": sorted(timeline_flags),
+                "method_limits": (payload.get("method") or {}).get("limits") or [],
+            }
+        )
+    return {
+        "available": bool(artifacts),
+        "matched_artifacts": len(artifacts),
+        "activities": artifacts,
+    }
+
+
+def _latest_session_evidence_context(root: str | Path | None, target: date) -> dict:
+    state = read_json(snapshots_dir(root) / "current_state.json", {})
+    evidence = state.get("latest_session_evidence") if isinstance(state, dict) else None
+    if not isinstance(evidence, dict):
+        return {"available": False, "reason": "latest_session_evidence_not_available"}
+    evidence_date = None
+    activity = evidence.get("activity") or {}
+    date_candidates = [
+        activity.get("date") if isinstance(activity, dict) else None,
+        evidence.get("activity_date"),
+        evidence.get("session_date"),
+        evidence.get("date"),
+    ]
+    for value in date_candidates:
+        try:
+            evidence_date = parse_date(value)
+        except (TypeError, ValueError):
+            evidence_date = None
+        if evidence_date:
+            break
+    if evidence_date != target:
+        return {
+            "available": False,
+            "reason": "latest_session_evidence_date_does_not_match_review",
+            "evidence_date": evidence_date.isoformat() if evidence_date else None,
+        }
+    return {
+        "available": True,
+        "source": "snapshots/current_state.json:latest_session_evidence",
+        "evidence": evidence,
+    }
+
+
+def _reconcile_raw_timing_with_latest_session(
+    raw_rows: list[dict],
+    id_to_ref: dict[str, str],
+    latest_session: dict,
+) -> None:
+    """Apply a qualified trace correction without erasing Garmin's raw timing."""
+    if not latest_session.get("available"):
+        return
+    evidence = latest_session.get("evidence") or {}
+    activity = evidence.get("activity") or {}
+    timing = evidence.get("timing") or {}
+    plausibility = timing.get("plausibility") or {}
+    if plausibility.get("status") != "garmin_moving_duration_replaced_by_trace_estimate":
+        return
+    activity_ref = id_to_ref.get(str(activity.get("activity_id") or ""))
+    if not activity_ref:
+        return
+    for row in raw_rows:
+        if row.get("activity_ref") != activity_ref:
+            continue
+        row["garmin_reported_timing"] = {
+            "moving_duration_min": row.get("moving_duration_min"),
+            "implied_stopped_duration_min": row.get("stopped_duration_min"),
+        }
+        row["moving_duration_min"] = timing.get("moving_min")
+        row["stopped_duration_min"] = None
+        row["nonmoving_or_stopped_estimate_min"] = timing.get(
+            "nonmoving_or_stopped_estimate_min"
+        )
+        row["timing_source"] = (
+            "snapshots/current_state.json:latest_session_evidence.timing"
+        )
+        row["timing_interpretation_guardrail"] = timing.get(
+            "stopped_interpretation"
+        )
+        break
+
+
+def _cns_payload(root: str | Path | None, target: date) -> dict | None:
+    dated_name = f"cns_readiness_{target.isoformat()}.json"
+    payload = read_json(snapshots_dir(root) / dated_name, {})
+    source = f"snapshots/{dated_name}"
+    if not isinstance(payload, dict) or parse_date(payload.get("date")) != target:
+        payload = read_json(snapshots_dir(root) / "cns_readiness.json", {})
+        source = "snapshots/cns_readiness.json"
+        if not isinstance(payload, dict) or parse_date(payload.get("date")) != target:
+            return None
+    return {
+        "date": target.isoformat(),
+        "status": payload.get("status"),
+        "score": payload.get("score"),
+        "confidence": payload.get("confidence"),
+        "session_ceiling": payload.get("session_ceiling"),
+        "interpretation": payload.get("interpretation"),
+        "source": source,
+    }
+
+
+def _cns_outcome_context(root: str | Path | None, target: date) -> dict:
+    session_day = _cns_payload(root, target)
+    next_day = _cns_payload(root, target + timedelta(days=1))
+    return {
+        "session_day": session_day,
+        "next_day": next_day,
+        "available": bool(session_day or next_day),
+        "decision_role": "Audit context only; CNS evidence does not change calibration eligibility automatically.",
+    }
+
+
+def _coaching_evidence_audit(
+    root: str | Path | None,
+    target: date,
+    expected: dict,
+    actual: dict,
+    contract_quality: dict,
+) -> dict:
+    raw_rows, id_to_ref = _raw_activity_context(root, target, actual)
+    detail_rows = _detail_context(root, id_to_ref)
+    mtb_activity_refs = {
+        str(row.get("activity_ref"))
+        for row in raw_rows
+        if row.get("category") == "mtb" and row.get("activity_ref")
+    }
+    loop_context = _loop_context(
+        root,
+        target,
+        id_to_ref,
+        allowed_activity_refs=mtb_activity_refs,
+    )
+    latest_session = _latest_session_evidence_context(root, target)
+    _reconcile_raw_timing_with_latest_session(raw_rows, id_to_ref, latest_session)
+    cns = _cns_outcome_context(root, target)
+    fueling = contract_quality.get("fueling_adequacy") or {}
+    limiters = []
+    if actual.get("sessions") and len(raw_rows) < int(_number(actual.get("sessions"))):
+        limiters.append("raw_activity_summary_coverage_is_partial")
+    if _is_technical_session(expected):
+        if any(
+            (row.get("metadata_confidence") or {}).get("hr_source_confidence")
+            in {"unknown_not_indexed", "unknown_fetch_failed", "no_external_hr_reported"}
+            for row in raw_rows
+        ):
+            limiters.append("mtb_hr_source_confidence_is_limited")
+        if any(
+            (row.get("metadata_confidence") or {}).get("device_fetch_status")
+            == "cached_after_refresh_failure"
+            for row in raw_rows
+        ):
+            limiters.append("mtb_device_metadata_is_cached_after_refresh_failure")
+        if not loop_context.get("available"):
+            limiters.append("matching_loop_context_not_available")
+    if fueling.get("applicable") and fueling.get("status") != "within_planned_ranges":
+        limiters.append(f"fueling_audit_{fueling.get('status')}")
+    if not cns.get("next_day"):
+        limiters.append("next_day_cns_outcome_not_available")
+    confidence = "high" if not limiters else "medium" if len(limiters) <= 2 else "limited"
+    return {
+        "status": "available" if raw_rows or latest_session.get("available") else "partial",
+        "confidence": confidence,
+        "confidence_limiters": limiters,
+        "usage": "Coaching interpretation and confounder audit only; these fields are not automatic model authority.",
+        "calibration_eligibility_effect": "none",
+        "actual_session_evidence": {
+            "raw_summary_coverage": {
+                "matched": len(raw_rows),
+                "expected_from_actual_index": int(_number(actual.get("sessions"))),
+            },
+            "activities": raw_rows,
+            "activity_detail": detail_rows,
+            "latest_session_evidence": latest_session,
+            "loop_context": loop_context,
+        },
+        "fueling_adequacy": fueling,
+        "cns_outcome": cns,
     }
 
 
@@ -1283,8 +2280,9 @@ def _compare_prediction(
     contract_quality: dict | None = None,
 ) -> dict:
     expected = prediction.get("expected_session") or {}
-    expected_range = expected.get("expected_training_load_range") or [None, None]
-    expected_load = expected.get("expected_training_load")
+    load_expectation = _selected_training_load_expectation(expected)
+    expected_range = load_expectation.get("expected_range") or [None, None]
+    expected_load = load_expectation.get("expected_value")
     actual_load = actual.get("training_load")
     load_delta = actual_load - expected_load if actual_load is not None and expected_load is not None else None
     load_delta_pct = (load_delta / expected_load * 100) if load_delta is not None and expected_load else None
@@ -1387,6 +2385,7 @@ def _compare_prediction(
 
     return {
         "adherence_status": adherence,
+        "training_load_expectation": load_expectation,
         "training_load_delta": _round(load_delta),
         "training_load_delta_pct": _round(load_delta_pct),
         "duration_delta_min": _round((actual.get("duration_min") or 0) - (expected.get("duration_min") or 0)),
@@ -1445,6 +2444,10 @@ def _review_text(review: dict) -> str:
     review_fields = quality.get("review_field_completion") or {}
     stop_rule = quality.get("stop_rule_outcome") or {}
     technical = quality.get("technical_quality") or {}
+    audit = review.get("coaching_evidence_audit") or {}
+    fueling = audit.get("fueling_adequacy") or {}
+    cns = audit.get("cns_outcome") or {}
+    next_day_cns = cns.get("next_day") or {}
     return "\n".join(
         [
             f"Predictive Session Review - {review['date']}",
@@ -1455,6 +2458,8 @@ def _review_text(review: dict) -> str:
             f"Physiology calibration: {comparison.get('physiology_calibration_status')} (eligible: {comparison.get('physiology_calibration_eligible')})",
             f"Contract quality: {quality.get('status')} (review fields: {len(review_fields.get('completed') or [])}/{len(review_fields.get('required') or [])})",
             f"Stop-rule outcome: {stop_rule.get('status')}; technical quality: {technical.get('status')}",
+            f"Fueling audit: {fueling.get('status')}; next-day CNS: {next_day_cns.get('status')}",
+            f"Coaching evidence confidence: {audit.get('confidence')} (calibration effect: {audit.get('calibration_eligibility_effect')})",
             f"Calibration: {comparison.get('calibration_status')} (eligible: {comparison.get('calibration_eligible')})",
             f"Interpretation: {comparison.get('interpretation')}",
             "",
@@ -1471,6 +2476,28 @@ def build_predictive_prescription(
     target = parse_date(for_date) or parse_date((state or {}).get("date")) or today_local(DEFAULT_TIMEZONE)
     state = state or build_current_state(root, target)
     plan = plan or _load_planned_session_plan(root, target) or build_today_plan(root, target, state=state)
+    if not isinstance(plan.get("nutrition"), dict):
+        from .context import load_context
+
+        context = load_context(root)
+        nutrition_context = {
+            **context,
+            "athlete": {
+                **context.get("athlete", {}),
+                **state.get("athlete", {}),
+            },
+        }
+        session = plan.get("session") or {}
+        plan = {
+            **plan,
+            "nutrition": _nutrition_block(
+                nutrition_context,
+                str(session.get("intensity") or "easy"),
+                int(session.get("duration_min") or 0),
+                session=session,
+                state=state,
+            ),
+        }
     plan_source = plan.get("plan_source") or {
         "type": "today_plan",
         "path": "snapshots/today_plan.json",
@@ -1560,16 +2587,40 @@ def build_predictive_review(
             "interpretation": "No dated pre-session prescription was stored for this date, so this session cannot calibrate the digital twin.",
         }
     )
+    coaching_evidence_audit = _coaching_evidence_audit(
+        root,
+        target,
+        expected,
+        actual,
+        contract_quality,
+    )
+    comparison["coaching_evidence_confidence"] = {
+        "status": coaching_evidence_audit.get("confidence"),
+        "limiters": coaching_evidence_audit.get("confidence_limiters") or [],
+        "calibration_eligibility_effect": "none",
+    }
+    privacy_safe_expected, redacted_identifier_paths = _privacy_safe_prediction(
+        prediction
+    )
     review = {
         "date": target.isoformat(),
         "generated_at": iso_now(DEFAULT_TIMEZONE),
         "artifact_type": "predictive_session_review",
         "prescription_available": bool(prescription),
         "prescription_source_date": (prescription or {}).get("date"),
-        "expected": prediction,
+        "expected": privacy_safe_expected,
         "actual_activity": actual,
         "actual_next_day_response": response,
         "comparison": comparison,
+        "coaching_evidence_audit": coaching_evidence_audit,
+        "privacy": {
+            "stored_prediction_mutated": False,
+            "review_surface_identifier_redaction_applied": bool(
+                redacted_identifier_paths
+            ),
+            "redacted_identifier_field_count": len(redacted_identifier_paths),
+            "redacted_identifier_paths": redacted_identifier_paths,
+        },
         "artifacts": {
             "current": "snapshots/predictive_session_review.json",
             "dated": f"snapshots/predictive_session_review_{target.isoformat()}.json",

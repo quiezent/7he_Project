@@ -4,6 +4,17 @@
     "event_focus": {
       "discipline": "enduro_mtb",
       "objective": "Rebuild the physical ability to absorb a chill Saturday practice day and still attack race efforts the next day.",
+      "current_milestone": {
+        "name": "four_twin_peaks_enduro_reacquisition",
+        "status": "active",
+        "plan_artifact": "snapshots/enduro_reacquisition_plan_2026-08-10_2026-09-12.json",
+        "target_window": {
+          "first_controlled_proof": "2026-08-24 to 2026-08-30",
+          "confirmation": "2026-09-07 to 2026-09-12"
+        },
+        "capacity_evidence": "The 2026-06-12 S-Works Enduro activity completed four climb-descent cycles; the current task is to reacquire final-run technical equality and next-day absorption, not to establish four-cycle capacity from zero.",
+        "success_definition": "Four complete Twin Peaks climb-descent cycles with an explicit not_triggered stop-rule outcome, final-run vision, decision speed, braking precision, front tracking, and corner-exit quality equal to the first run, braking and upper-body fatigue no greater than 3/10, final climb RPE no greater than 6/10, and a clean next-morning response."
+      },
       "target_demands": {
         "long_course_reference": {
           "climb_per_stage_m": 250,
@@ -29,6 +40,56 @@
         "access_model": {
           "distance_priority": "Nearest of Clayton's three main KL MTB venues.",
           "training_role": "Default weekly anchor for climb-loop fitness, enduro repeatability, and controlled trail exposure."
+        },
+        "twin_peak_stage_network": {
+          "start_hub": {
+            "name": "Twin Peak",
+            "aliases": [
+              "Twin Peaks"
+            ],
+            "stage_count": 4,
+            "start_line_separation_m": {
+              "min": 25,
+              "max": 100
+            }
+          },
+          "stages": {
+            "pure_quill": {
+              "display_name": "Pure Quill Stage",
+              "start": "Twin Peak",
+              "finish": "Captain Haddock",
+              "character": "Smoothest of the four enduro stages starting near Twin Peak.",
+              "bike_use": {
+                "specialized_stumpjumper": "Ridden for controlled Kiara loop and skill-quality sessions."
+              }
+            },
+            "tnt": {
+              "display_name": "TnT Stage",
+              "start": "Twin Peak",
+              "finish": "Captain Haddock",
+              "middle_sections": [
+                "TnT",
+                "Dirty Deeds"
+              ],
+              "character": "Rougher middle route than Pure Quill.",
+              "bike_use": {
+                "specialized_enduro": "Ridden by Clayton.",
+                "specialized_stumpjumper": "Not ridden by Clayton on this route."
+              }
+            },
+            "flintstone": {
+              "display_name": "Flintstone",
+              "start": "Twin Peak",
+              "character": "Contains several rock-garden sections.",
+              "recent_use": "Not ridden for several months as of 2026-07-15."
+            },
+            "dh_line": {
+              "display_name": "DH Line",
+              "start": "Twin Peak",
+              "finish": "Car park"
+            }
+          },
+          "comparison_rule": "Classify the stage before comparing time, Flow, Grit, physiological cost, or technical quality; Pure Quill, TnT, Flintstone, and DH Line are not interchangeable descents."
         },
         "benchmark_events": [
           {
@@ -240,7 +301,38 @@
           "default_role": "Outdoor trail bike with current power meter.",
           "preferred_training_use": "Power-meter climb-focused Bukit Kiara loop sessions: focus the workout on repeated climbs and cruise the same descent trail to control risk and isolate aerobic/torque fitness.",
           "mileage_policy": "Clayton is comfortable putting training mileage on the Stumpjumper.",
-          "trainer_swap_option": "Can replace the Marin SQ3 on the Elite Suito if needed."
+          "trainer_swap_option": "Can replace the Marin SQ3 on the Elite Suito if needed.",
+          "setup_history": [
+            {
+              "date": "2026-06-19",
+              "change": "Fork rebound damping increased by one click and shock rebound damping reduced by one click.",
+              "rider_rationale": "The fork rebound increase addressed front-wheel ping over big hits that had pushed Clayton rearward; treat the slower rebound as a previously successful correction rather than an untested cause."
+            },
+            {
+              "date_reported": "2026-07-28",
+              "historical_event_date": "unknown",
+              "change": "Fork HSC one click firmer than the 2026-07-28 setting.",
+              "positive_context": "Clayton previously loved this setting at maximum attack on 2K+ through successive hits.",
+              "negative_context": "During a separate illness-fatigue period Clayton could not ride the firmer setting effectively and returned HSC one click softer.",
+              "interpretation": "Treat HSC as a provisional intent- and readiness-dependent setting: firmer attack support when fresh versus the softer compliance setting for genuinely chill riding. Validate rather than assuming either setting is universally superior."
+            },
+            {
+              "date": "2026-07-30",
+              "change": "Tested the fork one click firmer in HSC than the 2026-07-28 setting while retaining the previously successful slower rebound direction.",
+              "rider_outcome": "Clayton reported a stronger dynamically centred posture, greater willingness to load the front, no leftward veer, no perceived rear wallow, more controlled corner exits, and remaining chassis headroom.",
+              "objective_context": "At the 1,118.38 m distance-synchronised overlap, the 2K lap was 11.768 seconds (5.5 percent) faster than 2026-07-25 and 7.551 seconds (3.6 percent) faster than 2026-07-28, with no lap-comparator quality flags. Power was also higher, so this is not a setup-only gain. Pure Quill was shortened by a missed exit and did not reproduce the prior 38 km/h maximum-speed condition.",
+              "interpretation": "Retain HSC +1 provisionally as the attack setting. The primary gain is improved rider centring and front-pressure authority; the firmer HSC is a credible secondary enabler by holding the front higher under larger impacts. Do not credit the result to setup alone and do not add another click.",
+              "validation_constraint": "Re-test HSC +1 on an exact familiar route at 85-90 percent with no other setup changes. Keep it only if the fork recovers between successive hits without ping, pack-down, harsh deflection, left pull, rearward hip retreat, rear wallow, kick, chassis pitch, loss of small-hit grip, or increased hand and braking fatigue."
+            },
+            {
+              "date": "2026-07-31",
+              "change": "Promoted fork HSC +1 relative to the 2026-07-28 setting from provisional attack setting to the working Stumpjumper baseline for normal-readiness, familiar Bukit Kiara riding.",
+              "rider_outcome": "In a chill-pace within-ride HSC +1 / HSC -1 / HSC +1 sequence, Clayton reported that +1 felt harsher but retained greater exit commitment; -1 produced more mid-turn braking and reduced commitment to the exit. Returning to +1 on a partial final 2K confirmed the preferred control direction before focus declined.",
+              "interpretation": "The primary adaptation remains Clayton's dynamically centred posture, deliberate front loading and rapid recentering. HSC +1 is a secondary enabler that plausibly preserves chassis support so that rider skill can be expressed. HSC responds to damper shaft speed rather than trail speed, so a harsher feel at slower pace is acceptable only while tyre tracking, grip and hand/upper-body fatigue remain clean. Do not add another click or use HSC -1 as a workaround for declining focus.",
+              "scope": "Working baseline only for normal-readiness, familiar Kiara terrain. Wet roots, long rough descents, unfamiliar terrain and impaired or compromised CNS readiness remain unvalidated; impaired or compromised CNS status blocks technical testing rather than selecting a softer setting to continue.",
+              "validation_constraint": "Hold tyre pressures, fork air/sag, rebound, shock and other setup variables constant. Falsify HSC +1 if matched runs show front ping, skip, harsh lateral deflection, reduced root or small-hit grip, travel starvation, pack-down, rear kick, chassis pitch, rearward hip retreat, left pull, reactive braking, missed exits or greater hand, braking or upper-body fatigue."
+            }
+          ]
         }
       },
       "power_meter_policy": {
@@ -280,7 +372,67 @@
       "target": "expert"
     },
     "sport": "mountain_biking",
-    "timezone": "Asia/Kuala_Lumpur"
+    "timezone": "Asia/Kuala_Lumpur",
+    "work_and_sleep_context": {
+      "work": {
+        "domain": "Building an AI workflow for NYSE and Nasdaq trading.",
+        "cognitive_demand": "High: sustained analysis, workflow design, and trading-related decision work.",
+        "timing": "Work often extends late into the Kuala Lumpur evening and may cross midnight.",
+        "exact_recurring_hours": null,
+        "exact_days_per_week": null,
+        "unknowns_rule": "Do not invent a work cutoff or assume the demanding workday is complete from low morning Garmin stress; collect actual start/end timing."
+      },
+      "training_placement": {
+        "preferred_rule": "Train after the main sleep period and before the late U.S.-market work window; do not place hard training after work finishes in the early morning.",
+        "current_observed_pattern": "Recent MTB sessions are usually late morning to early afternoon, while indoor bike sessions commonly begin in the late afternoon before the market-work window.",
+        "key_mtb_rule": "Place consequence-bearing MTB after the best available sleep opportunity and a fresh mental-clarity check, not merely a green Body Battery.",
+        "minimum_viable_busy_week": "One controlled Suito bike touch plus one MTB exposure; preserve Sunday Sabbath and avoid replacing missed bike work with hard non-bike load."
+      },
+      "segmented_sleep": {
+        "status": "prospective_hypothesis_not_yet_validated",
+        "principle": "A planned nap or morning sleep extension may support a late-market schedule, but it supplements rather than erases short primary sleep or accumulated sleep debt.",
+        "garmin_limitation": "Current Garmin data reports zero nap time and cannot be trusted to confirm that no nap occurred; actual nap timing, duration, inertia, and post-nap clarity require structured athlete input.",
+        "validation_window": "Use a 2-3 week prospective log before promoting segmented sleep as a proven Clayton-specific recovery strategy."
+      }
+    },
+    "wearable_context": {
+      "primary_device": "Garmin Fenix 6",
+      "usual_wear_pattern": "Worn continuously day and night except for dress-watch substitution, normal showers, charging, or other explicitly reported removal; at home the strap may sometimes be loosened enough to interrupt optical HR while the watch remains worn.",
+      "optical_hr_measurement_interpretation": {
+        "athlete_confirmed_rule": "The stop and restart of Fenix wrist-HR readings define the observed optical-HR measurement-unavailable boundary at the device sample-transition resolution.",
+        "boundary_precision": "sample_transition_not_exact_physical_event_time",
+        "physical_wear_state_rule": "A wrist-HR gap does not by itself prove that the watch was removed because a loosened strap can produce the same signal loss.",
+        "cause_rule": "Do not assign dress-watch substitution, loose strap, shower, charging, or another cause to an individual gap without exact target-date athlete confirmation.",
+        "reported_possible_mechanisms": [
+          "dress_watch_substitution",
+          "loose_strap_while_still_worn",
+          "normal_shower_watch_removal",
+          "charging_watch_removal"
+        ]
+      },
+      "reported_recurring_exceptions": [
+        {
+          "label": "Sunday church dress-watch substitution",
+          "weekday": 6,
+          "frequency": "usually",
+          "reason_category": "church_dress_watch",
+          "replacement_device_category": "dress_watch",
+          "exact_timing": null,
+          "occurrence_rule": "This recurring habit is context only. Do not instantiate or time a dated off-wrist interval without athlete-confirmed start and end times."
+        }
+      ],
+      "interpretation_rules": [
+        "Intentional off-wrist time is coverage provenance, not physiological recovery evidence.",
+        "Missing or negative-sentinel samples never prove off-wrist status by themselves.",
+        "A direct target-date wrist-HR gap confirms optical-HR measurement unavailability at sample-transition resolution but does not prove physical watch removal or identify its cause.",
+        "Keep measurement availability, physical wear state, and cause attribution as separate fields.",
+        "Attribute each material unavailable run only where a strict target-date athlete-confirmed interval overlaps it; recurring context and unmatched remainders stay unexplained.",
+        "Positive low-stress use requires dense valid target-date samples from near midnight through a declared cutoff at or after 18:00, credible Garmin cadence, and no uncovered tail.",
+        "Fresh target-date wear coverage supersedes cached same-day model predictions that depended on low stress; mask them until rebuilt.",
+        "Never impute stress, Body Battery, sleep, HRV, steps, or readiness across an off-wrist interval.",
+        "Material internal unavailability withholds positive low-stress credit; high observed stress may still downshift the call."
+      ]
+    }
   },
   "goal_progression": {
     "current_phase": "base_rebuild",
@@ -293,9 +445,9 @@
     "phase_rules": {
       "base_rebuild": {
         "highest_impact_focus": [
-          "Protect 3 bike-specific touches per week when life allows.",
+          "Build 5-6 bike-specific touches per week when recovery and calendar allow, while keeping only 2-3 sessions meaningfully costly and using 2-3 low-cost Z1/Z2 or primer touches.",
           "Protect 2 MTB exposures per week: one quality/skill day and one durability/enduro-volume day.",
-          "Use one structured indoor tempo/torque session per week, progressing repeatability before raising power.",
+          "Use current Garmin FTP plus RPE/HR response for one structured engine session when density supports it; keep the remaining indoor bike touches low aerobic.",
           "Use elliptical as recovery/support only, not as the aerobic backbone of a bike-performance block."
         ],
         "purpose": "Rebuild aerobic durability, strength rhythm, and weekly repeatability for enduro practice-plus-race demands."
@@ -338,6 +490,16 @@
       "note": "N-of-1 Garmin review found bike-specific continuity is Clayton's highest-yield lever. Maintenance floor is about 2 bike touches/week, rebuild target is 3 bike touches/week, and enduro progression should protect 2 MTB exposures/week before adding extra gym or non-bike aerobic work.",
       "timestamp": "2026-05-26T19:00:53+08:00",
       "type": "training_strategy_updated"
+    },
+    {
+      "note": "Clayton clarified that the active build target is 5-6 bike touches per week. Count unique bike days rather than split files; keep 2-3 meaningful-cost sessions and make 2-3 touches low-cost Z1/Z2 or primers. Protect 2 MTB exposures and allow a capped third when readiness and density support it.",
+      "timestamp": "2026-07-26T07:50:00+08:00",
+      "type": "training_frequency_strategy_updated"
+    },
+    {
+      "note": "Garmin's current operational cycling FTP is 211 W from the 2026-07-25 outdoor MTB activity with ANT+ bike power. Top-level maxFtp and the activity detail agree; Clayton confirmed auto-detection. Preserved 2026-07-16 FIT evidence directly shows a Garmin FTP update from 209 W to 214 W. Treat 211 W as current Garmin-estimated FTP, while retaining moderate confidence versus a clean steady-state or laboratory test.",
+      "timestamp": "2026-07-26T07:50:00+08:00",
+      "type": "current_ftp_updated"
     },
     {
       "note": "Predictive training architecture added: store a pre-session digital-twin expectation, then compare actual Garmin load, self-evaluation, and next-day wellness response after sync. Classify execution/adherence before treating a miss as model error or poor adaptation.",
@@ -451,9 +613,34 @@
   },
   "training_strategy": {
     "current_power_policy": {
+      "current_garmin_ftp_w": 211,
+      "current_garmin_ftp_date": "2026-07-25",
+      "current_garmin_ftp_source": "Garmin outdoor MTB activity 23723839107: top-level maxFtp 211 W and detail summary functionalThresholdPower 211 W, recorded with ANT+ BIKE_POWER; athlete confirmed Garmin auto-detection.",
+      "current_garmin_ftp_confidence": {
+        "garmin_operational_value": "high",
+        "clean_test_physiological_validity": "moderate"
+      },
+      "recent_garmin_detected_ftp": [
+        {
+          "date": "2026-07-14",
+          "ftp_w": 209,
+          "activity_id": "23590320093"
+        },
+        {
+          "date": "2026-07-16",
+          "ftp_w": 214,
+          "activity_id": "23614632613",
+          "fit_evidence": "Start FTP 209 W, activity-end proprietary FTP-update marker 214 W, session threshold power 214 W."
+        },
+        {
+          "date": "2026-07-25",
+          "ftp_w": 211,
+          "activity_id": "23723839107"
+        }
+      ],
       "historical_best_p20_date": "2024-04-24",
       "historical_best_p20_w": 222,
-      "policy": "Treat 222 W as historical P20, not current FTP. Prescribe current intervals from recent controlled efforts until a fresh clean test is done.",
+      "policy": "Use 211 W as the current Garmin operational FTP for FTP-relative prescription, validated by RPE and HR. Do not substitute the historical 222 W P20. Garmin auto-detection is operationally current but is not identical to a clean steady-state or laboratory FTP test.",
       "rebuild_progression": [
         "3x8 min tempo/torque",
         "3x10 min tempo/torque",
@@ -474,7 +661,14 @@
           250,
           400
         ],
-        "preferred_rebuild_bike_touches_per_week": 3
+        "preferred_rebuild_bike_touches_per_week": 5,
+        "maximum_normal_build_bike_touches_per_week": 6,
+        "meaningful_cost_sessions_per_week_max": 3,
+        "low_cost_bike_touches_per_week": [
+          2,
+          3
+        ],
+        "counting_rule": "Count unique bike days, not split activity files or doubles created only to manufacture frequency."
       }
     },
     "cns_readiness_policy": {
@@ -532,19 +726,20 @@
     "north_star_metric": "Can Clayton ride the final descent of the day with the same aggression, braking precision, and corner-exit speed as the first one?",
     "weekly_architecture": {
       "highest_return_shape": [
-        "One structured indoor bike tempo/torque session.",
-        "One MTB quality/skill exposure.",
-        "One MTB durability/enduro-volume exposure.",
-        "Optional recovery elliptical or short gym support if it does not compromise trail quality."
+        "Five bike touches as the preferred build floor and six only when recovery and calendar support it.",
+        "Two protected MTB exposures: one quality/engine day and one durability or technical-quality day.",
+        "A capped third MTB exposure may be used for skill transfer, not another hidden hard day.",
+        "Two to three indoor low-aerobic or primer touches; at most one becomes structured engine work.",
+        "No more than three meaningful-cost sessions across bike and hard running."
       ],
       "preferred_days": {
-        "friday": "MTB durability/enduro-volume when available.",
-        "monday": "Indoor tempo/torque or easy bike touch.",
-        "saturday": "PCP/jump/skills or second trail exposure; reduce ambition if driving/event load is high.",
+        "friday": "Indoor low-aerobic continuity or primer; shorten after a harder-than-written Thursday.",
+        "monday": "Preferred social run with Clayton's wife; optional short easy bike touch only when the run remains conversational and recovery is clean.",
+        "saturday": "Optional third MTB skill-transfer or Enduro-bike exposure; reduce ambition or skip for church/family obligations.",
         "sunday": "Sabbath hard rest.",
-        "thursday": "Recovery elliptical or short strength support.",
-        "tuesday": "Rest, mobility, or short strength support.",
-        "wednesday": "MTB quality/skill day when available."
+        "thursday": "Protected MTB durability or technical-quality exposure.",
+        "tuesday": "Protected MTB quality/engine exposure.",
+        "wednesday": "Indoor low-aerobic continuity."
       },
       "race_format_proxy": "Because Sunday is Sabbath, simulate enduro back-to-back demands with Friday practice-style exposure plus Saturday attack-style effort."
     }
@@ -561,7 +756,14 @@
     "bike_specific_continuity": {
       "downshift_warning": "Do not allow high elliptical/non-bike load to hide a bike-specific drought.",
       "minimum_bike_touches_per_week": 2,
-      "preferred_rebuild_bike_touches_per_week": 3,
+      "preferred_rebuild_bike_touches_per_week": 5,
+      "maximum_normal_build_bike_touches_per_week": 6,
+      "meaningful_cost_sessions_per_week_max": 3,
+      "low_cost_bike_touches_per_week": [
+        2,
+        3
+      ],
+      "counting_rule": "Count unique bike days, not split activity files. Any hard run counts toward the meaningful-cost cap.",
       "protect_mtb_exposures_per_week": 2,
       "maximum_mtb_exposures_per_week": 3
     },
@@ -614,5 +816,5 @@
       }
     ]
   },
-  "updated_at": "2026-05-31T14:15:00+08:00"
+  "updated_at": "2026-07-28T15:09:00+08:00"
 }

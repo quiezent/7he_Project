@@ -1,0 +1,73 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-08-06",
+  "generated_at": "2026-08-06T08:25:00+08:00",
+  "status": "active_family_island_recovery",
+  "session": {
+    "title": "Kota Kinabalu island-hopping recovery day",
+    "type": "scheduled_rest_with_family_life_activity",
+    "modality": "recovery_life_activity",
+    "duration_min": 0,
+    "intensity": "recovery",
+    "density_cost": "life_load_only",
+    "mtb_exposure": false,
+    "optional": false,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Join the confirmed three-island family outing while respecting red physical readiness and impaired CNS status from 4.93 hours of primary sleep. Preserve recovery for the return flight and the post-travel Enduro reacquisition block.",
+    "dose": {
+      "planned_training": "None.",
+      "family_activity_window_local": "10:00-16:00",
+      "family_activity": "Boat transfers, island walking, shade breaks and casual water activity only.",
+      "water_activity_ceiling": "Easy recreational swimming or snorkeling only with a buddy or guide; no solo open-water swimming, breath-hold work, hard finning, racing, distance target or deep-water novelty.",
+      "day_rule": "Do not add a run, gym session, bike session, step target or intensity-minute target."
+    },
+    "adaptation_hypothesis": "Treating the outing as low-demand life activity should allow short-sleep CNS fatigue to recover while normal movement, daylight and family enjoyment preserve rhythm without adding meaningful training density.",
+    "execution_rules": [
+      "Use a properly fitted personal flotation device during boat travel and whenever directed by the operator.",
+      "Stay with the group, buddy or guide in the water. Today is not a day to test distance, breath hold, current tolerance or technical confidence.",
+      "Choose shade and seated boat recovery whenever possible; use a hat, protective clothing and sunscreen according to the product directions.",
+      "Eat breakfast and lunch rather than using low appetite, seasickness or travel logistics as an accidental fast.",
+      "Follow the boat operator's current marine-weather decision; local conditions override the itinerary.",
+      "Finish the day feeling no more depleted than at departure."
+    ],
+    "expected_result": {
+      "during": "Normal family participation without exertional swimming, heat strain, delayed reactions or progressive sleepiness.",
+      "after": "Stable cognition, no disproportionate fatigue and enough appetite for a normal Cantonese dinner.",
+      "next_day": "Travel-ready at noon with no need for make-up training before or after the flight."
+    },
+    "stop_rules": [
+      "Any brain fog, unusual sleepiness, delayed reaction, dizziness, headache, nausea, poor coordination or unsafe confidence removes swimming and snorkeling; remain on shore or boat and tell the family or guide.",
+      "Heat symptoms, chest symptoms, breathing difficulty, worsening seasickness or inability to maintain normal conversation ends optional activity and shifts to cooling, fluids and appropriate medical assessment.",
+      "Thunder, lightning, unsafe sea state, poor visibility or boat-operator concern overrides all planned water activity.",
+      "Do not enter the water alone or continue because Garmin, Body Battery or the itinerary appears favourable."
+    ],
+    "nutrition": {
+      "before_departure": "Eat a normal breakfast with carbohydrate, protein and salt, plus approximately 400-600 ml fluid before 10:00.",
+      "during": "Use meals and snacks normally. Across the hot six-hour window, target roughly 400-650 ml fluid per hour on average, adjusted for shade, sweat and access, with approximately 300-600 mg sodium per hour during sustained heat exposure.",
+      "dinner": "Steamed fish is an excellent protein anchor. Add rice, noodles or dim sum carbohydrate, vegetables and fluids; salt from Cantonese food can support replacement but does not substitute for water.",
+      "alcohol": "Avoid alcohol tonight because sleep restoration and tomorrow's flight are the priority."
+    },
+    "post_session_review_fields": [
+      "actual_family_activity",
+      "time_in_sun_and_heat",
+      "swimming_or_snorkeling_duration",
+      "subjective_energy_start_vs_finish",
+      "brain_fog_or_sleepiness",
+      "heat_or_seasickness_symptoms",
+      "fluid_ml_total",
+      "sodium_mg_total",
+      "meal_and_snack_notes",
+      "stop_rule_outcome",
+      "next_morning_response"
+    ]
+  }
+}

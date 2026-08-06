@@ -1,0 +1,233 @@
+{
+  "date": "2026-07-16",
+  "entries": [
+    {
+      "activity_id": "23614632613",
+      "timestamp_local": "2026-07-16T13:49:26+08:00",
+      "source": "athlete_post_session_report",
+      "subjective_report": "Lap 1 returned to the car because the athlete forgot two 15 g honey sachets. Lap 2 was the real climb to Twin Peaks. Lap 3 was Pure Quill Stage. Lap 5 was 2K+ trail. Lap 6 was the climb out and the last part of DH Line. Lap 7 was a cool-down around the car park. The athlete did not climb Twin Peaks twice because lap 3 felt so good; he chose 2K+ to check whether the feeling transferred. No setup was changed, no root ping occurred, the trail was dry, and the athlete felt strong on the bike.",
+      "lap_route_annotations": [
+        {
+          "laps": [
+            1
+          ],
+          "classification": "return_to_car_for_forgotten_fuel"
+        },
+        {
+          "laps": [
+            2
+          ],
+          "stage_id": "twin_peaks",
+          "classification": "main_climb"
+        },
+        {
+          "laps": [
+            3
+          ],
+          "stage_id": "pure_quill",
+          "classification": "full_stage_descent"
+        },
+        {
+          "laps": [
+            5
+          ],
+          "stage_id": "2k_plus",
+          "classification": "trail_descent"
+        },
+        {
+          "laps": [
+            6
+          ],
+          "stage_id": "dh_line",
+          "classification": "climb_out_and_partial_egress"
+        },
+        {
+          "laps": [
+            7
+          ],
+          "classification": "car_park_cool_down"
+        }
+      ],
+      "fuel_carry_context": {
+        "forgotten_then_retrieved": "two 15 g honey sachets",
+        "consumption": "not_reported"
+      },
+      "trail_condition": "dry",
+      "setup_change_during_ride": "none",
+      "session_contract_review": {
+        "workout_feel": "strong",
+        "front_wheel_root_ping_reported": false,
+        "technical_quality_notes": "Pure Quill felt sufficiently good that the athlete replaced the planned second same-route repetition with 2K+ to check transfer. He reported no root ping and felt strong on the bike. The report does not yet establish the specific body-position, braking, line-choice, fatigue, or late-session outcome on 2K+.",
+        "route_action": "one Pure Quill descent followed by 2K+ rather than a second Pure Quill descent or direct egress"
+      },
+      "coach_contract_audit": {
+        "planned_test": "conditional same-line Pure Quill repeatability",
+        "actual_test": "Pure Quill execution followed by cross-trail transfer check on 2K+",
+        "action_alignment": "route_mismatch",
+        "primary_interpretation": "Promising rider-adaptation and skill-transfer signal, pending explicit 2K+ technical review.",
+        "secondary_confounder": "Dry terrain likely increased root friction and predictability and cannot be excluded from the causal interpretation.",
+        "setup_interpretation": "No setup change means the result cannot be credited to a new setting and does not justify an HSC change.",
+        "calibration_disposition": "exclude_from_nominal_digital_twin_calibration",
+        "reason": "The route action changed, actual load materially exceeded the prescription, technical review fields remain incomplete, and no explicit valid stop-rule outcome has been supplied."
+      }
+    },
+    {
+      "activity_id": "23614632613",
+      "timestamp_local": "2026-07-16T15:08:03+08:00",
+      "source": "athlete_structured_followup",
+      "lap_4_context": {
+        "after_lap_3": "Rested briefly after Pure Quill.",
+        "terrain": "Two steep climbs that the athlete had recently ridden seated but used to ride standing in earlier years.",
+        "execution": "Stood for both climbs and pushed them maximally.",
+        "athlete_training_hypothesis": "Reintroduce more standing climbing because earlier peak-power performances predate the more road-bike-style seated training emphasis."
+      },
+      "climb_rpe_by_lap": {
+        "lap_2": 4,
+        "lap_4": 10,
+        "lap_6": 2
+      },
+      "post_pure_quill_gate_report": {
+        "breathing": "strong",
+        "legs": "strong",
+        "vision": "top",
+        "decision_speed": "top",
+        "athlete_intent": "Felt ready for another Pure Quill but counted the lap 1 detour toward the cap, substituted maximal standing work on the lap 4 climbs, and then rode 2K+."
+      },
+      "session_contract_review": {
+        "technical_quality": "clean",
+        "technical_quality_notes": "The athlete reported that the dynamically centred posture, stable front tracking, brake release, and line choice transferred to 2K+. Confidence was high enough to double some rough sections. There was no late skill fade, reactive braking, delayed line choice, deflection, or near miss. No fork dive or pack-down, rear kick, or pitching was reported. The athlete noticed more two-wheel drifting rather than rear-only drifting; whether this was a controlled balanced drift or reduced grip margin still requires mechanical interpretation.",
+        "late_session_skill_fade": "none",
+        "reactive_braking": false,
+        "delayed_line_choice": false,
+        "front_wheel_deflection_or_emergency_correction": false,
+        "near_miss_count": 0,
+        "braking_fatigue": 0,
+        "upper_body_fatigue": 5,
+        "fueling_carbs_g_per_hour": 32.1,
+        "fluid_ml_per_hour": 650.4,
+        "sodium_mg_per_hour": 235.4,
+        "front_tracking": "stable",
+        "body_position": "better_and_dynamically_centred",
+        "rough_section_execution": "confidently_doubled_selected_sections",
+        "suspension_observation": {
+          "fork_dive": false,
+          "fork_pack_down": false,
+          "rear_kick": false,
+          "pitching": false
+        },
+        "tyre_drift_observation": "More two-wheel drifting instead of rear-only drifting.",
+        "stop_rule_outcome_status": "explicit_valid_code_still_required",
+        "athlete_stop_rule_statement": "None except lap 4 because, after doing lap 1, the athlete did not think he should complete two Pure Quill runs."
+      },
+      "fueling_reported_totals": {
+        "carbs_g": 59.3,
+        "fluid_ml": 1200,
+        "sodium_mg": 434.4,
+        "energy_kcal": 237,
+        "consumed": {
+          "100plus_active_ml": 1000,
+          "additional_water_mixed_ml": 200,
+          "honey_sachets": 1,
+          "honey_carbs_g": 11.3
+        },
+        "carried_but_not_consumed": {
+          "honey_sachets": 1
+        },
+        "rate_basis_elapsed_min": 110.7
+      },
+      "coach_contract_audit": {
+        "lap_4_intensity": "RPE 10 materially exceeded the prescribed lap-two climb ceiling of RPE 4 and met the stored downshift threshold.",
+        "upper_body_gate": "Reported upper-body fatigue of 5/10 exceeded the admission gate of 2/10 and the technical-stop threshold above 3/10; timing within the session remains unreported.",
+        "technical_disposition": "Clean reported technical execution, but not a clean nominal prescription sample because the route changed and the physiological dose materially exceeded the contract.",
+        "stop_rule_disposition": "Do not assign a valid stop-rule outcome until the athlete explicitly selects the schema code after reviewing the lap 4 RPE and upper-body thresholds.",
+        "fueling_disposition": "Fluid rate was within target; carbohydrate and sodium rates were below the stored 90-150-minute Kuala Lumpur MTB targets."
+      },
+      "coach_power_history_audit": {
+        "sample": "739 powered cycling activities from 2021-2026.",
+        "observed_bests": {
+          "1_sec": "1352 W on 2026-07-09; current all-time best.",
+          "5_sec": "1182 W in 2023.",
+          "10_sec": "1006 W in 2022.",
+          "20_sec": "923 W in 2023.",
+          "30_sec": "782 W in 2023.",
+          "60_sec": "459 W in 2025.",
+          "2_min": "363 W in 2024.",
+          "5_min": "299 W in 2024.",
+          "10_min": "232 W in a 2024 indoor session.",
+          "20_min": "222 W in a 2024 indoor session; historical P20, not current FTP."
+        },
+        "today_location_audit": "Today's 1001 W peak occurred at the start of lap 5/2K+ at high cadence, not during the lap 4 standing climbs. Lap 4 reached 451 W maximum and represented low-cadence standing torque rather than the activity's peak-power event.",
+        "interpretation": "The record supports restoring MTB-specific standing torque and 5-30-second punch exposure, but it does not show that seated aerobic/tempo work failed. Indoor structure produced the best sustained 10-20-minute power, while short-power records were predominantly expressed in MTB activities.",
+        "decision": "Rebalance rather than reset: retain one recoverable seated tempo/torque session and later add a controlled standing-climb microdose using repeatable 20-60-second power, traction, form, repeat falloff, and next-day response instead of one-second maximum power.",
+        "confidence": "High for dates and current-lap placement; moderate across power-meter eras; low-to-moderate for attributing historical differences specifically to seated versus standing posture."
+      },
+      "coach_drift_interpretation": {
+        "primary_hypothesis": "A more dynamically centred posture distributed lateral load more evenly across both tyres instead of overloading or unweighting the rear.",
+        "positive_validation": "Both tyres release together, chassis yaw stays aligned with the intended line, and grip returns progressively without a steering catch.",
+        "failure_signature": "Front-first release, bar tuck, abrupt re-grip, drift beginning under unresolved braking, or a line correction would indicate reduced front-grip margin rather than desirable neutral drift.",
+        "setup_decision": "No suspension change; the absence of dive, pack-down, kick, or pitching does not support adding HSC."
+      }
+    },
+    {
+      "activity_id": "23614632613",
+      "timestamp_local": "2026-07-16T15:30:55+08:00",
+      "source": "athlete_final_contract_clarification",
+      "reconciles_prior_report": {
+        "standing_climb": "The post-2K climb ridden standing on 2026-07-09 is the same climb contained in lap 4 on 2026-07-16.",
+        "strength_context": "The athlete has also been training squats and lunges.",
+        "fueling": "Both honey sachets were consumed; the earlier table listed the nutrition for one sachet, not the number eaten.",
+        "stop_rule": "The athlete explicitly supplied a valid schema stop-rule outcome.",
+        "drift": "The front tyre initiated the slide; the rear then drifted to match it, and the athlete picked the bike up to restore grip and exit."
+      },
+      "same_climb_comparison": {
+        "2026_07_09_lap_7": {
+          "elapsed_min": 23.02,
+          "moving_min": 14.38,
+          "elevation_gain_m": 93.5,
+          "normalized_power_w": 123,
+          "max_power_w": 229,
+          "average_cadence_rpm": 45,
+          "punchy_climb_pedaling": "731 seconds at 124.3 W average, 227 W maximum, 8.1 percent average grade and 144.8 bpm average HR."
+        },
+        "2026_07_16_lap_4": {
+          "elapsed_min": 25.59,
+          "moving_min": 13.07,
+          "elevation_gain_m": 81.6,
+          "normalized_power_w": 165,
+          "max_power_w": 451,
+          "average_cadence_rpm": 46,
+          "punchy_climb_pedaling": "424 seconds at 200.6 W average, 428 W maximum, 11.4 percent average grade and 159.6 bpm average HR."
+        },
+        "interpretation_guardrail": "The same climb identity strengthens specificity, but lap boundaries, selected sections, grade mix, standing duration and effort differed. The comparison supports better standing power expression, not a causal seven-day fitness gain."
+      },
+      "fueling_reported_totals_corrected": {
+        "carbs_g": 70.6,
+        "fluid_ml": 1200,
+        "sodium_mg": 438.8,
+        "energy_kcal": 284,
+        "honey_sachets_consumed": 2,
+        "rate_basis_elapsed_min": 110.7
+      },
+      "session_contract_review": {
+        "fueling_carbs_g_per_hour": 38.3,
+        "fluid_ml_per_hour": 650.4,
+        "sodium_mg_per_hour": 237.8,
+        "stop_rule_outcome": "triggered_but_continued",
+        "stop_rule_outcome_source": "athlete_explicit_clarification",
+        "technical_quality": "degraded",
+        "technical_quality_scope": "calibration_cleanliness_not_global_ride_quality",
+        "technical_quality_notes": "Overall posture transfer and 2K+ execution were strong, with no late fade, reactive braking, delayed line choice or near miss. However, the front tyre initiated a corner drift before the rear matched it. The athlete successfully reduced lean by picking the bike up and restored grip for the exit. This demonstrates a skilled recovery but is not the stable-front-tracking outcome required for a clean nominal technical calibration.",
+        "late_session_skill_fade": "none",
+        "near_miss_count": 0,
+        "front_first_drift": true,
+        "drift_recovery": "Rear drifted into alignment; athlete picked the bike up and grip returned for the corner exit.",
+        "calibration_disposition": "exclude_from_nominal_digital_twin_calibration"
+      },
+      "coach_interpretation": {
+        "standing_adaptation": "The week-to-week change is primarily improved recruitment and re-access to a previously familiar standing pattern, with squats and lunges as a plausible supporting force-capacity input. It cannot represent large new muscular adaptation in seven days.",
+        "drift": "A front-first release has less safety margin than a simultaneous neutral drift. The recovery was skilled, but the target remains earlier pressure management and a progressive two-tyre release rather than relying on rear drift to rescue front push.",
+        "setup": "Keep suspension unchanged; no evidence supports an HSC increase."
+      }
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "date": "2026-07-31",
+  "entries": [
+    {
+      "timestamp_local": "2026-07-31T10:08:00+08:00",
+      "source": "athlete_pre_session_request_and_live_evidence_review",
+      "reported_context": {
+        "garmin_sync_status": "Live decision sync completed successfully.",
+        "athlete_request": "Maximum outdoor dose today; athlete would prefer two to three hours or 20 km at a slower pace with breaks.",
+        "route_class": "not_explicitly_stated",
+        "subjective_gate": {
+          "illness_status": "not_yet_reported_today",
+          "mental_clarity": "not_yet_reported_today",
+          "leg_soreness_or_heaviness": "not_yet_reported_today",
+          "upper_body_soreness": "not_yet_reported_today"
+        }
+      },
+      "fresh_evidence": {
+        "readiness": "yellow 68 with hard-session caution",
+        "sleep": "7.22 hours, score 88",
+        "body_battery": "82 wake/current",
+        "hrv": "47 ms and BALANCED, balanced-low boundary 46 ms",
+        "resting_hr": "48 bpm versus 47 bpm seven-day average",
+        "cns": "ready 84.6 with normal ceiling if physical readiness allows",
+        "garmin_training_status": "PRODUCTIVE_6",
+        "garmin_acwr": "1.3 OPTIMAL",
+        "load_focus": "Low aerobic 271.5 within range 261-662; high aerobic 1120.9 above maximum 873; anaerobic 410.9 just above maximum 400.",
+        "recent_density": "Yesterday MTB 97.5 minutes/load 182.1 with 22.8 minutes in HR Z4+Z5; rolling seven days 442.7 minutes/load 656.7 and three MTB sessions.",
+        "coverage_caveat": "Morning low stress 17 cannot earn positive readiness credit because coverage ends at 10:02 and contains 36 minutes of material internal unavailability."
+      },
+      "coach_decision_framework": {
+        "kiara_or_technical_mtb": "Use the existing 60-minute target and 70-minute absolute cap with no more than two familiar 2K descents.",
+        "flat_nontechnical_outdoor": "A separate ceiling of 90 minutes moving and 120 minutes elapsed, up to 20 km, is conditionally defensible only if the ride stays genuinely Z1/Z2, RPE no higher than 3 and load no higher than 80.",
+        "three_hour_request": "Not prescribed today.",
+        "reason": "Fresh recovery supports riding, but high-aerobic and anaerobic load are already saturated and yesterday's MTB neural/high-intensity cost remains active. Breaks do not erase cumulative climbing, heat or technical exposure."
+      }
+    },
+    {
+      "timestamp_local": "2026-07-31T16:06:00+08:00",
+      "source": "athlete_post_session_report",
+      "activity_id": "23796711428",
+      "reported_context": {
+        "route_class": "Bukit Kiara familiar flowing trails",
+        "opening_gate_result": "good",
+        "climb_rpe_by_lap": {
+          "lap_1": 5,
+          "lap_3": 3,
+          "lap_5": 3
+        },
+        "trail_condition": "dry",
+        "lap_notes": {
+          "lap_1": "Slow climb with a mid-climb detour to inspect another trail.",
+          "lap_2": "Fork HSC +1, chill pace; rider reported the firmer setting felt harsher at the slower pace and the front deflected on roots mid-corner.",
+          "lap_4": "Fork HSC -1, chill pace; rider reported more mid-turn braking and less ability to commit fully to the exit.",
+          "lap_6": "Approximately half of 2K after returning to HSC +1. The clean confirmation led the rider to classify the lap-2 deflection as rider error rather than an HSC +1 setup failure."
+        },
+        "setup_changes": {
+          "fork_hsc_sequence": "HSC +1 on lap 2, HSC -1 on lap 4, HSC +1 on lap 6",
+          "tyre_pressures_and_other_setup": "No other changes reported."
+        },
+        "setup_interpretation_reported_by_athlete": "HSC +1 is the new baseline.",
+        "late_session_focus": "Focus reduced during lap 6 and was not as sharp as the previous day. Athlete suspects the chill intent reduced attentional intensity; lap 4 required more deliberate mental focus.",
+        "braking_fatigue": "none",
+        "upper_body_fatigue": "none",
+        "egress": "Chill egress after the final technical test.",
+        "adherence_reflection": "Athlete stated that two descents would have been best as prescribed, but added the partial third descent to avoid second-guessing whether HSC +1 suited slower riding.",
+        "fueling_totals": {
+          "carbs_g": 59.3,
+          "fluid_ml": 1000,
+          "sodium_mg": 434.4,
+          "basis": "One litre 100Plus Active plus one 15 g honey sachet using the athlete-supplied product values already preserved in coaching memory."
+        }
+      },
+      "session_contract_review": {
+        "opening_gate_result": "good",
+        "actual_duration_min": 75.3,
+        "actual_training_load": 93.1,
+        "actual_rpe": 5,
+        "workout_feel": "weak",
+        "trail_condition": "dry",
+        "descent_count": 2.5,
+        "actual_repeats_completed": 2.5,
+        "climb_rpe_by_cycle": [
+          5,
+          3,
+          3
+        ],
+        "correct_exit_recognition": "Lap 4 required more mid-turn braking and reduced exit commitment; no exit miss was reported.",
+        "front_tracking_and_intended_steering": "Front deflected on roots mid-corner during lap 2. A clean HSC +1 partial lap 6 led the athlete to classify the earlier deflection as rider error rather than setup failure.",
+        "rider_hip_retreat": "not_reported",
+        "front_ping_pack_down_or_deflection": "One front deflection on lap 2; no repeated HSC +1 deflection on lap 6. Ping and pack-down were not reported.",
+        "rear_wallow_kick_or_chassis_pitch": "not_reported",
+        "vision_and_decision_speed_first_vs_final": "Opening gate was good; focus and sharpness were reduced by lap 6 versus the prior day.",
+        "braking_fatigue": "none",
+        "upper_body_fatigue": "none",
+        "stop_rule_outcome": "triggered_and_stopped",
+        "athlete_stop_wording": "Stop triggered in lap 6 when focus was reducing; technical work stopped and only chill egress followed.",
+        "technical_quality_notes": "HSC +1 supported greater exit commitment than HSC -1 at chill pace. Lap 2 included a mid-corner root deflection later classified by the rider as rider error after a clean HSC +1 partial lap 6. Focus reduced during lap 6 and triggered the stop.",
+        "late_session_skill_fade": "reduced_focus_and_sharpness_triggered_stop",
+        "fueling_carbs_g_per_hour": 47.3,
+        "fluid_ml_per_hour": 797,
+        "sodium_mg_per_hour": 346
+      }
+    }
+  ]
+}

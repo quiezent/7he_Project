@@ -1,0 +1,31 @@
+{
+  "date": "2026-07-19",
+  "wearable_context": {
+    "optical_hr_boundary_interpretation": {
+      "status": "athlete_confirmed",
+      "device": "Garmin Fenix 6",
+      "boundary_basis": "wrist_hr_reading_stop_and_restart",
+      "boundary_precision": "device_sample_transition",
+      "usual_wear_pattern": "otherwise_always_worn",
+      "physical_wear_state_from_hr_gap": "unknown_without_separate_confirmation",
+      "reported_possible_mechanisms": [
+        "dress_watch_substitution",
+        "loose_strap_while_still_worn",
+        "normal_shower_watch_removal",
+        "charging_watch_removal"
+      ],
+      "cause_attribution_rule": "Do not assign a mechanism to an individual gap without exact target-date athlete confirmation."
+    }
+  },
+  "travel_schedule": {
+    "status": "athlete_confirmed",
+    "departure_date": "2026-07-20",
+    "alarm_local": "05:30",
+    "flight_departure_local": "08:00",
+    "arrival_region": "Hong Kong",
+    "trip_base": "Shenzhen",
+    "return_date": "2026-07-24",
+    "return_timing": "night",
+    "planning_interpretation": "Family-first travel and consolidation. Do not promote structured training without fresh post-sleep readiness and actual travel-load evidence."
+  }
+}

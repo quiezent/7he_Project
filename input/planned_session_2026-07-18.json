@@ -1,0 +1,44 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-07-18",
+  "generated_at": "2026-07-13T15:00:06+08:00",
+  "status": "fixed_calendar_event_requires_same_day_gate",
+  "session": {
+    "title": "Church 3.5 km fun run and telematch",
+    "type": "church_fun_run_telematch",
+    "modality": "run_multisport_event",
+    "duration_min": 120,
+    "intensity": "social_mixed",
+    "mtb_exposure": false,
+    "optional": false,
+    "schema_version": 3,
+    "contract_fields": ["purpose", "dose", "adaptation_hypothesis", "execution_rules", "expected_result", "stop_rules", "post_session_review_fields"],
+    "purpose": "Participate fully in the church event while containing unfamiliar eccentric running, acceleration, lateral-movement, and heat stress.",
+    "dose": {
+      "planning_duration": "Approximately 90-150 minutes including games; actual church schedule governs.",
+      "warm_up": "5-10 minutes progressive walking and easy jogging plus ankle, calf, hip, and lateral-movement preparation.",
+      "run": "3.5 km at social/conversational effort, RPE 3-5; not a time trial.",
+      "telematch": "Games are the day's variable-intensity exposure. Build into accelerations rather than using maximal first efforts.",
+      "completion": "The church event is the entire training dose; no MTB, trainer, gym, or make-up session afterward."
+    },
+    "adaptation_hypothesis": "A controlled social run and games provide useful locomotor variety and coordination without excessive soreness when intensity is contained and novelty is respected.",
+    "execution_rules": [
+      "Use secure footwear and inspect wet or slippery grass before faster running or direction changes.",
+      "Keep the 3.5 km social; save no fitness test for the finish.",
+      "Treat telematch sprinting, jumping, and lateral cuts as the high-variable load even if Garmin underestimates it.",
+      "No additional planned exercise after the event."
+    ],
+    "expected_result": {
+      "event": "Comfortable completion with good coordination and no escalating calf, Achilles, knee, or adductor symptoms.",
+      "garmin_load": "Variable and not a target to chase.",
+      "next_day": "Sunday Sabbath with only mild, non-limiting novelty soreness."
+    },
+    "stop_rules": [
+      "Do not race the run if same-day readiness is red, sleep is poor with weak feel, or illness symptoms are present.",
+      "Stop or walk for sharp or escalating calf, Achilles, knee, hamstring, or adductor pain; limping; loss of coordination; dizziness; confusion; chills; or heat-illness symptoms.",
+      "Downshift games when the surface is slick, footing is uncertain, or repeated accelerations degrade movement quality.",
+      "A triggered stop rule ends or downshifts the relevant event; do not compensate afterward."
+    ],
+    "post_session_review_fields": ["actual_duration_min", "actual_training_load", "run_time", "actual_rpe", "workout_feel", "telematch_duration_and_intensity", "surface_condition", "calf_achilles_knee_adductor_response", "coordination_quality", "fueling_carbs_g_per_hour", "fluid_ml_per_hour", "sodium_mg_per_hour", "stop_rule_outcome", "next_morning_response"]
+  }
+}

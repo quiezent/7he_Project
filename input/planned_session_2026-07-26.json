@@ -1,0 +1,88 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-07-26",
+  "generated_at": "2026-07-26T07:58:44+08:00",
+  "status": "active_one_off_athlete_authorized_sabbath_exception",
+  "sabbath_exception": {
+    "date": "2026-07-26",
+    "authorized_by": "athlete",
+    "explicit_one_off": true,
+    "scope": "indoor_low_aerobic_only",
+    "recurring_rule_unchanged": true,
+    "reason": "Clayton explicitly requested an exception after family travel and before a Saturday full-day church obligation. This authorization is exact-date and nonprecedential."
+  },
+  "decision_basis": {
+    "physical_readiness": "Readiness 78/green; sleep 6.78 h with score 83; wake/current Body Battery 71/72; overnight HRV 47 ms balanced; resting HR 48 equal to the seven-day average.",
+    "cns_readiness": "CNS 75.6/ready. Body Battery does not independently promote consequence or intensity.",
+    "recent_load": "The 2026-07-25 MTB session was 91.2 min, Garmin load 163.6, aerobic TE 3.5, anaerobic TE 2.4, and athlete RPE 7; therefore this exception cannot contain tempo, torque, sprints, or threshold work.",
+    "garmin_diagnosis": "ACWR 0.5 LOW. Low-aerobic load 261.86 is approximately 1 point below the 263 minimum, high-aerobic load 951.8 is above the 872 maximum, and anaerobic load 307.8 is within target. Add low-aerobic continuity only.",
+    "power_anchor": "Garmin cycling FTP endpoint and latest outdoor activity surface 211 W effective 2026-07-25. A 125 W steady segment is 59.2% FTP. Suito power is accepted for work below approximately 200 W."
+  },
+  "session": {
+    "title": "One-off Suito low-aerobic bridge",
+    "type": "indoor_low_aerobic_sabbath_exception",
+    "modality": "bike_indoor",
+    "duration_min": 60,
+    "intensity": "easy",
+    "bike_touch_status": "normal",
+    "density_cost": "low",
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Restore bike-specific low-aerobic continuity after travel without compromising Monday's social run or Tuesday's protected Kiara quality.",
+    "dose": {
+      "warmup": "10 min progressive from 95 to 115 W.",
+      "main_set": "40-45 min at 120-125 W. Treat 125 W as a ceiling, not an obligation.",
+      "cooldown": "5 min at 90-105 W.",
+      "total_cap": "55-60 min. If the legs are more than mildly heavy, finish at 45-50 min.",
+      "intensity_anchor": "RPE 2-3, conversational, naturally comfortable cadence, seated throughout."
+    },
+    "adaptation_hypothesis": "A continuous dose near 59% of current Garmin FTP should add low-cost mitochondrial and capillary stimulus plus bike-frequency continuity, improving between-stage aerobic recovery while preserving normal legs and cognition for the next two days.",
+    "execution_rules": [
+      "Remain seated and conversational; use a natural cadence rather than low-cadence torque.",
+      "No sprints, standing surges, tempo blocks, intervals, or extension beyond 60 minutes.",
+      "Establish a steady-power HR reference during minutes 15-25; interpret later HR together with heat, cadence, and RPE rather than chasing a single number.",
+      "Normal food is sufficient if already fed; use water to thirst. Carbohydrate during the session is optional, not required for this easy one-hour dose.",
+      "The objective is low-aerobic time, not repairing ACWR or Garmin Load Focus in one session."
+    ],
+    "expected_result": {
+      "power": "Steady segment at 120-125 W; 125 W equals 59.2% of current Garmin FTP.",
+      "rpe": "2-3 throughout.",
+      "heart_rate": "Likely approximately 120-130 bpm from Clayton's comparable steady trainer sessions, but individual response governs.",
+      "garmin_training_load": "Approximately 45-55.",
+      "training_effect": "Aerobic TE approximately 2.3-2.7, anaerobic TE 0, and zero intentional high-intensity minutes.",
+      "next_day": "Monday's conversational run feels normal; Tuesday legs, clarity, and technical appetite remain available."
+    },
+    "stop_rules": [
+      "Do not progress to 120-125 W after the warm-up if RPE exceeds 3, weak/heavy legs worsen, or HR/breathing is abnormal for this power.",
+      "Reduce power by 5-10 W if fixed-power HR rises approximately 8 bpm above the established reference, RPE reaches 4, or cadence/form deteriorates.",
+      "Finish at 30-45 min if HR/RPE does not settle after the reduction or the session is no longer restorative.",
+      "Stop immediately for dizziness, chest symptoms, illness symptoms, pain, or disproportionate breathlessness.",
+      "No same-day upgrade is permitted even if the legs feel excellent."
+    ],
+    "post_session_review_fields": [
+      "actual_duration_min",
+      "average_power_w",
+      "normalized_power_w",
+      "average_hr",
+      "heart_rate_drift",
+      "actual_training_load",
+      "aerobic_training_effect",
+      "anaerobic_training_effect",
+      "actual_rpe",
+      "workout_feel",
+      "leg_heaviness_start_vs_finish",
+      "stop_rule_outcome",
+      "next_morning_response",
+      "monday_run_response",
+      "tuesday_kiara_readiness"
+    ]
+  }
+}

@@ -79,7 +79,9 @@ def _quantile(values: list[float], q: float) -> float | None:
 
 def _activity_rows(root: str | Path | None, start: date, target: date) -> list[dict]:
     rows: list[dict] = []
-    for path in activities_dir(root).glob("**/*.json"):
+    # Rich key-session detail is preserved under activities/details but must not
+    # become a duplicate longitudinal session.
+    for path in activities_dir(root).glob("*.json"):
         payload = read_json(path, {})
         if not isinstance(payload, dict):
             continue

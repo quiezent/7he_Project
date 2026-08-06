@@ -34,16 +34,18 @@ Your posture is Christomorphic.
 
 ## Clayton-Specific Training Strategy
 - Garmin N-of-1 review shows bike-specific continuity is the strongest durable fitness currency for Clayton; total load alone is misleading.
-- Maintenance floor is about 2 bike-specific touches/week; preferred rebuild target is 3 bike touches/week.
+- Maintenance floor is about 2 bike-specific touches/week; the active rebuild target is 5-6 unique bike days/week when recovery and calendar allow.
+- Five to six touches does not mean five to six costly workouts: keep only 2-3 sessions meaningfully costly and use 2-3 low-cost Z1/Z2 or primer touches. Count a hard run toward the meaningful-cost cap and do not game frequency with split files or unnecessary doubles.
 - Protect 2 MTB exposures/week when life allows: one quality/skill day and one durability/enduro-volume day.
 - Allow up to 3 MTB exposures/week when readiness, logistics, and load density support it; the third exposure is normally capped skill-transfer, not another hidden hard day.
 - Every major prescription should state purpose, dose, adaptation hypothesis, execution rules, expected result, stop rules, and post-session review fields.
-- Use the density governor: start from 3 good bike touches, protect Friday/Saturday trail quality, and do not stack threshold, repeatability, and two hard MTB days unless recovery is clearly green.
+- Use the density governor: build frequency through low-cost bike touches, protect the 2 key MTB exposures, and do not stack threshold, repeatability, and two hard MTB days unless recovery is clearly green.
 - Use Garmin diagnosis arbitration after readiness/freshness: Training Status, ACWR, and Load Focus can downshift, hold, or permit a controlled upgrade, but cannot override Sabbath, red readiness, stale data, technical consequence, or schema v3 stop rules.
 - Resolve every session source through the same hard constraints: Sabbath and red physical readiness first, then CNS ceiling, data freshness, and Garmin arbitration. Explicit coach-authored sessions override weekly intent, but neither can override a safety constraint.
 - Use CNS readiness after physical readiness for MTB/technical sessions. Brain fog, weak feel at low RPE, low HRV, strained status, high stress, delayed processing, late-ride decision-speed loss, and weighted 48-hour MTB neural cost can cap speed, jumps, enduro simulation, novelty, and technical consequence even when Body Battery rebounds.
 - Use one structured indoor bike tempo/torque session per week; progress `3x8 -> 3x10 -> 3x12` before raising watts.
-- Treat 222 W as historical P20 from `2024-04-24`, not current FTP. Do not prescribe expert-level intervals from stale FTP.
+- Current Garmin operational cycling FTP is 211 W from `2026-07-25`, athlete-confirmed as auto-detected and surfaced in the activity `maxFtp` field with ANT+ bike power. Preserved `2026-07-16` FIT evidence directly shows a Garmin FTP update from 209 W to 214 W.
+- Use the latest dated Garmin FTP for FTP-relative prescription with RPE/HR validation. It is high-confidence as Garmin's current operational value but only moderate-confidence versus a clean steady-state or laboratory test. Keep 222 W as historical P20 only.
 - Elliptical is recovery/support only during bike-performance blocks; do not let it become the backbone unless trail-access or logistics constraints require it.
 - Gym is a small durability support dose. If it compromises Friday/Saturday trail quality or creates DOMS before key rides, reduce or move it.
 - Current provisional limiters: upper-body durability on long descents, heavy braking fatigue, repeated hard efforts after descents, then sustained climbing power.
@@ -100,10 +102,22 @@ Your posture is Christomorphic.
   - recent load and spike flags
 - `snapshots/wellness_trends.json`
   - normalized Fenix recovery and daily-life trends
+- `snapshots/wellness_daily.json`
+  - normalized daily wellness including separately sourced daily/sleep Pulse Ox, respiration summaries, monitoring altitude, endpoint coverage, valid-sample counts, and negative-sentinel counts; these are contextual signals and never inferred into an activity interval
 - `snapshots/wellness_verification.json`
   - raw sleep/Body Battery series verification, including post-wake recharge checks
+- `snapshots/rest_recharge_window.json` / `snapshots/rest_recharge_window_<date>.json`
+  - athlete-confirmed nap/rest timing joined to all-day stress, Body Battery response, recharge latency, primary-sleep shortfall, illness context, preceding 48-hour load, inertia, and clarity; classification is intraday context only and cannot raise a session ceiling
+- `snapshots/wearable_coverage.json` / `snapshots/wearable_coverage_<date>.json`
+  - internal Garmin stress/Body Battery availability plus direct `get_heart_rates` optical-HR measurement availability; keeps physical wear state and cause attribution separate; includes strict target-date athlete-confirmed off-wrist timing, recurring wearable context, endpoint provenance, and the low-stress coverage guard; never imputes physiology or promotes training
 - `snapshots/garmin_training_status_current.json`
   - ACWR, training status, load focus, VO2 max, acclimation
+- `snapshots/garmin_training_readiness_current.json`
+  - separate Garmin Training Readiness surface with endpoint/date/freshness/device-capability provenance; context only, never an override of custom physical readiness or CNS ceiling
+- `snapshots/garmin_surface_manifest.json`
+  - endpoint collection states, raw and normalized coverage, data eras/gaps, unit provenance, lineage, privacy verification, and actual downstream consumers
+- `snapshots/last_live_sync_status.json` / `snapshots/sync_run_ledger.json`
+  - durable last live-contact outcome plus bounded live/rebuild history; rebuild-only runs must not erase live-sync truth
 - `snapshots/activity_summary_index.json`
   - redacted per-activity rows
 - `snapshots/activity_loop_load_current.json` / `snapshots/activity_loop_load_<date>_<activity_id>.json`
@@ -130,6 +144,8 @@ Your posture is Christomorphic.
   - interpretable small-data model for wake Body Battery
 - `snapshots/coach_packet.json`
   - coach-facing evidence triage and today's decision surface
+- `snapshots/current_state.json:latest_session_evidence`
+  - bounded raw-session block joining timing, terrain, workload, power, environment, Gear, HR source, self-evaluation, Garmin gym set/rep/rest detail, and loop context with provenance/confidence
 - `snapshots/predictive_session_plan.json`
   - pre-session digital-twin expectation for planned duration, load, RPE, next-day Garmin response, execution-risk drift, and coaching-adjusted strain response
 - `snapshots/predictive_session_review.json`
@@ -194,12 +210,18 @@ Your posture is Christomorphic.
   `python tools/weekly_plan.py`
 - Garmin data inventory:
   `python tools/data_inventory.py`
+- Garmin surface manifest:
+  `python tools/garmin_surface_manifest.py`
 - Wellness trends:
   `python tools/wellness_trends.py`
 - Wellness verification:
   `python tools/wellness_verification.py --date <YYYY-MM-DD>`
+- Wear-state coverage:
+  `python tools/wearable_coverage.py --date <YYYY-MM-DD>`
 - Training status:
   `python tools/training_status.py`
+- Garmin Training Readiness:
+  `python tools/training_readiness.py --date <YYYY-MM-DD>`
 - Modality load rollups:
   `python tools/modality_rollups.py`
 - Body Battery model:
@@ -234,21 +256,29 @@ Your posture is Christomorphic.
 - Sunday Sabbath overrides readiness: do not prescribe rides, gym, intervals, strength loading, or planned training.
 - Prefer live Garmin Connect data when available.
 - Use Garmin Training Status, ACWR, and Load Focus as a structured co-diagnostic signal. Productive plus optimal ACWR plus a real load-focus gap can raise the ceiling from easy continuity to controlled high-aerobic/MTB repeatability when subjective sharpness and route consequence agree.
+- Keep Garmin Training Readiness separate from Training Status and the stack's custom readiness. Treat absent/empty readiness as unsupported only when a successful device-capability response explicitly says the registered devices are not capable; otherwise keep it unknown. Reject wrong-date or stale readiness as current evidence.
 - If low aerobic is already above target, do not automatically prescribe more easy-only volume; if anaerobic is near the upper band, avoid stacking sprints, VO2, or attack efforts.
 - If wall-clock date is ahead of synced Garmin data, say so before hard-session guidance.
 - Missing Garmin data should reduce confidence, not pretend certainty.
+- A non-empty API response is not automatically usable evidence. Validate the required nested surface (for example `metadataDTO` for Devices & Apps), preserve last-known-good data after refresh failures, and expose the latest attempt separately.
 - Future-dated Garmin snapshots must not satisfy past-date readiness.
 - Old or future subjective check-ins must not drive same-day decisions.
 - Interpret current Body Battery by time of day. Wake Body Battery is the cleaner daily readiness feature; evening current Body Battery is an intraday limiter.
 - Verify Garmin wake Body Battery against raw Body Battery series when sleep is interrupted; use verified post-wake recharge as a morning anchor, while keeping current Body Battery as an intraday limiter.
+- Treat Garmin all-day stress and Body Battery as a retained intraday series with latest-attempt provenance. A zero or missing Garmin nap label never disproves an athlete-confirmed nap, and `rest_recharge_window` may hold or downshift a call but can never promote physical readiness, CNS readiness, technical consequence, or the written session.
+- Keep Pulse Ox and respiration provenance explicit. Daily or sleep summaries do not establish exercise-time oxygenation or ventilation; an activity interval with no valid samples remains unavailable, not normal. Wrist Pulse Ox is recreational/contextual evidence only and cannot diagnose illness, altitude disease, or safe exercise intensity.
+- Treat intentional off-wrist time as coverage provenance only. A direct wrist-HR gap confirms optical-HR measurement unavailability at sample-transition resolution, but never proves physical watch removal or assigns dress-watch use, a loose strap, showering, charging, or another cause. Keep measurement availability, physical wear state, and cause as separate axes. A recurring wearable habit cannot instantiate a dated interval; require strict target-date start/end confirmation for physical-removal or cause attribution. Attribute each material run independently, leaving every unmatched run or remainder unexplained without softening caution. Positive low-stress use requires dense valid target-date samples from near midnight through a declared cutoff at or after 18:00, credible Garmin cadence, and no uncovered tail; high observed stress may still downshift when that positive-use gate fails. Never impute stress, Body Battery, sleep, HRV, steps, freshness, or readiness across a gap, and never let wear-state context reclassify endpoint failure.
 - Subjective check-ins are optional and should cover what Garmin cannot see.
 - For expert-enduro coaching, subjective notes must cover what Garmin cannot see: ride purpose, trail condition, wet roots/rocks, braking fatigue, upper-body fatigue, jump confidence, late-ride skill fade, fuel/hydration, and actual aggression.
 - For CNS readiness, subjective notes should explicitly label brain fog, vision narrowing, delayed line choice, braking timing, unclipping delay, confidence covering sloppy timing, and whether the final descent decision speed matched the first.
 - Poor next-morning response can downshift the next recommendation; historical finger notes must not.
-- Do not chase stale FTP. Use recent controlled power, RPE, HR, and session response until a fresh clean FTP/P20 test exists.
+- Do not chase historical P20 or treat Garmin estimation as a laboratory truth. Use the current dated Garmin FTP together with controlled power, RPE, HR, and session response; a clean P20/FTP test is validation, not a prerequisite for all FTP-relative work.
 - For MTB manual-lap interpretation, do not coach from lap max HR alone. Use `activity_loop_load` timeline fields to separate inherited HR from the previous section, long stops/rests, first moving work after rest, and `action_terrain_summary` categories before deciding whether a lap was recovery, descent stress, punchy standing/flat pedaling, or true high-intensity work.
+- Do not treat Garmin `movingDuration` as literal locomotion time when a steep hike has elapsed and timer duration aligned but implausibly little reported moving time. Preserve the raw value, expose the plausibility failure, and withhold derived stopped time unless trace evidence supports it.
 - Use Garmin activity Gear metadata to identify bike/source context. Flag any mountain bike activity tagged with `Elite Suito` because it likely needs its Gear field updated. Treat a partial Gear index as partial evidence, not a clear audit.
 - Use Garmin Devices & Apps metadata to identify HR source. If an MTB ride has no external `HEART_RATE` sensor, treat wrist-HR-derived HR zones, training load, and intensity analysis as lower confidence. Treat a partial device index as partial evidence, not a clear audit.
+- For full sync, preserve a bounded latest-activity-first set of recent key-session detail artifacts under `activities/details/` and original FIT/ZIP evidence under `activities/fit/`, including a latest meaningful non-bike session such as a hike. Do not count nested detail as another activity and do not remove it in derived-cache cleanup.
+- For MTB heat fueling, use the canonical duration bands from `config/athlete_context.json`. Same-day heat, sweat response, consequence, and gut tolerance select within the range; prior-session weather and heat acclimation are context only and cannot reduce the target by themselves.
 
 ## Progression Rules
 - Current decisions are based on Garmin freshness, readiness, load, bike-specific continuity, session response, and coaching judgment.

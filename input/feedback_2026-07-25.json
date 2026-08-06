@@ -1,0 +1,161 @@
+{
+  "date": "2026-07-25",
+  "entries": [
+    {
+      "timestamp_local": "2026-07-25T15:05:00+08:00",
+      "source": "athlete_pre_session_report",
+      "location": "Bukit Kiara carpark",
+      "subjective_report": "Mental clarity is great, body feels great, and no illness is reported.",
+      "readiness_self_report": {
+        "mental_clarity": "great",
+        "body_feel": "great",
+        "illness_status": "none"
+      },
+      "coaching_interpretation": "Fresh subjective evidence: no brain fog and no systemic illness. This supports a controlled familiar-skill field gate but cannot independently clear high-consequence work after 5.03 hours of primary sleep."
+    },
+    {
+      "activity_id": "23723839107",
+      "timestamp_local": "2026-07-25T20:37:00+08:00",
+      "source": "athlete_post_session_report",
+      "subjective_report": "Lap 2 was 2K and lap 4 was Pure Quill. The athlete paused during lap 4 because hikers asked for directions. He cruised the descents while concentrating on line choice and completing braking before each corner so he could enter cleanly and exit faster. On the steeper approximately 8-12 percent portions of the climbs, he pedaled standing to build torque.",
+      "lap_route_annotations": [
+        {
+          "laps": [
+            2
+          ],
+          "stage_id": "2k",
+          "reported_label": "2K",
+          "classification": "trail_descent"
+        },
+        {
+          "laps": [
+            4
+          ],
+          "stage_id": "pure_quill",
+          "classification": "full_stage_descent"
+        }
+      ],
+      "external_stop_context": {
+        "lap": 4,
+        "reason": "Hikers asked for directions.",
+        "classification": "external_social_interruption_not_physiological_recovery"
+      },
+      "descent_execution": {
+        "pace_intent": "cruising_submaximal",
+        "attention_focus": [
+          "line_choice",
+          "complete_braking_before_corner",
+          "clean_corner_entry",
+          "faster_corner_exit"
+        ]
+      },
+      "standing_climb_execution": {
+        "reported_grade_pct_range": [
+          8,
+          12
+        ],
+        "position": "standing",
+        "purpose": "build_torque"
+      },
+      "session_contract_review": {
+        "technical_quality_notes": "The athlete reports deliberate submaximal descending with attention to earlier braking completion, clean corner entry, and faster exit. The report does not yet establish late-session skill fade, braking or upper-body fatigue, a near miss or deflection outcome, setup status, fueling, or the explicit stop-rule outcome.",
+        "late_session_skill_fade": null,
+        "stop_rule_outcome": null,
+        "stop_rule_outcome_status": "explicit_valid_code_required"
+      },
+      "coach_contract_audit": {
+        "written_action": "One familiar Pure Quill descent after a clean opening gate, followed only by the required partial-DH egress.",
+        "actual_action": "2K descent, Pure Quill descent, and required egress.",
+        "action_alignment": "route_and_descent_count_mismatch",
+        "calibration_disposition": "exclude_from_nominal_digital_twin_calibration_pending_complete_review",
+        "reason": "The additional 2K descent changed the written action, actual duration and load materially exceeded the stored prediction range, and an explicit valid stop-rule outcome plus the remaining technical review fields are still missing."
+      }
+    },
+    {
+      "activity_id": "23723839107",
+      "timestamp_local": "2026-07-25T23:02:04+08:00",
+      "source": "athlete_structured_followup",
+      "opening_gate_result": null,
+      "opening_gate_status": "not_explicitly_reported",
+      "climb_rpe_by_lap": {
+        "lap_1": 2,
+        "lap_3": 5,
+        "lap_5": 7
+      },
+      "climb_rpe": {
+        "lap_1": 2,
+        "lap_3": 5,
+        "lap_5": 7
+      },
+      "trail_condition": "dry",
+      "setup_change_during_ride": null,
+      "setup_status": "not_explicitly_reported",
+      "session_contract_review": {
+        "vision_and_decision_speed": "Same from the first descent through the final descent.",
+        "body_position": "Better posture and position.",
+        "front_tracking": "More accurate front-wheel placement with clear front-wheel authority and no deflection.",
+        "line_choice_reserve": "The athlete felt capable of choosing a more aggressive enduro race line on the Stumpjumper but did not report doing so.",
+        "unforced_correction_or_near_miss": "none",
+        "braking_fatigue": 0,
+        "upper_body_fatigue": 0,
+        "late_session_skill_fade": "none",
+        "additional_lap_capacity": "The athlete expected that another full lap would probably produce skill fade.",
+        "technical_quality": "clean",
+        "technical_quality_notes": "Actual descending quality remained stable from first to final: vision and decision speed were unchanged, body position improved, front-wheel placement was more accurate, front authority was present, and there was no deflection, near miss, braking fatigue, upper-body fatigue, or observed late fade. The athlete retained line-choice reserve but judged that another lap would probably exceed the clean-skill envelope.",
+        "fueling_carbs_g_per_hour": 39.0,
+        "fluid_ml_per_hour": 657.9,
+        "sodium_mg_per_hour": 285.8,
+        "stop_rule_triggered": true,
+        "stop_rule_trigger": "Lap 5 climb RPE was 7, exceeding the stored downshift threshold above RPE 5.",
+        "stop_rule_outcome": null,
+        "stop_rule_outcome_status": "explicit_valid_code_required",
+        "stop_rule_action_question": "If the athlete deliberately backed off when lap 5 reached RPE 7 and completed only the safest direct egress, select triggered_and_downshifted. If he kept pushing at the same effort and merely finished because the planned route was over, select triggered_but_continued."
+      },
+      "fueling_reported_totals": {
+        "carbs_g": 59.3,
+        "fluid_ml": 1000,
+        "sodium_mg": 434.4,
+        "consumed": {
+          "100plus_active_ml": 1000,
+          "honey_sachets": 1,
+          "honey_sachet_mass_g": 15
+        },
+        "nutrient_basis": "Previously supplied product values: 1 L 100Plus Active provides 48 g carbohydrate and 430 mg sodium; one 15 g honey sachet provides 11.3 g carbohydrate and 4.4 mg sodium.",
+        "rate_basis_elapsed_min": 91.2
+      },
+      "athlete_stop_reasoning": {
+        "pre_pure_quill": "The athlete knowingly added the shorter 2K descent to test trail finesse before committing to the longer climb and Pure Quill descent.",
+        "post_pure_quill": "After Pure Quill, the athlete checked the time and ended the quality session as prescribed rather than adding another lap.",
+        "classification_guardrail": "Preserve this reasoning separately from the schema outcome; do not infer a valid stop-rule outcome from prose."
+      },
+      "coach_contract_audit": {
+        "technical_outcome": "clean_for_completed_descents",
+        "durability_outcome": "current_clean_skill_limit_reached_before_a_third_full_lap",
+        "action_alignment": "route_and_descent_count_mismatch",
+        "dose_alignment": "harder_than_written",
+        "stop_rule_disposition": "A formal RPE trigger is documented, but the action outcome remains unclassified until the athlete supplies one valid schema code.",
+        "calibration_disposition": "exclude_from_nominal_digital_twin_calibration"
+      }
+    },
+    {
+      "activity_id": "23723839107",
+      "timestamp_local": "2026-07-26T07:26:01+08:00",
+      "source": "athlete_final_contract_clarification",
+      "opening_gate_result": "passed",
+      "setup_change_during_ride": "none",
+      "session_contract_review": {
+        "stop_rule_triggered": false,
+        "stop_rule_outcome": "not_triggered",
+        "stop_rule_outcome_source": "athlete_explicit_clarification"
+      },
+      "coach_contract_audit": {
+        "status": "conflicted_but_athlete_outcome_preserved",
+        "athlete_reported_stop_rule_outcome": "not_triggered",
+        "contract_threshold_conflict": "The stored stop rule says to downshift if climb RPE exceeds 5; the athlete reported lap 5 climb RPE 7.",
+        "coach_interpretation": "Preserve the athlete's explicit valid schema outcome without silently replacing it. Keep the threshold conflict visible because the route and delivered dose differed materially from the prescription.",
+        "nominal_calibration_clean": false,
+        "calibration_disposition": "exclude_from_nominal_digital_twin_calibration"
+      }
+    }
+  ]
+}

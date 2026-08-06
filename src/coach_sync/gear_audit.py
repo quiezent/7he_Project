@@ -128,12 +128,58 @@ def build_gear_audit(
             "type": row.get("type") or activity.get("type"),
             "category": category,
             "gear_fetch_ok": row.get("gear_fetch_ok"),
+            "gear_fetch_error": row.get("gear_fetch_error"),
+            "fetch": row.get("fetch"),
+            "latest_attempt": row.get("latest_attempt"),
+            "last_success_at": row.get("last_success_at"),
             "gear_labels": [item.get("label") for item in gear if item.get("label")],
         }
         rows.append(normalized)
         if category == "mtb":
             recent_mtb.append(normalized)
-            if gear_matches(gear, ELITE_SUITO_TERMS):
+            latest_attempt = (
+                normalized.get("latest_attempt")
+                if isinstance(normalized.get("latest_attempt"), dict)
+                else {}
+            )
+            fetch_status = str(
+                latest_attempt.get("status")
+                or (normalized.get("fetch") or {}).get("status")
+                or ("success" if normalized.get("gear_fetch_ok") else "failed")
+            )
+            if (
+                normalized.get("gear_fetch_ok") is True
+                and latest_attempt.get("status") in {"failed", "unsupported"}
+            ):
+                flags.append(
+                    {
+                        "type": "gear_metadata_refresh_failed_using_cached",
+                        "severity": "yellow",
+                        "activity_id": activity_id,
+                        "date": act_date.isoformat(),
+                        "message": (
+                            f"{act_date.isoformat()} MTB activity {activity_id} Gear refresh failed; "
+                            "using preserved last-known-good bike/source evidence."
+                        ),
+                    }
+                )
+            elif normalized.get("gear_fetch_ok") is not True and fetch_status in {
+                "failed",
+                "unsupported",
+            }:
+                flags.append(
+                    {
+                        "type": "mtb_gear_unknown_metadata_unavailable",
+                        "severity": "yellow",
+                        "activity_id": activity_id,
+                        "date": act_date.isoformat(),
+                        "message": (
+                            f"{act_date.isoformat()} MTB activity {activity_id} Gear metadata "
+                            "could not be fetched; bike/source context is unknown."
+                        ),
+                    }
+                )
+            elif gear_matches(gear, ELITE_SUITO_TERMS):
                 flags.append(
                     {
                         "type": "mtb_activity_gear_elite_suito",

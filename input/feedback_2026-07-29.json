@@ -1,0 +1,16 @@
+{
+  "date": "2026-07-29",
+  "entries": [
+    {
+      "timestamp_local": "2026-07-29T14:27:00+08:00",
+      "source": "athlete_same_day_activity_report",
+      "activity_id": "23771988104",
+      "reported_context": {
+        "planned_activity": "Indoor Zone 2 ride on the Elite Suito",
+        "actual_activity": "Hike",
+        "garmin_sync_status": "confirmed_by_live_sync_at_2026-07-29T14:50:05+08:00",
+        "duration_distance_elevation_rpe_and_fueling": "not_yet_reported"
+      }
+    }
+  ]
+}

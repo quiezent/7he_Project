@@ -1,0 +1,19 @@
+{
+  "date": "2026-07-17",
+  "sleep_work_timing_review": {
+    "nap_status": "completed",
+    "nap_source": "athlete_report",
+    "nap_start_local": "10:20",
+    "nap_end_local": "11:50",
+    "time_in_bed_minutes": 90,
+    "estimated_sleep_minutes": 75,
+    "sleep_inertia_minutes": 10,
+    "post_nap_clarity_10_range": [
+      7,
+      8
+    ],
+    "garmin_reported_nap_time_seconds": 0,
+    "garmin_nap_checked_at_local": "2026-07-17T12:02:20+08:00",
+    "garmin_nap_interpretation": "No Garmin nap label was present after the nap; zero does not prove that no nap occurred."
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-07-14",
+  "generated_at": "2026-07-14T09:53:38+08:00",
+  "status": "same_day_cleared_quality_cap",
+  "decision_context": {
+    "physical_readiness": "green 70",
+    "cns_readiness": "ready 94",
+    "garmin_arbitration": "hold_plan after correcting LOW ACWR underload handling",
+    "route_interpretation": "Historical 3 x Twin Peaks was 160.3 minutes and load 158.6, so three cycles are durability rather than today's quality dose.",
+    "weekly_density_rule": "Keep today's work narrow so Thursday can remain the second protected MTB exposure before Saturday's run and telematch."
+  },
+  "session": {
+    "title": "Kiara 2 x Twin Peaks braking-release quality",
+    "type": "mtb_quality_skill",
+    "modality": "mtb",
+    "venue": "Bukit Kiara",
+    "duration_min": 105,
+    "intensity": "moderate_capped",
+    "mtb_exposure": true,
+    "optional": false,
+    "schema_version": 3,
+    "contract_fields": ["purpose", "dose", "adaptation_hypothesis", "execution_rules", "expected_result", "stop_rules", "post_session_review_fields"],
+    "purpose": "Use two Twin Peaks climb-descent cycles to build repeatable braking-release timing and corner-exit quality without converting the first key session into a durability test.",
+    "dose": {
+      "green_gate": "Two Twin Peaks cycles only: first climb and descent as the sighting/baseline, second as the quality confirmation; 90-105 minutes elapsed and two climbs/descents maximum.",
+      "yellow_gate": "One Twin Peaks climb/descent only, 45-70 minutes, with no speed intent.",
+      "red_or_cns_block": "No technical MTB. Use rest or low-consequence recovery only.",
+      "climbs": "Conversational RPE 3-4 / Z1-Z2 with no pushing of steep pitches, attack efforts, or threshold accumulation.",
+      "descents": "Descent one at roughly 65-70 percent to establish the marker; descent two at roughly 75-80 percent only if vision, grip, timing, and posture remain clean.",
+      "load_cap": "Expected Garmin load 70-110; session RPE no higher than 5."
+    },
+    "adaptation_hypothesis": "Repeating one braking marker and exit line should improve front-tyre authority, brake release, and chassis recovery through rider timing rather than greater entry speed or a setup change.",
+    "execution_rules": [
+      "Use one familiar trail and one named braking-release target.",
+      "Keep bike setup, tyre pressure, cleat position, and suspension clicks unchanged.",
+      "Compare the second descent with the first; do not chase speed, jumps, novelty, Strava time, or a third Twin Peaks cycle.",
+      "Use fresh same-day readiness, CNS, radar, and trail-condition gates before starting."
+    ],
+    "expected_result": {
+      "technical": "The second descent preserves or improves deliberate braking, centred posture, visual width, and corner-exit timing relative to the first.",
+      "garmin_load_range": [70, 110],
+      "next_day": "No unusual CNS, braking, or upper-body fatigue."
+    },
+    "stop_rules": [
+      "Do not start with red physical readiness, compromised/impaired CNS status, stale evidence, active thunder, or trail conditions above the session consequence.",
+      "Stop for delayed line choice, reactive braking, narrowed vision, a near miss, or two consecutive missed release markers.",
+      "Stop when posture becomes tall, grip becomes defensive, arm/braking fatigue exceeds 4/10, or final-descent quality can no longer match the first.",
+      "The second Twin Peaks descent ends the session; a third climb or extra loop is execution drift."
+    ],
+    "post_session_review_fields": ["actual_duration_min", "actual_training_load", "actual_rpe", "workout_feel", "loop_count", "trail_condition", "release_marker_hit_by_run", "technical_quality_notes", "late_session_skill_fade", "final_descent_quality_vs_first", "braking_fatigue", "upper_body_fatigue", "fueling_carbs_g_per_hour", "fluid_ml_per_hour", "sodium_mg_per_hour", "stop_rule_outcome", "next_morning_response"]
+  }
+}

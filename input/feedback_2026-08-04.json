@@ -1,0 +1,76 @@
+{
+  "date": "2026-08-04",
+  "activity_id": "23843662177",
+  "session_contract_review": {
+    "actual_duration_min": 173.2,
+    "garmin_reported_moving_min": 30.1,
+    "actual_moving_min": null,
+    "moving_duration_interpretation": "Garmin's 30.1-minute movingDuration is not a credible measure of actual movement on this steep rooted and stepped hike. The FIT records 173.2 minutes elapsed with no timer pauses; slow vertical movement was repeatedly below Garmin's horizontal-speed threshold. Use elapsed time and the ascent/top/descent phase trace, not reported movingDuration, for coaching and calibration.",
+    "actual_distance_km": 3.09,
+    "actual_ascent_m": 344.2,
+    "high_point_elevation_m": 2232,
+    "hike_rpe": 3,
+    "heart_rate_response_vs_effort": {
+      "garmin_average_bpm": 106,
+      "garmin_max_bpm": 151,
+      "heart_rate_zones_min": {
+        "zone_1": 56.0,
+        "zone_2": 30.6,
+        "zone_3": 26.6,
+        "zone_4": 0.5,
+        "zone_5": 0.0
+      },
+      "phase_trace": {
+        "ascent_to_top_band_duration_min": 65.1,
+        "ascent_average_bpm": 126.3,
+        "ascent_max_bpm": 151,
+        "top_band_duration_min": 30.0,
+        "top_band_average_bpm": 95.1,
+        "descent_duration_min": 78.0,
+        "descent_average_bpm": 92.3,
+        "descent_max_bpm": 120
+      },
+      "source_provenance": "Original FIT contains only local/onboard device_info sources and no ANT, ANT+, Bluetooth, or BLE external-HR device record. A proprietary paired-device record names HRM 200, but does not establish it as the active source. Treat the activity HR as Fenix 6 wrist optical with high confidence, while retaining normal wrist-HR measurement limitations.",
+      "interpretation": "The whole-session average was diluted by approximately 30 minutes in the top band and a low-HR descent. The ascent was meaningful controlled aerobic work despite RPE 3; aerobic training effect was 2.5 and Garmin load was 51.2."
+    },
+    "altitude_trace": {
+      "garmin_min_elevation_m": 1879.0,
+      "garmin_max_elevation_m": 2222.8,
+      "garmin_elevation_gain_m": 344.15,
+      "signed_summit_elevation_m": 2232,
+      "interpretation": "The photo-derived signed rise of about 341 m closely validates Garmin's 343.8 m relative range. Garmin absolute elevation was about 9-12 m below the photographed watch/start and summit sign, so relative gain is stronger evidence than absolute high point."
+    },
+    "activity_time_oxygenation_and_stress": {
+      "spo2": "unavailable",
+      "respiration": "unavailable",
+      "numeric_all_day_stress": "unavailable_negative_activity_sentinels",
+      "interpretation": "Neither Connect activity detail nor the original FIT contains activity SpO2 or respiration. All all-day stress samples during the hike were Garmin negative sentinels, so daily average stress must not be assigned to the climb."
+    },
+    "body_battery_trace": {
+      "start": 51,
+      "top_band": 42,
+      "finish": 39,
+      "late_evening": 8,
+      "interpretation": "Body Battery showed an acute same-day drain but is a modeled co-diagnostic signal, not a direct energy measurement."
+    },
+    "altitude_symptoms_during_or_after": "none",
+    "descent_leg_fatigue": "none",
+    "technical_quality_notes": "No general descent-leg fatigue. Near the end, slight right-knee discomfort occurred only on large step-downs. This is treated as a local eccentric step-down tolerance/control signal, not a systemic fatigue conclusion or diagnosis.",
+    "late_session_skill_fade": "none_reported",
+    "footing_and_weather": "Rooted and stepped forest trail with mist and cloud at the signed 2232 m high point; Mount Kinabalu was obscured.",
+    "fueling_food": "Two hard-boiled eggs.",
+    "fueling_carbs_g_total": null,
+    "fueling_interpretation": "Very low carbohydrate intake; an exact value is not inferred without egg size or nutrition-label evidence.",
+    "fluid_ml_total": 1000,
+    "sodium_mg_total": null,
+    "garmin_estimated_water_loss_ml": 1757,
+    "hydration_interpretation": "Garmin's water-loss value is modeled, not measured sweat loss. Without pre/post body mass, additional intake and urine data, the apparent 757 ml difference cannot establish dehydration.",
+    "stop_rule_outcome": "not_triggered",
+    "next_morning_response": {
+      "garmin_response_class": "strong",
+      "garmin_response_score": 82,
+      "athlete_subjective_response": null,
+      "interpretation": "Garmin next-day physiology was strong; athlete-subjective next-morning response was not reported."
+    }
+  }
+}

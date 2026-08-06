@@ -93,8 +93,46 @@ def normalize_training_status_payload(snapshot: dict | None, snapshot_date: str 
             "heat_pct": as_number(acclimation.get("heatAcclimationPercentage")),
             "heat_trend": acclimation.get("heatTrend"),
             "heat_date": acclimation.get("heatAcclimationDate"),
-            "altitude_pct": as_number(acclimation.get("altitudeAcclimation")),
+            "altitude_acclimation": as_number(acclimation.get("altitudeAcclimation")),
+            "acclimation_percentage": as_number(acclimation.get("acclimationPercentage")),
+            "previous_altitude_acclimation": as_number(
+                acclimation.get("previousAltitudeAcclimation")
+            ),
+            "previous_acclimation_percentage": as_number(
+                acclimation.get("previousAcclimationPercentage")
+            ),
+            "current_altitude": as_number(acclimation.get("currentAltitude")),
+            "previous_altitude": as_number(acclimation.get("previousAltitude")),
+            "altitude_trend": acclimation.get("altitudeTrend"),
             "altitude_date": acclimation.get("altitudeAcclimationDate"),
+            "altitude_local_timestamp": acclimation.get(
+                "altitudeAcclimationLocalTimestamp"
+            ),
+            "units": {
+                "altitude_acclimation": "garmin_native_unit_not_declared",
+                "acclimation_percentage": "percent",
+                "previous_altitude_acclimation": "garmin_native_unit_not_declared",
+                "previous_acclimation_percentage": "percent",
+                "current_altitude": "garmin_native_altitude_unit_not_declared",
+                "previous_altitude": "garmin_native_altitude_unit_not_declared",
+            },
+            "provenance": {
+                "source": "get_training_status.mostRecentVO2Max.heatAltitudeAcclimation",
+                "raw_field_map": {
+                    "altitude_acclimation": "altitudeAcclimation",
+                    "acclimation_percentage": "acclimationPercentage",
+                    "previous_altitude_acclimation": "previousAltitudeAcclimation",
+                    "previous_acclimation_percentage": "previousAcclimationPercentage",
+                    "current_altitude": "currentAltitude",
+                    "previous_altitude": "previousAltitude",
+                    "altitude_trend": "altitudeTrend",
+                },
+                "interpretation_guardrail": (
+                    "Only acclimationPercentage and previousAcclimationPercentage are "
+                    "reported as percentages. altitudeAcclimation is preserved as a "
+                    "Garmin-native value and is not converted to or labeled as percent."
+                ),
+            },
         },
         "flags": [],
     }
@@ -124,4 +162,3 @@ def build_training_status_current(
     )
     write_json(snapshots_dir(root) / "garmin_training_status_current.json", normalized)
     return normalized
-

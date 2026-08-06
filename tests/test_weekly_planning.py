@@ -1,4 +1,5 @@
 from coach_sync.context import load_context, save_context
+from coach_sync.io import write_json
 from coach_sync.planning import SESSION_CONTRACT_FIELDS
 from coach_sync.weekly_planning import build_weekly_plan
 
@@ -92,6 +93,11 @@ def test_weekly_plan_writes_artifacts_and_caps_mtb_exposures(tmp_path):
     assert plan["targets"]["mtb_exposures"]["maximum_normal_build_mtb_exposures"] == 3
     assert plan["targets"]["mtb_exposures"]["planned_key_mtb_exposures"] == 2
     assert plan["targets"]["mtb_exposures"]["optional_mtb_exposures"] == 1
+    assert plan["targets"]["bike_touches"]["preferred"] == 5
+    assert plan["targets"]["bike_touches"]["maximum_normal_build"] == 6
+    assert plan["targets"]["bike_touches"]["planned_normal_count"] == 5
+    assert plan["targets"]["bike_touches"]["planned_max_count"] == 6
+    assert plan["targets"]["bike_touches"]["planned_meaningful_cost_sessions"] == 2
     assert (tmp_path / "snapshots" / "weekly_plan.json").exists()
     assert (tmp_path / "snapshots" / "weekly_plan_2026-W26.json").exists()
     assert (tmp_path / "snapshots" / "weekly_plan.txt").exists()
@@ -143,7 +149,21 @@ def test_weekly_plan_downshifts_when_readiness_is_red(tmp_path):
     assert any(gate["gate"] == "readiness" for gate in plan["daily_gates"])
 
 
-def test_weekly_plan_green_monday_can_start_with_tempo(tmp_path):
+def test_weekly_plan_labels_prior_day_state_basis_as_provisional(tmp_path):
+    load_context(tmp_path)
+
+    plan = build_weekly_plan(
+        tmp_path,
+        "2026-06-23",
+        state=_state(day="2026-06-22"),
+    )
+
+    assert plan["status"] == "provisional_prior_day_basis"
+    assert plan["planning_basis"]["state_basis_date"] == "2026-06-22"
+    assert plan["planning_basis"]["plan_target_date"] == "2026-06-23"
+
+
+def test_weekly_plan_green_monday_preserves_social_run_and_keeps_bike_optional(tmp_path):
     load_context(tmp_path)
 
     plan = build_weekly_plan(
@@ -159,5 +179,53 @@ def test_weekly_plan_green_monday_can_start_with_tempo(tmp_path):
 
     monday = plan["sessions"][0]
     assert monday["date"] == "2026-06-22"
-    assert monday["type"] == "indoor_tempo_torque"
-    assert monday["priority"] == "key_engine"
+    assert monday["type"] == "social_run_optional_bike"
+    assert monday["priority"] == "support"
+    assert monday["bike_touch_status"] == "optional"
+    assert monday["density_cost"] == "low"
+
+
+def test_weekly_plan_uses_low_cost_touches_to_reach_frequency_target(tmp_path):
+    load_context(tmp_path)
+
+    plan = build_weekly_plan(tmp_path, "2026-06-22", state=_state())
+
+    by_day = {session["day_name"]: session for session in plan["sessions"]}
+    assert by_day["Tuesday"]["mtb_exposure"] is True
+    assert by_day["Tuesday"]["density_cost"] == "meaningful"
+    assert by_day["Wednesday"]["type"] == "indoor_low_aerobic"
+    assert by_day["Wednesday"]["density_cost"] == "low"
+    assert by_day["Thursday"]["mtb_exposure"] is True
+    assert by_day["Thursday"]["density_cost"] == "meaningful"
+    assert by_day["Friday"]["type"] == "indoor_low_aerobic"
+    assert by_day["Saturday"]["bike_touch_status"] == "conditional"
+    assert by_day["Sunday"]["type"] == "scheduled_rest"
+
+
+def test_weekly_plan_applies_explicit_church_rest_and_recomputes_touch_counts(tmp_path):
+    load_context(tmp_path)
+    write_json(
+        tmp_path / "input" / "planned_session_2026-06-27.json",
+        {
+            "date": "2026-06-27",
+            "status": "active_logistics_rest_override",
+            "session": {
+                "title": "Church commitment — no planned training",
+                "type": "scheduled_rest",
+                "modality": "rest",
+                "duration_min": 0,
+                "intensity": "recovery",
+            },
+        },
+    )
+
+    plan = build_weekly_plan(tmp_path, "2026-06-22", state=_state())
+
+    saturday = next(item for item in plan["sessions"] if item["day_name"] == "Saturday")
+    assert saturday["type"] == "scheduled_rest"
+    assert saturday["weekly_intent_override"]["source"].endswith(
+        "planned_session_2026-06-27.json"
+    )
+    assert plan["targets"]["mtb_exposures"]["optional_mtb_exposures"] == 0
+    assert plan["targets"]["bike_touches"]["planned_normal_count"] == 4
+    assert plan["targets"]["bike_touches"]["planned_max_count"] == 5

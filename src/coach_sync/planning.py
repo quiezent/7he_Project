@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 from .garmin_arbitration import build_garmin_arbitration
@@ -57,6 +57,9 @@ def _load_planned_session(root: str | Path | None, target_date: date) -> dict | 
             "type": "input_planned_session",
             "path": _planned_session_path(target_date),
         },
+        "contract_generated_at": payload.get("generated_at"),
+        "contract_status": payload.get("status"),
+        "sabbath_exception": payload.get("sabbath_exception"),
     }
 
 
@@ -88,16 +91,106 @@ def load_weekly_session(root: str | Path | None, target_date: date) -> dict | No
     return None
 
 
-def _nutrition_block(context: dict, session_intensity: str, duration_min: int) -> dict:
+def _is_mtb_session(session: dict) -> bool:
+    session_type = str(session.get("type") or "").lower()
+    modality = str(session.get("modality") or "").lower()
+    return bool(
+        modality == "mtb"
+        or session.get("mtb_exposure")
+        or "mtb" in session_type
+        or "enduro" in session_type
+        or session_type == "endurance_skills"
+    )
+
+
+def _is_race_practice(session: dict) -> bool:
+    if session.get("race_practice") is True or session.get("race_simulation") is True:
+        return True
+    text = " ".join(
+        str(session.get(field) or "")
+        for field in ("type", "title", "purpose", "stimulus_intent")
+    ).lower()
+    return any(
+        marker in text
+        for marker in ("race practice", "race_practice", "race simulation", "race_simulation")
+    )
+
+
+def _heat_context(state: dict) -> dict:
+    training_status = state.get("training_status_current") or {}
+    acclimation = training_status.get("acclimation") or state.get("heat_acclimation")
+    latest_session = state.get("latest_session_evidence")
+    compact_latest = None
+    if isinstance(latest_session, dict):
+        activity = latest_session.get("activity") or {}
+        environment = latest_session.get("environment") or {}
+        compact_latest = {
+            "date": activity.get("date") or latest_session.get("date"),
+            "activity": {
+                "date": activity.get("date"),
+                "category": activity.get("category"),
+            }
+            if isinstance(activity, dict) and activity
+            else None,
+            "device_temperature": environment.get("device_temperature")
+            or latest_session.get("temperature"),
+            "garmin_estimated_water_loss": environment.get(
+                "garmin_estimated_water_loss"
+            )
+            or (
+                {
+                    "value_ml": latest_session.get("water_estimated_ml"),
+                    "measurement_type": "estimated_not_measured",
+                }
+                if latest_session.get("water_estimated_ml") is not None
+                else None
+            ),
+            "weather": environment.get("weather"),
+            "decision_role": (
+                "Compact prior-session heat and sweat-model context only; no device "
+                "identifiers, technical evidence, or raw trace are copied into the plan."
+            ),
+        }
+        compact_latest = {
+            key: value for key, value in compact_latest.items() if value is not None
+        }
+    return {
+        "heat_acclimation": acclimation if isinstance(acclimation, dict) else None,
+        "latest_session_evidence": compact_latest,
+        "decision_role": "Context only; use same-day conditions, sweat response, and gut tolerance to select within the range.",
+        "weather_rule": "Previous-session temperature or weather is not a forecast for this session.",
+        "acclimation_rule": "Heat acclimation can inform tolerance but never reduces the carbohydrate, fluid, or sodium target by itself.",
+    }
+
+
+def _nutrition_block(
+    context: dict,
+    session_intensity: str,
+    duration_min: int,
+    session: dict | None = None,
+    state: dict | None = None,
+) -> dict:
     nutrition = context.get("nutrition", {})
     athlete = context.get("athlete", {})
+    session = session or {}
+    state = state or {}
     body_weight = athlete.get("body_weight_kg")
     body_weight_source = athlete.get("body_weight_source")
     carb_ranges = nutrition.get("carb_g_per_kg", {})
     protein_range = nutrition.get("protein_g_per_kg", [1.6, 2.2])
     carbs = carb_ranges.get(session_intensity, carb_ranges.get("easy", [2.0, 4.0]))
+    low_aerobic_short = bool(
+        session.get("type") in {
+            "indoor_low_aerobic",
+            "indoor_low_aerobic_sabbath_exception",
+        }
+        and str(session_intensity).lower() in {"easy", "recovery"}
+        and duration_min <= 75
+    )
     if duration_min <= 0:
         during = None
+    elif low_aerobic_short:
+        during = [0, 20]
     elif duration_min < 60:
         during = nutrition.get("during_session_carbs_g_per_hour", {}).get("under_60_min", [0, 20])
     elif duration_min <= 120:
@@ -112,7 +205,11 @@ def _nutrition_block(context: dict, session_intensity: str, duration_min: int) -
         "daily_carbs": f"{carbs[0]}-{carbs[1]} g/kg",
         "during_session_carbs": "none"
         if during is None
-        else f"{during[0]}-{during[1]} g/hour",
+        else (
+            f"{during[0]}-{during[1]} g/hour (optional if normally fed)"
+            if low_aerobic_short
+            else f"{during[0]}-{during[1]} g/hour"
+        ),
         "hydration": "Start hydrated; add electrolytes if the session is hot, long, or sweat-heavy.",
         "recovery": "Eat protein plus carbs within 2 hours when the ride or gym session is meaningful.",
     }
@@ -121,6 +218,57 @@ def _nutrition_block(context: dict, session_intensity: str, duration_min: int) -
         if isinstance(body_weight_source, dict) and body_weight_source.get("date"):
             basis = f"{basis} from Garmin scale on {body_weight_source['date']}"
         block["body_weight_basis"] = basis
+
+    heat_context = _heat_context(state)
+    if heat_context.get("heat_acclimation") or heat_context.get("latest_session_evidence"):
+        block["heat_context"] = heat_context
+
+    mtb_targets = nutrition.get("mtb_heat_fueling_targets") or {}
+    target_key = None
+    selection_reason = None
+    if _is_mtb_session(session):
+        if _is_race_practice(session):
+            target_key = "over_150_min_or_race_practice"
+            selection_reason = "Explicit MTB race-practice or race-simulation intent."
+        elif duration_min > 150:
+            target_key = "over_150_min_or_race_practice"
+            selection_reason = "MTB duration is over 150 minutes."
+        elif 90 <= duration_min <= 150:
+            target_key = "ride_90_to_150_min"
+            selection_reason = "MTB duration is within the 90-150 minute heat-fueling band."
+    selected = mtb_targets.get(target_key) if target_key else None
+    if isinstance(selected, dict):
+        target_ranges = {
+            field: list(selected[field])
+            for field in ("carbs_g_per_hour", "fluid_ml_per_hour", "sodium_mg_per_hour")
+            if isinstance(selected.get(field), (list, tuple)) and len(selected[field]) == 2
+        }
+        if "carbs_g_per_hour" in target_ranges:
+            carb_target = target_ranges["carbs_g_per_hour"]
+            block["during_session_carbs"] = f"{carb_target[0]}-{carb_target[1]} g/hour"
+        if "fluid_ml_per_hour" in target_ranges and "sodium_mg_per_hour" in target_ranges:
+            fluid_target = target_ranges["fluid_ml_per_hour"]
+            sodium_target = target_ranges["sodium_mg_per_hour"]
+            block["hydration"] = (
+                f"{fluid_target[0]}-{fluid_target[1]} ml fluid/hour plus "
+                f"{sodium_target[0]}-{sodium_target[1]} mg sodium/hour."
+            )
+        block["during_session_targets"] = {
+            "source": "config/athlete_context.json:nutrition.mtb_heat_fueling_targets",
+            "profile": target_key,
+            "selection_reason": selection_reason,
+            **target_ranges,
+        }
+        if "body_weight_basis" not in block and mtb_targets.get("basis"):
+            block["body_weight_basis"] = mtb_targets.get("basis")
+        block["mtb_heat_target_basis"] = mtb_targets.get("basis")
+        block["mtb_heat_fueling_rule"] = mtb_targets.get("rule")
+        block["range_selection_rule"] = (
+            "Choose within the prescribed range from same-day heat/humidity, actual sweat rate, session consequence, "
+            "and gut tolerance; bias upward for hotter, more humid, sweat-heavy, or race-consequence riding. "
+            "Do not downshift solely because heat acclimation is high."
+        )
+        block["heat_context"] = heat_context
     return block
 
 
@@ -184,7 +332,7 @@ def _contract_for_session(session: dict) -> dict:
 
     if session_type == "bike_quality":
         return {
-            "purpose": "Rebuild bike-specific engine quality without using stale FTP as the prescription anchor.",
+            "purpose": "Rebuild bike-specific engine quality using the current dated Garmin FTP with RPE/HR validation.",
             "dose": {
                 "duration_min": duration,
                 "intensity": intensity,
@@ -196,7 +344,7 @@ def _contract_for_session(session: dict) -> dict:
             ),
             "execution_rules": [
                 "Warm up thoroughly before any hard work.",
-                "Use current RPE and HR response rather than historical 222 W P20 assumptions.",
+                "Use the latest dated Garmin operational FTP with RPE and HR response; historical 222 W P20 is not FTP.",
                 "Keep cadence, posture, and breathing controlled through the final work block.",
             ],
             "expected_result": {
@@ -392,6 +540,114 @@ def _session_is_already_low_consequence(session: dict) -> bool:
     )
 
 
+def _has_complete_session_contract(session: dict) -> bool:
+    return bool(
+        session.get("schema_version") == 3
+        and all(session.get(field) for field in SESSION_CONTRACT_FIELDS)
+    )
+
+
+def _is_bounded_familiar_controlled_skill(session: dict) -> bool:
+    session_type = str(session.get("type") or "").lower()
+    ceiling_class = str(session.get("garmin_ceiling_class") or "").lower()
+    duration = int(session.get("duration_min") or 0)
+    return bool(
+        _is_mtb_session(session)
+        and str(session.get("intensity") or "").lower() == "skill"
+        and 0 < duration <= 90
+        and _has_complete_session_contract(session)
+        and (
+            session_type == "mtb_skill_familiar_capped"
+            or ceiling_class == "controlled_familiar_skill"
+        )
+    )
+
+
+def _session_fits_garmin_ceiling(session: dict, arbitration: dict) -> bool:
+    if _session_is_already_low_consequence(session):
+        return True
+    return bool(
+        arbitration.get("ceiling") == "controlled_familiar_skill_or_aerobic_continuity"
+        and _is_bounded_familiar_controlled_skill(session)
+    )
+
+
+def _parse_session_datetime(value: object) -> datetime | None:
+    if value in {None, ""}:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).strip().replace(" ", "T", 1).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _activity_matches_session_modality(session: dict, activity: dict) -> bool:
+    activity_text = " ".join(
+        str(activity.get(field) or "").lower()
+        for field in ("category", "type", "activity_type", "name")
+    )
+    modality = str(session.get("modality") or "").lower()
+    session_type = str(session.get("type") or "").lower()
+    if _is_mtb_session(session):
+        return "mtb" in activity_text or "mountain_bik" in activity_text
+    if "run" in modality or "run" in session_type:
+        return "run" in activity_text
+    if any(marker in modality or marker in session_type for marker in ("bike", "cycling")):
+        return any(marker in activity_text for marker in ("bike", "bik", "cycling"))
+    return False
+
+
+def _planned_session_lifecycle(
+    planned_session: dict | None,
+    state: dict,
+    target_date: date,
+) -> dict:
+    pre_session = {
+        "stance": "pre_session",
+        "status": "no_matching_activity_after_contract",
+        "source": None,
+    }
+    if not planned_session:
+        return pre_session
+
+    contract_started = _parse_session_datetime(planned_session.get("contract_generated_at"))
+    latest_session = state.get("latest_session_evidence") or {}
+    activity = latest_session.get("activity") if isinstance(latest_session, dict) else None
+    if contract_started is None or not isinstance(activity, dict):
+        return pre_session
+
+    activity_started = _parse_session_datetime(activity.get("started_at_local"))
+    if activity_started is None:
+        return pre_session
+    if activity_started.tzinfo is None and contract_started.tzinfo is not None:
+        activity_started = activity_started.replace(tzinfo=contract_started.tzinfo)
+    elif activity_started.tzinfo is not None and contract_started.tzinfo is None:
+        contract_started = contract_started.replace(tzinfo=activity_started.tzinfo)
+
+    activity_date = parse_date(activity.get("date")) or activity_started.date()
+    if (
+        activity_date != target_date
+        or activity_started <= contract_started
+        or not _activity_matches_session_modality(planned_session["session"], activity)
+    ):
+        return pre_session
+
+    return {
+        "stance": "post_session_review",
+        "status": "matching_same_day_activity_started_after_contract",
+        "source": "current_state.latest_session_evidence.activity",
+        "contract_generated_at": planned_session.get("contract_generated_at"),
+        "contract_status": planned_session.get("contract_status"),
+        "activity_id": activity.get("activity_id"),
+        "activity_started_at_local": activity.get("started_at_local"),
+        "rule": (
+            "Preserve the coach-authored contract as executed intent. Post-session Garmin, "
+            "readiness, and activity evidence inform review and the next decision; they do not "
+            "retroactively rewrite the prescription."
+        ),
+    }
+
+
 def _session_summary(session: dict) -> dict:
     return {
         "title": session.get("title"),
@@ -443,7 +699,7 @@ def _apply_session_constraints(
         effective = replacement
     elif (
         arbitration.get("recommended_action") in {"downshift", "no_hard_guidance"}
-        and not _session_is_already_low_consequence(effective)
+        and not _session_fits_garmin_ceiling(effective, arbitration)
     ):
         replacement = _garmin_aerobic_continuity_plan(arbitration)
         constraints.append(
@@ -528,6 +784,39 @@ def _scheduled_rest_rule(context: dict, target_date: date) -> dict | None:
     return None
 
 
+def _valid_sabbath_exception(
+    planned_session: dict | None,
+    target_date: date,
+    scheduled_rest: dict | None,
+) -> dict | None:
+    if not planned_session or not scheduled_rest:
+        return None
+    exception = planned_session.get("sabbath_exception")
+    session = planned_session.get("session")
+    if not isinstance(exception, dict) or not isinstance(session, dict):
+        return None
+    exception_date = parse_date(exception.get("date"))
+    duration = int(session.get("duration_min") or 0)
+    valid = bool(
+        exception_date == target_date
+        and str(exception.get("authorized_by") or "").lower() == "athlete"
+        and exception.get("explicit_one_off") is True
+        and exception.get("recurring_rule_unchanged") is True
+        and exception.get("scope") == "indoor_low_aerobic_only"
+        and str(session.get("modality") or "").lower() == "bike_indoor"
+        and str(session.get("intensity") or "").lower() in {"easy", "recovery"}
+        and 0 < duration <= 60
+        and _has_complete_session_contract(session)
+    )
+    if not valid:
+        return None
+    return {
+        **exception,
+        "status": "validated_exact_date_low_consequence_exception",
+        "scheduled_rest_label": scheduled_rest.get("label"),
+    }
+
+
 def _gym_block(state: dict, scheduled_rest: dict | None = None) -> dict:
     if scheduled_rest:
         return {
@@ -570,19 +859,34 @@ def build_today_plan(
         state.get("data_freshness", {}).get("hard_session_confidence") == "limited"
     )
     planned_session = _load_planned_session(root, target_date)
+    sabbath_exception = _valid_sabbath_exception(
+        planned_session,
+        target_date,
+        scheduled_rest,
+    )
+    enforce_scheduled_rest = bool(scheduled_rest and sabbath_exception is None)
     weekly_session = load_weekly_session(root, target_date)
     selected_session = planned_session or weekly_session
     plan_source = {"type": "today_plan", "path": "snapshots/today_plan.json"}
     garmin_arbitration = build_garmin_arbitration(state)
+    session_lifecycle = _planned_session_lifecycle(planned_session, state, target_date)
+    post_session_review = bool(
+        planned_session
+        and session_lifecycle.get("stance") == "post_session_review"
+    )
 
-    if scheduled_rest:
+    if enforce_scheduled_rest:
         session = _scheduled_rest_plan(scheduled_rest)
+        post_session_review = False
+    elif post_session_review:
+        session = dict(planned_session["session"])
+        plan_source = planned_session["source"]
     elif level == "red" or hard_guidance == "avoid":
         session = _red_plan(state)
     elif selected_session:
         session = dict(selected_session["session"])
-        session = _with_adaptive_upgrade_option(session, garmin_arbitration)
         plan_source = selected_session["source"]
+        session = _with_adaptive_upgrade_option(session, garmin_arbitration)
     elif level == "yellow" or stale:
         if not stale and garmin_arbitration.get("recommended_action") == "controlled_upgrade":
             session = _controlled_upgrade_plan(state, garmin_arbitration)
@@ -597,7 +901,10 @@ def build_today_plan(
             and garmin_arbitration.get("recommended_action") in {"downshift", "no_hard_guidance"}
         ):
             session = _yellow_base_plan(state)
-    session, applied_constraints = _apply_session_constraints(session, state, garmin_arbitration)
+    if post_session_review:
+        applied_constraints = []
+    else:
+        session, applied_constraints = _apply_session_constraints(session, state, garmin_arbitration)
     session = _with_session_contract(session)
 
     nutrition_context = {
@@ -611,12 +918,14 @@ def build_today_plan(
         nutrition_context,
         session.get("intensity", "easy"),
         int(session.get("duration_min") or 0),
+        session=session,
+        state=state,
     )
     guardrails = [
         "Progression follows readiness, recent load, bike specificity, and next-day response.",
         "Downshift tomorrow if the session produces unusually poor recovery or skill quality.",
     ]
-    if selected_session and not scheduled_rest and not (level == "red" or hard_guidance == "avoid"):
+    if selected_session and not enforce_scheduled_rest and not (level == "red" or hard_guidance == "avoid"):
         if plan_source.get("type") == "input_planned_session":
             guardrails.insert(0, f"Using coach-authored planned session from {plan_source['path']}.")
         else:
@@ -624,10 +933,15 @@ def build_today_plan(
                 0,
                 f"Using this week's intent session from {plan_source['path']}; same-day readiness remains the execution gate.",
             )
-    if scheduled_rest:
+    if enforce_scheduled_rest:
         guardrails.insert(
             0,
             f"{scheduled_rest.get('label', 'Scheduled rest')} is a hard rest constraint: no planned exercise today.",
+        )
+    elif sabbath_exception:
+        guardrails.insert(
+            0,
+            "Athlete-authorized one-off exact-date Sabbath exception: indoor low-aerobic work only; this does not alter the recurring Sunday rule.",
         )
     if stale:
         guardrails.insert(
@@ -644,8 +958,10 @@ def build_today_plan(
         reason = constraint.get("reason")
         if reason and reason not in guardrails:
             guardrails.insert(0, reason)
+    if post_session_review:
+        guardrails.insert(0, session_lifecycle["rule"])
     if (
-        not scheduled_rest
+        not enforce_scheduled_rest
         and not (level == "red" or hard_guidance == "avoid")
         and garmin_arbitration.get("status") in {"available", "freshness_limited"}
     ):
@@ -658,7 +974,7 @@ def build_today_plan(
     plan = {
         "date": target_date.isoformat(),
         "generated_at": iso_now(tz),
-        "coaching_status": "proposal_for_llm_coach",
+        "coaching_status": "post_session_review" if post_session_review else "proposal_for_llm_coach",
         "session": session,
         "plan_source": plan_source,
         "gym": _gym_block(state, scheduled_rest=scheduled_rest),
@@ -672,15 +988,21 @@ def build_today_plan(
             "hard_session_guidance": hard_guidance,
             "data_freshness": state.get("data_freshness"),
             "scheduled_rest": scheduled_rest,
+            "sabbath_exception": sabbath_exception,
             "garmin_arbitration": garmin_arbitration,
             "cns_readiness": {
                 "status": (state.get("cns_readiness") or {}).get("status"),
                 "session_ceiling": (state.get("cns_readiness") or {}).get("session_ceiling"),
             },
+            "session_lifecycle": session_lifecycle,
         },
         "constraint_resolution": {
             "applied": applied_constraints,
-            "effective_session_source": "constraint" if applied_constraints else plan_source.get("type"),
+            "effective_session_source": (
+                "executed_coach_authored_contract"
+                if post_session_review
+                else ("constraint" if applied_constraints else plan_source.get("type"))
+            ),
         },
     }
     write_json(snapshots_dir(root) / "today_plan.json", plan)

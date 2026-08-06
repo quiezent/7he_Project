@@ -86,3 +86,18 @@ def test_adaptation_profile_supports_full_available_range(tmp_path):
     assert profile["analysis_type"] == "full_range_n_of_1_adaptation_profile"
     assert profile["window"]["mode"] == "full_available_range"
     assert profile["window"]["start"] == "2024-01-02"
+
+
+def test_adaptation_profile_excludes_nested_preserved_activity_detail(tmp_path):
+    activity = _activity(1, "2026-05-25", "mountain_biking", 120, p20=145)
+    write_json(tmp_path / "activities" / "garmin_1.json", activity)
+    write_json(
+        tmp_path / "activities" / "details" / "garmin_1_detail.json",
+        activity,
+    )
+    write_json(tmp_path / "snapshots" / "wellness_daily.json", [])
+
+    profile = build_adaptation_profile(tmp_path, "2026-05-26", days=60)
+
+    assert profile["totals"]["sessions"] == 1
+    assert profile["rolling_highlights"]["recent_7d"]["sessions"] == 1

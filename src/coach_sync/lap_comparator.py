@@ -6,7 +6,7 @@ from statistics import median
 from typing import Any
 
 from .io import read_json, write_json
-from .paths import snapshots_dir
+from .paths import activities_dir, snapshots_dir
 
 
 DEFAULT_GRID_M = 1.0
@@ -578,11 +578,14 @@ def compute_segment_stats(
 
 
 def _read_detail_artifact(root: str | Path | None, activity_id: str) -> dict[str, Any] | None:
-    path = snapshots_dir(root) / f"activity_detail_{activity_id}.json"
-    payload = read_json(path, None)
-    if not isinstance(payload, dict):
-        return None
-    return payload
+    for path in (
+        activities_dir(root) / "details" / f"garmin_{activity_id}_detail.json",
+        snapshots_dir(root) / f"activity_detail_{activity_id}.json",
+    ):
+        payload = read_json(path, None)
+        if isinstance(payload, dict):
+            return payload
+    return None
 
 
 def _extract_lap(payload: dict[str, Any], lap_number: int) -> dict[str, Any]:

@@ -107,6 +107,7 @@ def build_garmin_arbitration(state: dict[str, Any]) -> dict[str, Any]:
     ceiling = "planned_session"
     confidence = "medium"
     stimulus = "planned"
+    summary_override = None
 
     if not training_status:
         return {
@@ -157,8 +158,8 @@ def build_garmin_arbitration(state: dict[str, Any]) -> dict[str, Any]:
         stimulus = "recovery"
         allowed.append("Easy aerobic continuity only if it improves freshness.")
         avoid.append("No planned hard stimulus while Garmin training status is paused.")
-    elif acwr_status and acwr_status != "OPTIMAL":
-        reasons.append(f"Garmin ACWR status is {acwr_status}, not OPTIMAL.")
+    elif acwr_status not in {"", "OPTIMAL", "LOW"}:
+        reasons.append(f"Garmin ACWR status is {acwr_status}, indicating a non-low load warning.")
         action = "downshift"
         ceiling = "aerobic_continuity"
         stimulus = "easy_to_moderate"
@@ -171,6 +172,26 @@ def build_garmin_arbitration(state: dict[str, Any]) -> dict[str, Any]:
         stimulus = "easy_to_moderate"
         allowed.append("Capped aerobic work only.")
         avoid.append("No extra high-aerobic, anaerobic, or durability extension.")
+    elif family == "recovery" and acwr_status == "LOW":
+        reasons.append(
+            "Garmin Recovery status coincides with LOW ACWR; this is compatible with low acute load "
+            "and is not, by itself, evidence of overload."
+        )
+        action = "downshift"
+        ceiling = "controlled_familiar_skill_or_aerobic_continuity"
+        stimulus = "easy_to_moderate"
+        allowed.append(
+            "Bounded familiar technique or aerobic continuity if readiness, CNS status, "
+            "subjective sharpness, and route consequence agree."
+        )
+        avoid.append(
+            "Do not use low ACWR to justify an abrupt load spike, open-ended extension, "
+            "novel technical consequence, or hard repeatability."
+        )
+        summary_override = (
+            "Garmin Recovery with LOW ACWR narrows the ceiling without vetoing "
+            "bounded familiar technique."
+        )
     elif family in {"recovery", "unproductive", "overreaching", "strained"}:
         reasons.append(f"Garmin training status family is {family}.")
         action = "downshift"
@@ -184,6 +205,11 @@ def build_garmin_arbitration(state: dict[str, Any]) -> dict[str, Any]:
         anaerobic = buckets["anaerobic"]
         acwr_ok = acwr_status in {"", "OPTIMAL"} and (acwr_ratio is None or acwr_ratio < 1.45)
         productive_or_peaking = family in {"productive", "peaking"}
+
+        if acwr_status == "LOW":
+            reasons.append("Garmin ACWR is LOW; this reflects low acute load rather than overload.")
+            allowed.append("Hold the written plan when readiness, CNS status, and route consequence agree.")
+            avoid.append("Do not use low ACWR alone to justify an abrupt load spike or open-ended session extension.")
 
         if anaerobic["position"] == "above_target" or anaerobic["near_upper"]:
             avoid.append("Avoid extra anaerobic/VO2/sprint stacking; Garmin anaerobic load is near or above the upper target.")
@@ -219,7 +245,7 @@ def build_garmin_arbitration(state: dict[str, Any]) -> dict[str, Any]:
     if not avoid:
         avoid.append("Avoid mission creep that changes the adaptation target without naming it first.")
 
-    summary = {
+    summary = summary_override or {
         "controlled_upgrade": "Garmin diagnosis permits a controlled upgrade, not an open-ended hard day.",
         "downshift": "Garmin diagnosis lowers the ceiling for today.",
         "no_hard_guidance": "Garmin diagnosis cannot support hard guidance because freshness is limited.",

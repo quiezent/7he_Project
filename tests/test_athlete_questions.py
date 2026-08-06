@@ -2,7 +2,7 @@ from coach_sync.athlete_questions import build_athlete_question_audit
 from coach_sync.io import write_json
 
 
-def _activity(activity_id, day, type_key, load, name="Training", p20=None):
+def _activity(activity_id, day, type_key, load, name="Training", p20=None, ftp=None):
     payload = {
         "activityId": activity_id,
         "activityName": name,
@@ -22,6 +22,8 @@ def _activity(activity_id, day, type_key, load, name="Training", p20=None):
         payload["maxAvgPower_1200"] = p20
         payload["avgPower"] = p20 - 30
         payload["normPower"] = p20 - 20
+    if ftp is not None:
+        payload["maxFtp"] = ftp
     return payload
 
 
@@ -32,7 +34,15 @@ def test_athlete_question_audit_writes_weekly_and_power_sections(tmp_path):
     )
     write_json(
         tmp_path / "activities" / "mtb.json",
-        _activity(2, "2026-05-06", "mountain_biking", 120, name="Kuala Lumpur Mountain Biking", p20=145),
+        _activity(
+            2,
+            "2026-05-06",
+            "mountain_biking",
+            120,
+            name="Kuala Lumpur Mountain Biking",
+            p20=145,
+            ftp=211,
+        ),
     )
     write_json(
         tmp_path / "activities" / "elliptical.json",
@@ -45,5 +55,36 @@ def test_athlete_question_audit_writes_weekly_and_power_sections(tmp_path):
     assert audit["analysis_type"] == "athlete_profile_question_audit"
     assert audit["bike_specific_minimum_weeks"]
     assert audit["power_test_and_ftp"]["historical_best_p20"]["p20_w"] == 150
+    assert audit["power_test_and_ftp"]["latest_garmin_detected_ftp"]["ftp_w"] == 211
+    assert "Current Garmin operational FTP is 211 W" in audit["power_test_and_ftp"]["current_ftp_call"]
     assert audit["last_10_mtb_ride_labels"][0]["ride_type_inferred"]
     assert (tmp_path / "snapshots" / "athlete_question_audit.json").exists()
+
+
+def test_athlete_question_audit_excludes_nested_preserved_activity_detail(tmp_path):
+    activity = _activity(
+        11,
+        "2026-05-06",
+        "mountain_biking",
+        120,
+        name="Kiara",
+        p20=145,
+        ftp=211,
+    )
+    write_json(tmp_path / "activities" / "garmin_11.json", activity)
+    write_json(
+        tmp_path / "activities" / "details" / "garmin_11_detail.json",
+        {
+            "activityId": 11,
+            "startTimeLocal": "2026-05-06 08:00:00",
+            "activityType": {"typeKey": "mountain_biking"},
+            "activityTrainingLoad": 120,
+            "maxFtp": 211,
+        },
+    )
+    write_json(tmp_path / "snapshots" / "wellness_daily.json", [])
+
+    audit = build_athlete_question_audit(tmp_path, "2026-05-06")
+
+    assert audit["scope"]["activity_rows"] == 1
+    assert len(audit["power_test_and_ftp"]["recent_60d_garmin_detected_ftp"]) == 1

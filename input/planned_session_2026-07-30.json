@@ -1,0 +1,99 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-07-30",
+  "generated_at": "2026-07-28T15:09:00+08:00",
+  "status": "provisional_awaiting_live_recovery_and_mechanical_clear",
+  "decision_basis": {
+    "athlete_direction": "Postpone the Enduro bike until next week and focus on the Stumpjumper at the newly reached higher speed and intensity.",
+    "tuesday_cost": "The 2026-07-28 Stumpjumper session produced Garmin load 218.3, aerobic/anaerobic TE 4.0/2.8, RPE 10, and a triggered_but_continued stop outcome. Thursday is available only if 48-hour recovery is genuinely clean.",
+    "setup_history": "The current slower fork rebound was a successful correction for big-hit front ping that pushed Clayton rearward. A prior HSC +1 test felt excellent at maximum attack on 2K+ through successive hits; HSC was later returned one click softer during illness-related fatigue.",
+    "test_priority": "Validate HSC +1 as a fresh-rider attack setting without changing rebound, shock, tyre pressure, cockpit, cleats, or route intent."
+  },
+  "session": {
+    "title": "Stumpjumper HSC attack-setting validation — 2K+ then conditional Pure Quill",
+    "type": "mtb_setup_validation",
+    "garmin_ceiling_class": "controlled_familiar_setup",
+    "modality": "mtb",
+    "venue": "Bukit Kiara",
+    "duration_min": 95,
+    "intensity": "skill_moderate_hard",
+    "density_cost": "meaningful",
+    "mtb_exposure": true,
+    "optional": false,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Test whether one additional click of fork HSC restores high-speed large-impact support and intended steering on the Stumpjumper while preserving the slower rebound setting that previously removed big-hit front ping.",
+    "dose": {
+      "preconditions": "Run same-day Garmin sync/current-state/coach-packet. Require non-red physical readiness, CNS ready, normal subjective clarity and body feel, no illness, and a completely clear cold tyre/wheel/axle/headset/fork/shock/linkage/frame inspection.",
+      "setup": "Before riding, add exactly one click of fork HSC relative to the 2026-07-28 setting. Keep fork rebound, shock settings, tyre pressures, cockpit, and cleats unchanged.",
+      "opening_gate": "Ten to fifteen minutes at RPE 2-3 with figure eights, deliberate bike-body separation, symmetric steering, progressive front loading, and no unexplained leftward tendency.",
+      "first_descent": "Ride 2K+ at approximately 85 percent execution. Use the known successive-hit sections to assess fork support, recovery, tyre contact, intended steering, and whether Clayton can remain dynamically centred rather than retreating rearward.",
+      "post_2k_plus_gate": "Pure Quill is earned only if the fork tracks without ping or harsh lateral deflection, steering remains fully intentional, no rear wallow/kick or chassis pitch appears, vision and decision speed are unchanged, braking and upper-body fatigue remain no more than 2/10, and the preceding climb is no higher than RPE 5.",
+      "second_descent": "If the gate passes, ride one Pure Quill at 85-90 percent. This is a support and steering validation, not a maximum-speed attempt or segment chase.",
+      "egress": "Use the required exit at transport pace. It is not a third setup or speed test.",
+      "hard_cap": "One 2K+, one conditional Pure Quill, and required egress; 85-100 minutes expected and 105 minutes absolute cap. No additional stage or repeat."
+    },
+    "adaptation_hypothesis": "When Clayton is fresh enough to load the bike actively, HSC +1 should hold the fork higher through rapid large-impact compression, preserve chassis geometry and front-tyre authority, and prevent the rearward retreat that amplified rear wallow and leftward steering on 2026-07-28.",
+    "execution_rules": [
+      "Higher speed is the validation endpoint, not the opening dose.",
+      "Keep the previously successful slower fork rebound unchanged; do not test rebound and HSC together.",
+      "Use only familiar lines and keep braking points deliberate. Do not enter the impact sequence already rearward.",
+      "Record whether any failure occurs on the first impact or accumulates through successive hits, plus fork O-ring travel and whether the fork recovers between hits.",
+      "No standing-torque target, sprint, VO2 interval, jump progression, or alternate trail.",
+      "For approximately 95-105 minutes in Kuala Lumpur heat, target 45-60 g carbohydrate, 650-900 ml fluid, and 600-900 mg sodium per hour."
+    ],
+    "expected_result": {
+      "technical": "2K+ and the conditional Pure Quill hold the intended line through large and successive hits without front ping, left pull, reactive correction, rearward retreat, rear wallow/kick, or chassis pitch.",
+      "setup": "HSC +1 provides more large-impact support while retaining useful tyre compliance; normal small-hit tracking and root/rock conformity do not deteriorate.",
+      "physiology": "Climbs remain RPE 2-5 and whole-session RPE approximately 5-7, with no deliberate engine interval.",
+      "garmin_training_load": "Approximately 120-175 if the full conditional route is completed as written.",
+      "next_session": "Friday may be a short HSC -1 chill/compliance ride only if Thursday remains within the contract and Friday recovery is clean."
+    },
+    "stop_rules": [
+      "Replace the ride with recovery if physical readiness is red, CNS readiness is impaired/compromised, data is stale, subjective clarity/body feel is abnormal, or the opening gate shows an unexplained leftward tendency.",
+      "Any unresolved pressure loss, tyre/casing/bead fault, wheel or hub play, axle/headset/fork issue, suspension leak/knock, linkage play, or frame concern blocks trail testing.",
+      "Do not earn Pure Quill if the 2K+ climb exceeds RPE 5 or if 2K+ produces front ping/deflection, unintended steering, rearward retreat, rear wallow/kick, pitch, reactive braking, line correction, or fatigue above 2/10.",
+      "Any inability to steer the intended line immediately ends technical speed. Use the safest easy exit and do not repeat the feature.",
+      "Do not exceed 90 percent because HSC +1 feels excellent; no maximum-speed pass."
+    ],
+    "post_session_review_fields": [
+      "opening_gate_result",
+      "actual_duration_min",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "trail_condition",
+      "climb_rpe_by_cycle",
+      "mechanical_inspection_result",
+      "cold_tyre_pressures",
+      "fork_pressure_and_sag",
+      "fork_rebound_position",
+      "fork_hsc_baseline_and_test_position",
+      "fork_o_ring_travel",
+      "fork_recovery_between_hits",
+      "first_hit_vs_successive_hit_response",
+      "front_tracking_and_intended_steering",
+      "front_ping_or_harsh_deflection",
+      "rider_hip_retreat",
+      "rear_wallow_or_kick",
+      "chassis_pitch",
+      "vision_and_decision_speed_first_vs_final",
+      "braking_fatigue",
+      "upper_body_fatigue",
+      "late_session_skill_fade",
+      "fueling_carbs_g_per_hour",
+      "fluid_ml_per_hour",
+      "sodium_mg_per_hour",
+      "stop_rule_outcome",
+      "next_morning_response"
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "date": "2026-08-06",
+  "daily_work_sleep_timing": {
+    "late_cognitive_work": "US stock-market catch-up work after unreliable connectivity in the mountains",
+    "work_crossed_midnight": true,
+    "primary_sleep_start_local": "02:05",
+    "primary_sleep_end_local": "07:01",
+    "primary_sleep_hours": 4.93,
+    "athlete_reported_cause": "Intentional sleep-opportunity truncation for work, not unexplained insomnia or failed overnight recovery.",
+    "coaching_interpretation": "The cause explains the short sleep and separates it from delayed post-hike autonomic strain. It does not erase the independent short-sleep CNS and reaction-time constraint for today's open-water and travel context."
+  }
+}

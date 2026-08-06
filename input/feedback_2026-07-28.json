@@ -1,0 +1,123 @@
+{
+  "date": "2026-07-28",
+  "entries": [
+    {
+      "timestamp_local": "2026-07-28T07:34:00+08:00",
+      "source": "athlete_same_day_context",
+      "reported_context": {
+        "monday_run_completed": false,
+        "reason": "Clayton's wife did not run, so Clayton did not run.",
+        "today_intent": "Eat breakfast, then ride Bukit Kiara on the Stumpjumper.",
+        "later_week_preference": {
+          "thursday": "Enduro bike",
+          "friday": "Enduro bike"
+        }
+      }
+    },
+    {
+      "timestamp_local": "2026-07-28T13:15:00+08:00",
+      "source": "athlete_post_session_feedback",
+      "activity_id": "23758129689",
+      "session_contract_review": {
+        "lap_route_map": {
+          "lap_2": "2K",
+          "lap_4": "Pure Quill",
+          "lap_6": "Required egress / partial DH-Line exit"
+        },
+        "athlete_speed_report": "Lap 4 was maximum speed and the athlete felt the Stumpjumper was maxed.",
+        "late_bike_feel": {
+          "toward_end_of_lap_4": "Stumpjumper felt softer.",
+          "mid_lap_6": "Rear of the Stumpjumper started feeling soft."
+        },
+        "tyre_pressure_psi": {
+          "front_before_and_after": 23,
+          "rear_before_and_after": 28
+        },
+        "instability": {
+          "locations": [
+            "mid Lap 4 rock garden",
+            "mid Lap 6 rock garden"
+          ],
+          "response": "Athlete slowed down.",
+          "direction": "Bike felt unstable and pulled left.",
+          "athlete_alternative_hypothesis": "When tired, the athlete has a tendency to veer left."
+        },
+        "stop_rule_outcome": null,
+        "stop_rule_normalization_status": "awaiting_explicit_athlete_value"
+      }
+    },
+    {
+      "timestamp_local": "2026-07-28T14:16:00+08:00",
+      "source": "athlete_post_session_followup",
+      "activity_id": "23758129689",
+      "session_contract_review": {
+        "opening_gate_result": "passed",
+        "opening_gate_notes": "Completed figure-eight work with good bike-body separation and deliberate rear-tyre loading through body and leg-weight transfer.",
+        "climb_rpe_by_cycle": {
+          "lap_1": 3,
+          "lap_3": 7,
+          "lap_5": 5
+        },
+        "trail_condition": "dry",
+        "technical_quality_notes": "Braking remained accurate and normal small-hit response was unchanged. At maximum speed the bike felt unable to absorb larger hits with the same composure. The rear felt like it wallowed, the front felt insufficiently supported on impacts, and the athlete may have shifted rearward in response. The bike became unstable and pulled left in rock gardens, but there was no reported line near miss.",
+        "vision_and_decision_speed_first_vs_final": "Good and unchanged.",
+        "braking_release_consistency": "Accurate.",
+        "front_tracking": "Normal on small hits; unstable with a leftward pull on larger rock-garden hits at maximum or late-session speed.",
+        "unforced_correction_or_near_miss": "No line near miss; athlete deliberately reduced speed through the affected rock gardens.",
+        "braking_fatigue": "minimal",
+        "upper_body_fatigue": "minimal",
+        "late_session_skill_fade": "some_controlled_fade",
+        "rear_softness_character": "wallow",
+        "front_support_hypothesis": "The athlete suspects one additional click of high-speed compression may be needed for large-impact support at the new speed; the athlete may have moved rearward because the front felt unsupported.",
+        "tyre_pressure_measurement": {
+          "timing": "hot_immediately_post_ride",
+          "gauge": "same_gauge_as_pre_ride",
+          "front_psi": 23,
+          "rear_psi": 28
+        },
+        "fueling_consumed": {
+          "carbs_g_total": 70.6,
+          "fluid_ml_total": 1000,
+          "sodium_mg_total": 438.8,
+          "contents": "1 L 100Plus Active and two honey sachets"
+        },
+        "fueling_carbs_g_per_hour": 42.3,
+        "fluid_ml_per_hour": 598.8,
+        "sodium_mg_per_hour": 262.8,
+        "stop_rule_outcome": "triggered_but_continued",
+        "stop_rule_normalization_status": "athlete_confirmed_valid_value"
+      }
+    },
+    {
+      "timestamp_local": "2026-07-28T14:59:00+08:00",
+      "source": "athlete_technical_clarification_and_week_direction",
+      "activity_id": "23758129689",
+      "reported_context": {
+        "next_bike_priority": "Postpone the Enduro bike until next week and focus on the Stumpjumper at the newly reached higher speed and intensity.",
+        "directional_control_loss": {
+          "lap_4": "Occurred in the Pure Quill rock garden over successive rocks averaging about 100 mm.",
+          "lap_6": "Occurred after successive drops while entering a rocky trail containing smaller rocks.",
+          "common_result": "On both occasions the athlete felt unable to steer the bike in the intended direction and veered left."
+        },
+        "setup_hypothesis": "One additional click of fork high-speed compression may increase support at higher speed by damping the larger impacts more effectively."
+      }
+    },
+    {
+      "timestamp_local": "2026-07-28T15:09:00+08:00",
+      "source": "athlete_stumpjumper_setup_history_and_schedule_preference",
+      "reported_context": {
+        "fork_rebound_history": "Fork rebound damping was increased because the front had pinged over big hits and pushed the athlete rearward. The athlete considers the slower rebound setting a successful correction and does not want to undo it for the next test.",
+        "fork_hsc_history": {
+          "attack_setting": "The athlete previously tested one additional click of fork HSC and loved it at maximum attack on 2K+ through successive hits.",
+          "fatigued_setting": "During a separate period of illness-related fatigue the athlete could not ride the firmer HSC setting effectively and reduced HSC by one click.",
+          "historical_event_dates": "not supplied"
+        },
+        "proposed_week_revision": {
+          "thursday": "If sufficiently recovered, test HSC +1 on 2K+ and Pure Quill at 85-90 percent.",
+          "friday": "Chill Stumpjumper ride after returning HSC -1 to the 2026-07-28 setting.",
+          "enduro_bike": "Deferred until next week."
+        }
+      }
+    }
+  ]
+}

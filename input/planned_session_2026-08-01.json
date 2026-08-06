@@ -1,0 +1,26 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-08-01",
+  "generated_at": "2026-07-26T07:58:44+08:00",
+  "status": "active_logistics_rest_override",
+  "decision_basis": {
+    "athlete_report": "Saturday is a full day of church activity.",
+    "density_role": "Remove the optional third MTB exposure; do not relocate it by creating a hidden hard day."
+  },
+  "session": {
+    "title": "Church commitment — no planned training",
+    "type": "scheduled_rest",
+    "modality": "rest",
+    "duration_min": 0,
+    "intensity": "recovery",
+    "optional": false,
+    "purpose": "Protect the full-day church commitment and absorb the week's two protected MTB exposures.",
+    "execution_rules": [
+      "No planned ride, run, gym, intervals, or make-up session.",
+      "Ordinary walking and church activity are life load, not a workout target."
+    ],
+    "expected_result": {
+      "recovery": "Arrive at Sunday Sabbath without accumulated training-density debt."
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "artifact_type": "athlete_calendar_constraint",
+  "reported_at": "2026-07-30T17:56:00+08:00",
+  "start_date": "2026-08-03",
+  "end_date": "2026-08-07",
+  "purpose": "Family trip",
+  "locations": [
+    "Kota Kinabalu, Sabah",
+    "Kundasang, Sabah"
+  ],
+  "planned_context": {
+    "activities": [
+      "Kota Kinabalu island hopping",
+      "Kundasang family sightseeing",
+      "Possible sunrise-viewing hike"
+    ],
+    "bike_access": "not_reported",
+    "sunrise_hike_date": "not_yet_known",
+    "sunrise_hike_route_duration_and_elevation": "not_yet_known"
+  },
+  "coaching_interpretation": {
+    "priority": "Family-first travel and consolidation rather than trying to preserve a nominal five-to-six-touch week.",
+    "default_training": "No separate structured workout is required during the trip.",
+    "hike_rule": "If the sunrise hike occurs, record it on Garmin. A substantive hike is a meaningful aerobic, eccentric-leg, sleep-disruption and heat/cold-exposure dose and replaces rather than supplements training that day.",
+    "island_rule": "Island hopping, sun, boat transit, swimming, walking and heat exposure are life load. They inform hydration and recovery but are not converted into arbitrary workout targets.",
+    "reentry_rule": "The first post-travel bike decision requires fresh sleep, readiness, CNS, travel-fatigue and illness evidence. Do not assume immediate Enduro eligibility solely because the calendar is open.",
+    "sabbath": "Sunday 2026-08-09 remains a hard no-planned-exercise day."
+  },
+  "next_evidence_needed": [
+    "Exact travel and return timing",
+    "Whether and when the Kundasang sunrise hike will occur",
+    "Hike duration, elevation gain, terrain and RPE if completed",
+    "Actual sleep, walking load, heat exposure, hydration and illness status",
+    "Fresh Garmin and subjective readiness after returning"
+  ]
+}

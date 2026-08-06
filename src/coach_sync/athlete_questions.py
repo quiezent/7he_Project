@@ -28,7 +28,10 @@ def _avg(values: list[float | None]) -> float | None:
 
 def _raw_rows(root: str | Path | None) -> list[dict]:
     rows = []
-    for path in activities_dir(root).glob("**/*.json"):
+    # Only top-level Garmin summaries belong in longitudinal activity analysis.
+    # Rich key-session detail under activities/details is preserved raw evidence,
+    # not an additional synthetic activity.
+    for path in activities_dir(root).glob("*.json"):
         payload = read_json(path, {})
         if not isinstance(payload, dict):
             continue
@@ -53,6 +56,7 @@ def _raw_rows(root: str | Path | None) -> list[dict]:
                 "calories": _round(as_number(payload.get("calories")), 0),
                 "training_load": _round(as_number(summary.get("training_load")) or 0),
                 "training_stress_score": _round(as_number(payload.get("trainingStressScore"))),
+                "garmin_detected_ftp_w": _round(as_number(payload.get("maxFtp")), 0),
                 "p20_w": _round(
                     as_number(payload.get("maxAvgPower_1200")) or as_number(payload.get("max20MinPower")),
                     0,
@@ -191,7 +195,8 @@ def _substitution_read(summary: dict) -> str:
 
 
 def _power_test_audit(rows: list[dict], target: date) -> dict:
-    cycling = [row for row in rows if row.get("category") in BIKE_CATEGORIES and row.get("p20_w") is not None]
+    all_cycling = [row for row in rows if row.get("category") in BIKE_CATEGORIES]
+    cycling = [row for row in all_cycling if row.get("p20_w") is not None]
     formal = [
         row
         for row in cycling
@@ -203,14 +208,58 @@ def _power_test_audit(rows: list[dict], target: date) -> dict:
         if any(token in (row.get("activity_name") or "").lower() for token in ("threshold", "ftp training", "tempo", "vo2 max"))
     ]
     recent_60 = [row for row in cycling if row["date_obj"] >= target - timedelta(days=59)]
+    detected_ftp_rows = [
+        row for row in all_cycling if row.get("garmin_detected_ftp_w") is not None
+    ]
+    latest_detected_ftp = detected_ftp_rows[-1] if detected_ftp_rows else None
+    recent_detected_ftp = [
+        row for row in detected_ftp_rows if row["date_obj"] >= target - timedelta(days=59)
+    ]
+    if latest_detected_ftp is not None:
+        age_days = (target - latest_detected_ftp["date_obj"]).days
+        current_ftp_call = (
+            f"Current Garmin operational FTP is {int(latest_detected_ftp['garmin_detected_ftp_w'])} W "
+            f"from the sparse activity maxFtp detection surface on {latest_detected_ftp['date']}. "
+            "Use it for current FTP-relative prescription with RPE/HR validation; it is Garmin-estimated, "
+            "not equivalent to a clean laboratory or steady-state field test."
+        )
+    else:
+        age_days = None
+        current_ftp_call = (
+            "No current Garmin FTP-detection surface found. Treat 222 W as historical P20, not current FTP, "
+            "and prescribe from current controlled efforts until a valid current FTP source exists."
+        )
     return {
         "last_formal_test_candidate": _power_row(formal[-1]) if formal else None,
         "best_formal_20_min_candidate": _power_row(max(formal, key=lambda row: row.get("p20_w") or 0)) if formal else None,
         "historical_best_p20": _power_row(max(cycling, key=lambda row: row.get("p20_w") or 0)) if cycling else None,
         "last_structured_power_candidate": _power_row(structured[-1]) if structured else None,
         "recent_60d_best_p20": _power_row(max(recent_60, key=lambda row: row.get("p20_w") or 0)) if recent_60 else None,
-        "current_ftp_call": "No clean current FTP test found. Treat 222 W as historical P20, not current FTP. Use current workouts to rebuild before testing.",
+        "latest_garmin_detected_ftp": _ftp_row(latest_detected_ftp, age_days),
+        "recent_60d_garmin_detected_ftp": [
+            _ftp_row(row, (target - row["date_obj"]).days) for row in recent_detected_ftp
+        ],
+        "current_ftp_call": current_ftp_call,
+        "garmin_ftp_interpretation": (
+            "Top-level maxFtp is a sparse Garmin detection/max-metric surface, unlike the "
+            "functionalThresholdPower setting carried into ordinary IF/TSS calculations. Preserve the "
+            "detection provenance separately from clean-test validity."
+        ),
         "power_source_note": "Raw Garmin summaries identify indoor/outdoor activity, Garmin device/manufacturer, and power values, but not the exact power source such as Elite Suito versus bike power meter.",
+    }
+
+
+def _ftp_row(row: dict | None, age_days: int | None = None) -> dict | None:
+    if not row:
+        return None
+    return {
+        "date": row.get("date"),
+        "activity_id": row.get("id"),
+        "name": row.get("activity_name"),
+        "category": row.get("category"),
+        "ftp_w": row.get("garmin_detected_ftp_w"),
+        "age_days": age_days,
+        "source_field": "maxFtp",
     }
 
 
@@ -583,6 +632,7 @@ def _text_report(artifact: dict) -> str:
     lines.append(f"- Historical best: {ftp['historical_best_p20']}")
     lines.append(f"- Last formal test candidate: {ftp['last_formal_test_candidate']}")
     lines.append(f"- Recent 60d best P20: {ftp['recent_60d_best_p20']}")
+    lines.append(f"- Latest Garmin detected FTP: {ftp['latest_garmin_detected_ftp']}")
     lines.append(f"- Current call: {ftp['current_ftp_call']}")
     lines.extend(["", "Last 10 MTB Labels:"])
     for ride in artifact["last_10_mtb_ride_labels"]:

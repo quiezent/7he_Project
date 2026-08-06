@@ -7,7 +7,7 @@ from statistics import mean
 from typing import Any
 
 from .evidence import as_number
-from .io import write_json
+from .io import read_json, write_json
 from .load_model import build_activity_summary_index
 from .paths import snapshots_dir
 from .time_utils import DEFAULT_TIMEZONE, iso_now, parse_date, today_local
@@ -104,11 +104,67 @@ def _body_battery_anchor(row: dict) -> float:
     return 50.0
 
 
-def _sleep_stress_proxy(row: dict) -> float:
-    sleep_stress = as_number(row.get("sleep_stress"))
-    if sleep_stress is not None:
-        return sleep_stress
-    return _number(row.get("avg_stress"), 25.0)
+def _sleep_stress_proxy(row: dict) -> float | None:
+    """Return observed sleep stress only; do not manufacture a proxy."""
+    return as_number(row.get("sleep_stress"))
+
+
+def _coverage_safe_avg_stress(row: dict) -> float | None:
+    """Keep high observed stress, but require explicit coverage for low stress."""
+    value = as_number(row.get("avg_stress"))
+    if value is None:
+        return None
+    if value > 30:
+        return value
+    if row.get("all_day_stress_low_positive_reward_eligible") is True:
+        return value
+    return None
+
+
+def _wearable_coverage_decision(
+    root: str | Path | None,
+    day: date,
+) -> bool | None:
+    """Load an exact-date wear decision, preferring the immutable dated artifact."""
+    directory = snapshots_dir(root)
+    dated_path = directory / f"wearable_coverage_{day.isoformat()}.json"
+    artifact: Any = None
+    try:
+        if dated_path.exists():
+            artifact = read_json(dated_path, {})
+        else:
+            alias = read_json(directory / "wearable_coverage.json", {})
+            if isinstance(alias, dict) and alias.get("date") == day.isoformat():
+                artifact = alias
+    except (OSError, ValueError):
+        return None
+    if not isinstance(artifact, dict) or artifact.get("date") != day.isoformat():
+        return None
+    decision = (artifact.get("decision_use") or {}).get(
+        "low_stress_positive_reward_eligible"
+    )
+    return decision if isinstance(decision, bool) else None
+
+
+def _apply_wearable_coverage_guard(
+    rows: list[dict],
+    root: str | Path | None,
+) -> list[dict]:
+    """Join wear evidence downward-only without mutating normalized wellness."""
+    guarded: list[dict] = []
+    for source_row in rows:
+        row = dict(source_row)
+        try:
+            row_date = parse_date(row.get("date"))
+        except (TypeError, ValueError):
+            row_date = None
+        if row_date is not None:
+            decision = _wearable_coverage_decision(root, row_date)
+            raw = row.get("all_day_stress_low_positive_reward_eligible")
+            if raw is True and decision is False:
+                row["all_day_stress_low_positive_reward_eligible"] = False
+        guarded.append(row)
+    return guarded
 
 
 def _wellness_dates(wellness_rows: list[dict]) -> dict[str, date]:
@@ -223,14 +279,19 @@ def _features_for_day(
     duration = activity_today["duration_min"]
     load_per_hour = activity_today["training_load"] / (duration / 60) if duration > 0 else 0.0
 
+    avg_stress = _coverage_safe_avg_stress(row)
+    sleep_stress = _sleep_stress_proxy(row)
+    if avg_stress is None or sleep_stress is None:
+        return None
+
     features = {
         "today_sleep_score_proxy": _sleep_score_proxy(row),
         "today_sleep_hours": _number(row.get("sleep_hours"), 6.5),
         "today_body_battery_anchor": _body_battery_anchor(row),
         "today_resting_hr": resting_hr,
         "today_resting_hr_delta_14d": resting_delta,
-        "today_avg_stress": _number(row.get("avg_stress"), 30.0),
-        "today_sleep_stress_proxy": _sleep_stress_proxy(row),
+        "today_avg_stress": avg_stress,
+        "today_sleep_stress_proxy": sleep_stress,
         "today_body_battery_drain": _number(row.get("body_battery_drain"), 40.0),
         "today_weighted_intensity_min": _number(row.get("weighted_intensity_min")),
         "today_training_load": activity_today["training_load"],
@@ -251,6 +312,7 @@ def _features_for_day(
 def _target_score(row: dict, wellness_rows: list[dict], target_day: date) -> dict:
     score = 70.0
     signals: list[str] = []
+    audit_markers: list[str] = []
     missing: list[str] = []
 
     sleep_score = as_number(row.get("sleep_score"))
@@ -337,13 +399,22 @@ def _target_score(row: dict, wellness_rows: list[dict], target_day: date) -> dic
 
     avg_stress = as_number(row.get("avg_stress"))
     if avg_stress is not None:
-        signals.append("avg_stress")
         if avg_stress > 45:
+            signals.append("avg_stress")
             score -= 12
         elif avg_stress > 35:
+            signals.append("avg_stress")
             score -= 7
-        elif avg_stress <= 20:
-            score += 3
+        elif avg_stress > 30:
+            signals.append("avg_stress")
+        elif row.get("all_day_stress_low_positive_reward_eligible") is True:
+            signals.append("avg_stress")
+            if avg_stress <= 20:
+                score += 3
+        else:
+            audit_markers.append(
+                "avg_stress_low_positive_withheld_for_partial_wear"
+            )
     else:
         missing.append("avg_stress")
 
@@ -363,6 +434,7 @@ def _target_score(row: dict, wellness_rows: list[dict], target_day: date) -> dic
         "next_day_ready": score >= 70,
         "signal_count": len(signals),
         "signals": signals,
+        "audit_markers": audit_markers,
         "missing_signals": missing,
         "usable": len(signals) >= 3,
     }
@@ -374,11 +446,11 @@ def build_training_response_dataset(
     max_rows: int = DEFAULT_MAX_ROWS,
 ) -> dict:
     target = parse_date(for_date) or today_local(DEFAULT_TIMEZONE)
-    wellness_rows = [
+    wellness_rows = _apply_wearable_coverage_guard([
         row
         for row in build_wellness_daily(root)
         if parse_date(row.get("date")) and parse_date(row.get("date")) <= target
-    ]
+    ], root)
     wellness_by_date = {row["date"]: row for row in wellness_rows if row.get("date")}
     activity_by_day = _activity_by_date(build_activity_summary_index(root, target))
     available_dates = _wellness_dates(wellness_rows)
@@ -445,6 +517,7 @@ def build_training_response_dataset(
                         if row.get(key) is not None
                     ),
                     "target_signals": target_payload["signals"],
+                    "target_audit_markers": target_payload["audit_markers"],
                 },
             }
         )
@@ -670,11 +743,11 @@ def _prediction_for_date(
     target: date,
     dataset_rows: list[dict],
 ) -> dict:
-    wellness_rows = [
+    wellness_rows = _apply_wearable_coverage_guard([
         row
         for row in build_wellness_daily(root)
         if parse_date(row.get("date")) and parse_date(row.get("date")) <= target
-    ]
+    ], root)
     wellness_by_date = {row["date"]: row for row in wellness_rows if row.get("date")}
     activity_by_day = _activity_by_date(build_activity_summary_index(root, target))
     candidate_dates = [

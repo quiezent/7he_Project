@@ -1,0 +1,109 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-07-16",
+  "generated_at": "2026-07-16T09:48:41+08:00",
+  "status": "active_same_day_coach_override",
+  "revision_history": [
+    {
+      "generated_at": "2026-07-13T15:00:06+08:00",
+      "title": "Kiara enduro durability, quality capped",
+      "dose": "90-120 minutes with two to three controlled climb-descent loops.",
+      "status": "superseded_after_tuesday_execution_drift"
+    },
+    {
+      "generated_at": "2026-07-16T09:32:40+08:00",
+      "title": "Kiara one-stage Pure Quill precision touch",
+      "dose": "One Pure Quill run and required egress, 60-70 minutes.",
+      "status": "superseded_after_athlete_clarified_saturday_is_low_load_social_recovery",
+      "coaching_correction": "Saturday was over-weighted as a freshness constraint; Tuesday's execution drift remains the primary density constraint."
+    }
+  ],
+  "decision_basis": {
+    "local_time": "2026-07-16T09:48:41+08:00",
+    "readiness": "73 green",
+    "cns_readiness": "86.4 ready with normal-if-physical-readiness-allows ceiling",
+    "wellness": "Wake Body Battery 92, current 77, HRV balanced at 48 ms, resting HR 48, stress 15, but sleep only 5.43 hours with score 70.",
+    "garmin_diagnosis": "Maintaining, ACWR 1.1 optimal, load focus balanced; permits controlled repeatability but does not justify a hard durability day.",
+    "tuesday_response": "Tuesday produced load 277.2, RPE 8, 44.6 minutes in Z4-Z5, and a strained next-day response score of 50; 35 percent modeled MTB neural carryover remains in the 48-hour window.",
+    "density": "Monday plus Tuesday load is 293.4 against the 280-370 weekly planning range; a second run must be earned and total load remains capped.",
+    "saturday_context": "The church 3.5 km walk-run plus simple telematch is athlete-classified low-load social/recovery activity, so it is a secondary constraint rather than the reason for today's cap.",
+    "weather_gate": "Morning riding window only; current forecasts indicate afternoon thunderstorm risk. Abort for audible thunder, lightning, rapidly darkening sky, or unsafe trail conditions."
+  },
+  "session": {
+    "title": "Kiara conditional two-run Pure Quill repeatability",
+    "type": "mtb_repeatability_controlled",
+    "modality": "mtb",
+    "venue": "Bukit Kiara",
+    "duration_min": 105,
+    "intensity": "skill",
+    "mtb_exposure": true,
+    "optional": false,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Build controlled Pure Quill repeatability by making the second run contingent on clean climbing, technical precision, rapid recovery, and stable trail conditions rather than motivation.",
+    "dose": {
+      "loop_one": "One conversational climb to Twin Peak at RPE 2-3, followed by the familiar Pure Quill line at 60-65 percent. Treat this as the admission audit, not a warm-up for more work.",
+      "second_loop_gate": "Start climb two only if every gate passes: climb one stayed conversational at RPE 3 or lower without a breath-catching stop; run one had wide vision, deliberate brake release, no reactive correction, no consequential root deflection, and no near miss; braking and upper-body fatigue are each 2/10 or lower; after a 3-5 minute reset breathing and legs normalize and mental clarity, vision width, and line-choice speed remain normal; trail grip remains predictable with no active rain, thunder, or rapidly worsening sky.",
+      "loop_two_if_admitted": "Climb two at RPE 4 or lower with no attack, threshold, or sprinting; repeat the same Pure Quill line at 65-70 percent, seeking matched posture and precision rather than more speed.",
+      "yellow_or_failed_gate": "Use the required approximately one-third DH-line egress at transport pace immediately after run one; no second climb or substitute stage.",
+      "red_or_cns_block": "Do not start technical MTB; return home and recover.",
+      "hard_cap": "Two Pure Quill runs maximum plus required egress; 85-105 minutes elapsed with 105 minutes as the hard cap.",
+      "load_cap": "Expected Garmin load 80-110 with 120 as the absolute post-session ceiling; session RPE no higher than 5."
+    },
+    "adaptation_hypothesis": "A clean first cycle followed by one earned same-route repetition should train enduro-specific repeatability and dynamically centred front-tyre authority without recreating Tuesday's high-aerobic execution drift.",
+    "execution_rules": [
+      "Ride Pure Quill only; TnT, Flintstone, and the full DH Line are excluded, with the partial DH Line used only for required egress.",
+      "Keep tyre pressures, fork and shock air, rebound, LSC, HSC, cockpit, and cleat setup unchanged; no HSC test.",
+      "Use the familiar/reference line on both runs; do not retry Tuesday's novel aggressive straight line over the damp off-camber roots.",
+      "Technical cue: create pressure on grippy soil before roots, remain dynamically centred with free elbows, release unnecessary braking and steering across the roots, then rebuild pressure after.",
+      "Use right-front-foot bias only as a momentary corrective cue, not as a permanent twisted stance.",
+      "The second run must reproduce control; faster time, greater aggression, or motivation cannot substitute for passing the gate.",
+      "Fuel from minute 15-20 using the stored 90-150-minute KL heat range; carry delay fuel without using it as permission for a third run.",
+      "Clear the technical trail before the forecast afternoon thunderstorm window; live thunder or lightning overrides every other gate."
+    ],
+    "expected_result": {
+      "technical": "If two runs are completed, run two matches run one for early line choice, dynamically centred posture, deliberate braking, stable front tracking, and decision speed, without emergency correction.",
+      "physiology": "Climb one remains RPE 3 or lower, climb two remains RPE 4 or lower, total load stays inside 80-110, and the session does not become another VO2 or threshold exposure.",
+      "next_day": "Friday legs, upper body, and decision speed remain functional without unusual fatigue."
+    },
+    "stop_rules": [
+      "Do not start with brain fog, narrowed vision, delayed processing, weak or heavy feel at easy effort, illness symptoms, active thunder/lightning, or unsafe trail conditions.",
+      "Do not start loop two if any admission gate fails; motivation and Garmin green cannot override a failed technical, physiological, recovery, or weather gate.",
+      "Downshift and take the safest direct exit if climbing becomes sustained RPE 5, conversational control is lost, HR/RPE drifts disproportionately, or a breath-catching stop is needed.",
+      "Stop technical intent for reactive braking, delayed line choice, rearward freezing, front-wheel deflection requiring emergency recovery, a near miss, confidence outrunning precision, narrowed vision, or braking/upper-body fatigue above 3/10.",
+      "The second Pure Quill descent ends the session; no third climb, other full stage, setup test, new line, jumps, or sprints."
+    ],
+    "post_session_review_fields": [
+      "actual_duration_min",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "stage",
+      "loop_count",
+      "climb_rpe_by_loop",
+      "climb_control",
+      "loop_two_gate_result",
+      "trail_condition",
+      "familiar_line_used",
+      "technical_quality_notes",
+      "front_wheel_deflection_or_emergency_correction",
+      "late_session_skill_fade",
+      "final_descent_quality_vs_first",
+      "braking_fatigue",
+      "upper_body_fatigue",
+      "fueling_carbs_g_per_hour",
+      "fluid_ml_per_hour",
+      "sodium_mg_per_hour",
+      "stop_rule_outcome",
+      "next_morning_response"
+    ]
+  }
+}

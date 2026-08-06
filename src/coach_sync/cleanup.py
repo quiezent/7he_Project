@@ -8,7 +8,6 @@ from .paths import repo_root, snapshots_dir
 
 SAFE_CACHE_NAMES = {"__pycache__", ".pytest_cache"}
 TRANSIENT_SNAPSHOT_PATTERNS = (
-    "activity_detail_*.json",
     "activity_loop_load_current.json",
 )
 

@@ -1,0 +1,69 @@
+{
+  "date": "2026-07-26",
+  "entries": [
+    {
+      "timestamp_local": "2026-07-26T07:45:00+08:00",
+      "source": "athlete_strategy_correction",
+      "current_ftp_report": {
+        "athlete_statement": "FTP is not stale; Garmin detected current FTP data in the last two outdoor sessions.",
+        "verified_current_garmin_ftp_w": 211,
+        "effective_date": "2026-07-25",
+        "verification": "Garmin cycling FTP endpoint, activity maxFtp, activity detail functionalThresholdPower, ANT+ BIKE_POWER metadata, athlete report, and preserved prior FIT FTP-update evidence."
+      },
+      "bike_frequency": {
+        "preferred_bike_touches_per_week": [
+          5,
+          6
+        ],
+        "interpretation": "Five to six unique bike days, not five to six costly workouts. Preserve two protected MTB exposures, allow a capped third, keep only two to three sessions meaningfully costly, and use two to three low-cost Z1/Z2 or primer touches."
+      },
+      "weekly_preferences": {
+        "monday": "Clayton usually prefers running with his wife.",
+        "saturday_2026-08-01": "Full-day church activity; no planned training.",
+        "sunday_recurring": "Sabbath no-exercise rule remains the recurring default."
+      },
+      "recent_travel_context": {
+        "family_trip": true,
+        "exercise": "No meaningful planned exercise apart from walking.",
+        "reported_daily_steps": 12000
+      }
+    },
+    {
+      "timestamp_local": "2026-07-26T07:50:00+08:00",
+      "source": "athlete_explicit_training_authorization",
+      "authorization": {
+        "date": "2026-07-26",
+        "type": "one_off_sabbath_exception",
+        "scope": "indoor_low_aerobic_only",
+        "recurring_rule_unchanged": true
+      }
+    },
+    {
+      "timestamp_local": "2026-07-26T19:55:00+08:00",
+      "source": "athlete_post_session_feedback",
+      "activity_id": "23737546621",
+      "session_contract_review": {
+        "stop_rule_outcome": "not_triggered",
+        "stop_rule_outcome_athlete_wording": "not triggered",
+        "stop_rule_normalization_status": "athlete_confirmed_valid_value",
+        "leg_heaviness_start_vs_finish": {
+          "start": "heavy",
+          "finish": "improved"
+        },
+        "heart_rate_drift": {
+          "athlete_observation": "Noticed late in the session and reduced power from 125 W to 120 W for the final 10 minutes.",
+          "athlete_hypothesis": "Zone 2 heart-rate drift usually occurs after 30 minutes when not fueling during the activity."
+        },
+        "fluid_ml_total": 1000,
+        "fluid_type": "water",
+        "steady_power_from_start_intentional": true,
+        "late_power_adjustment": {
+          "final_minutes": 10,
+          "from_w": 125,
+          "to_w": 120,
+          "reason": "Athlete noticed heart-rate drift."
+        }
+      }
+    }
+  ]
+}

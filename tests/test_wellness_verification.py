@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-from coach_sync.io import write_json
+from coach_sync.io import read_json, write_json
 from coach_sync.readiness import build_readiness
 from coach_sync.wellness_verification import build_wellness_verification
 
@@ -120,7 +120,8 @@ def test_readiness_uses_verified_morning_anchor_instead_of_blind_wake_value(tmp_
 
     readiness = build_readiness(tmp_path, "2026-05-29")
 
-    assert readiness["readiness_score"] == 73.0
+    assert readiness["readiness_score"] == 58.0
+    assert any(reason["type"] == "primary_short_sleep" for reason in readiness["reasons"])
     assert any(reason["type"] == "body_battery_verified_recharge" for reason in readiness["reasons"])
     assert not any(
         reason["type"] == "body_battery_wake" and reason["severity"] == "yellow"
@@ -129,3 +130,65 @@ def test_readiness_uses_verified_morning_anchor_instead_of_blind_wake_value(tmp_
     verification = readiness["evidence"]["wellness_verification"]
     assert verification["recommended_morning_anchor"] == 72.0
     assert verification["post_wake_recharge"] is True
+
+
+def test_afternoon_body_battery_rise_is_intraday_evidence_not_morning_anchor(tmp_path):
+    write_interrupted_sleep_wellness(tmp_path)
+    path = tmp_path / "snapshots" / "garmin_wellness_2026-05-29.json"
+    snapshot = read_json(path, {})
+    body_battery = next(
+        payload for payload in snapshot["payloads"] if payload["label"] == "get_body_battery"
+    )
+    body_battery["data"][0]["bodyBatteryValuesArray"] = [
+        [local_ms("2026-05-29T00:00:00"), 5],
+        [local_ms("2026-05-29T06:36:00"), 64],
+        # Wake was 06:20, so both rises are outside wake + 4 hours.
+        [local_ms("2026-05-29T10:30:00"), 68],
+        [local_ms("2026-05-29T16:00:00"), 90],
+    ]
+    write_json(path, snapshot)
+
+    report = build_wellness_verification(tmp_path, "2026-05-29")
+    interpretation = report["body_battery_interpretation"]
+
+    assert interpretation["morning_recharge_window"]["end_local"] == (
+        "2026-05-29T10:20+08:00"
+    )
+    assert interpretation["peak_after_reported_wake"]["value"] == 64.0
+    assert interpretation["post_wake_recharge"]["detected"] is False
+    assert interpretation["recommended_morning_anchor"] == 63.0
+    assert interpretation["recommended_anchor_source"] == "garmin_reported_wake"
+    intraday = interpretation["intraday_after_morning_window"]
+    assert intraday["peak"]["value"] == 90.0
+    assert intraday["recharge_detected"] is True
+    assert intraday["used_for_morning_anchor"] is False
+
+
+def test_point_at_next_sleep_start_is_excluded_from_morning_recharge(tmp_path):
+    write_interrupted_sleep_wellness(tmp_path)
+    path = tmp_path / "snapshots" / "garmin_wellness_2026-05-29.json"
+    snapshot = read_json(path, {})
+    sleep = next(
+        payload for payload in snapshot["payloads"] if payload["label"] == "get_sleep_data"
+    )
+    sleep["data"]["nextSleepStartTimestampGMT"] = local_ms("2026-05-29T09:00:00")
+    body_battery = next(
+        payload for payload in snapshot["payloads"] if payload["label"] == "get_body_battery"
+    )
+    body_battery["data"][0]["bodyBatteryValuesArray"] = [
+        [local_ms("2026-05-29T06:36:00"), 64],
+        [local_ms("2026-05-29T08:30:00"), 66],
+        [local_ms("2026-05-29T09:00:00"), 80],
+    ]
+    write_json(path, snapshot)
+
+    report = build_wellness_verification(tmp_path, "2026-05-29")
+    interpretation = report["body_battery_interpretation"]
+
+    window = interpretation["morning_recharge_window"]
+    assert window["next_sleep_start_local"] == "2026-05-29T09:00+08:00"
+    assert window["candidate_points"] == 2
+    assert interpretation["peak_after_reported_wake"]["value"] == 66.0
+    assert interpretation["post_wake_recharge"]["detected"] is False
+    assert interpretation["recommended_morning_anchor"] == 63.0
+    assert interpretation["intraday_after_morning_window"]["peak"]["value"] == 80.0

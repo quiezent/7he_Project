@@ -69,6 +69,37 @@ def test_training_architecture_builds_config_and_snapshot(tmp_path):
     assert artifact["macrocycle"][0]["phase"] == "base_rebuild"
     assert "density_governor" in artifact["weekly_architecture"]
     assert "weekly_plan" in artifact["artifact_contract"]
+    assert "rest_recharge_window" in artifact["artifact_contract"]
+    assert "wearable_coverage" in artifact["artifact_contract"]
+    sleep_governor = artifact["integrated_coaching_model"]["sleep_work_timing_governor"]
+    assert sleep_governor["rest_recharge_window"]["artifact"] == (
+        "snapshots/rest_recharge_window.json"
+    )
+    assert any(
+        "Body Battery alone" in rule
+        for rule in sleep_governor["rest_recharge_window"]["hard_guards"]
+    )
+    wear_state = sleep_governor["wear_state_provenance"]
+    assert wear_state["artifact"] == "snapshots/wearable_coverage.json"
+    assert wear_state["decision_role"] == (
+        "coverage_interpretation_only_never_readiness_clearance"
+    )
+    assert any("Never impute" in rule for rule in wear_state["hard_guards"])
+    assert any("predictive models" in rule for rule in wear_state["hard_guards"])
+    assert "unexplained_internal_unavailability_with_recurring_context" in wear_state[
+        "classifications"
+    ]
+    assert "insufficient_series_coverage" in wear_state["classifications"]
+    assert any("every material run independently" in rule for rule in wear_state["hard_guards"])
+    cns_field_gate = artifact["integrated_coaching_model"]["cns_readiness_model"][
+        "trail_specific_field_gate"
+    ]
+    assert "second diagnostic gate" in cns_field_gate["purpose"]
+    assert "compensatory focus" in cns_field_gate["sequence"][-1]
+    assert "not attentional engagement" in cns_field_gate["chill_rule"]
+    assert "does not prove normal CNS reserve" in cns_field_gate["interpretation_rule"]
+    assert "daily_work_sleep_timing" in artifact["logging_contract"]
+    assert "schedule_translation" in artifact["weekly_architecture"]
     assert "bukit_dinding_dh_setup" in artifact["session_library"]
     assert (tmp_path / "config" / "coaching_architecture.json").exists()
     assert (tmp_path / "snapshots" / "training_architecture.json").exists()

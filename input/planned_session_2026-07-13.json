@@ -1,0 +1,51 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-07-13",
+  "generated_at": "2026-07-13T15:00:06+08:00",
+  "status": "same_day_gated",
+  "state_basis": {
+    "readiness_level": "yellow",
+    "readiness_score": 53.0,
+    "cns_status": "ready",
+    "cns_score": 80.0,
+    "sleep_hours": 4.35,
+    "sleep_score": 58.0,
+    "body_battery_wake": 77.0,
+    "body_battery_current": 36.0,
+    "subjective_context": "Full morning meeting; no CNS symptom was reported."
+  },
+  "session": {
+    "title": "Suito recovery-continuity gate",
+    "type": "easy_bike_continuity",
+    "modality": "bike_indoor",
+    "duration_min": 30,
+    "intensity": "recovery_easy",
+    "optional": true,
+    "schema_version": 3,
+    "contract_fields": ["purpose", "dose", "adaptation_hypothesis", "execution_rules", "expected_result", "stop_rules", "post_session_review_fields"],
+    "purpose": "Preserve bike rhythm without borrowing recovery from Tuesday's protected MTB quality session.",
+    "dose": {
+      "opening_gate": "8 minutes at 75-90 W. Continue only if breathing, legs, and mental clarity feel distinctly better rather than merely tolerable.",
+      "main": "12-15 minutes at 90-105 W, then 5 minutes at 75-90 W.",
+      "cap": "30 minutes absolute maximum, RPE 1-2, natural 75-90 rpm cadence, HR preferably below 120 bpm.",
+      "rest_branch": "Full rest is a successful alternative if the opening gate is not clearly positive."
+    },
+    "adaptation_hypothesis": "A genuinely low-cost spin can preserve bike-specific continuity and improve circulation while leaving tomorrow's skill acquisition unchanged or better.",
+    "execution_rules": [
+      "Use the Elite Suito in easy resistance or ERG below 105 W.",
+      "No tempo, torque, standing work, sprints, cadence drills, or extra time.",
+      "The session succeeds by finishing fresher, not by accumulating load."
+    ],
+    "expected_result": {
+      "garmin_load_range": [5, 20],
+      "session_rpe": [1, 2],
+      "next_day": "Readiness and leg freshness are unchanged or improved."
+    },
+    "stop_rules": [
+      "Stop during the opening gate for weak or heavy feel at trivial power, rising RPE, disproportionate HR, headache, dizziness, mental fog, delayed processing, or no clear improvement.",
+      "Stop if HR exceeds about 120 bpm at steady easy power or climbs persistently without a power increase.",
+      "Do not extend beyond 30 minutes even if the ride feels good."
+    ],
+    "post_session_review_fields": ["actual_duration_min", "actual_training_load", "actual_rpe", "workout_feel", "stop_rule_outcome", "clarity_before_vs_after", "fluid_ml_per_hour", "next_morning_response"]
+  }
+}

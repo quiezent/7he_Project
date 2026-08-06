@@ -1,0 +1,69 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-07-31",
+  "generated_at": "2026-07-30T16:13:00+08:00",
+  "status": "superseded_after_athlete_control_clarification_and_travel_context",
+  "decision_basis": {
+    "thursday_actual": "The 2026-07-30 HSC +1 validation lasted 97.5 minutes with Garmin load 182.1 and athlete-logged RPE 8.",
+    "original_friday_gate": "The superseded chill ride required Thursday to remain at or below load 175 and RPE 7, with clean technical execution.",
+    "gate_result": "Failed on both load and RPE. Pure Quill also contained a route-timing error and shortened route, so a next-day HSC comparison would be confounded by fatigue and day order.",
+    "density": "The last seven days contain 442.7 minutes and Garmin load 656.7 across five activities, including two meaningful MTB sessions plus a 93.8-minute hike.",
+    "calendar": "Saturday is a full church day and Sunday remains Sabbath."
+  },
+  "supersedes": {
+    "path": "input/planned_session_2026-07-31_superseded_hsc_chill.json",
+    "title": "Stumpjumper HSC softer-setting chill compliance ride",
+    "reason": "Its explicit Thursday eligibility ceiling was exceeded."
+  },
+  "session": {
+    "title": "Friday absorption day after HSC +1 validation",
+    "type": "scheduled_rest",
+    "garmin_ceiling_class": "no_planned_training",
+    "modality": "rest",
+    "duration_min": 0,
+    "intensity": "rest",
+    "density_cost": "none",
+    "mtb_exposure": false,
+    "optional": false,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Absorb Thursday's meaningful physiological and neural cost, protect the positive HSC +1 learning, and avoid contaminating the next setup comparison with next-day fatigue.",
+    "dose": {
+      "planned_exercise": "None.",
+      "daily_life": "Normal low-stress daily movement only; no manufactured recovery workout or frequency-padding bike file.",
+      "mechanical": "If convenient, perform a non-riding Stumpjumper inspection and record cold tyre pressures, fork O-ring travel, rebound position, and any leak, play, or pressure loss.",
+      "recovery": "Eat normally with adequate carbohydrate and protein, replace fluid and sodium to thirst and sweat loss, and prioritize an earlier sleep opportunity."
+    },
+    "adaptation_hypothesis": "A no-load day allows the high-quality rider-position and front-support pattern to consolidate while lowering residual leg, upper-body, and CNS cost before the church commitment and Sabbath.",
+    "execution_rules": [
+      "Do not convert good morning readiness into a bike, run, gym, interval, or setup-test session.",
+      "Do not return HSC one click softer for a next-day comparison; retain HSC +1 as the provisional attack setting until a clean same-route validation can be scheduled.",
+      "Normal walking and ordinary daily activity are not restricted."
+    ],
+    "expected_result": {
+      "physiology": "Legs and systemic stress stabilize or improve without adding training load.",
+      "technical": "No additional setup variable is introduced; Thursday's evidence remains interpretable.",
+      "week": "Saturday church and Sunday Sabbath remain protected, with the next bike-specific build beginning from recovered evidence."
+    },
+    "stop_rules": [
+      "No readiness metric upgrades this rest prescription into training.",
+      "Any illness, pain, unusual fatigue, or poor overnight response increases recovery attention but does not create a compensatory workout."
+    ],
+    "post_session_review_fields": [
+      "next_morning_response",
+      "leg_heaviness_or_soreness",
+      "upper_body_soreness",
+      "subjective_clarity",
+      "mechanical_inspection_result",
+      "cold_tyre_pressures"
+    ]
+  }
+}

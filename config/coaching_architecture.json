@@ -5,16 +5,25 @@
     "coaching_architecture": "config/coaching_architecture.json is the durable training architecture for future agents.",
     "config_context": "config/athlete_context.json remains the canonical athlete strategy store.",
     "daily_decision_surface": "snapshots/coach_packet.json remains the same-day decision surface after sync/rebuild.",
+    "garmin_surface_manifest": "snapshots/garmin_surface_manifest.json inventories configured Garmin endpoints, attempt states, raw/normalized field coverage, eras/gaps, units, lineage, privacy checks, and actual downstream consumers.",
+    "garmin_training_readiness": "snapshots/garmin_training_readiness_current.json is a separate context-only Garmin feed with source date, age, endpoint health, and tri-state device-capability provenance; it cannot replace physical readiness or the CNS ceiling.",
+    "latest_session_evidence": "snapshots/current_state.json latest_session_evidence is the bounded raw-session interpretation block; every joined field must retain source, unit, and confidence limits.",
+    "live_sync_provenance": "snapshots/last_live_sync_status.json and snapshots/sync_run_ledger.json preserve live-contact truth across later rebuild-only runs.",
+    "oxygenation_respiration": "Dedicated Garmin Pulse Ox and respiration endpoints retain attempt state, coverage, valid samples, and negative sentinels. Daily or sleep values are contextual only and never imputed into an activity interval or used as medical diagnosis or training clearance.",
+    "raw_key_session_detail": "activities/details and activities/fit preserve bounded rich Garmin API detail and original FIT/ZIP evidence; nested detail is private raw evidence, is excluded from longitudinal activity counts, and is never derived-cache cleanup material.",
+    "rest_recharge_window": "snapshots/rest_recharge_window.json joins athlete-confirmed nap/rest timing to the retained Garmin all-day stress and Body Battery series, recharge latency, primary-sleep shortfall, illness, preceding 48-hour load, inertia, and clarity. It is upward-inert intraday context; poor cognition or illness may only lower the CNS ceiling.",
     "snapshot": "snapshots/training_architecture.json is the dated generated copy for audit.",
+    "wearable_coverage": "snapshots/wearable_coverage.json separates endpoint health, optical-HR measurement availability, physical wear state, and cause attribution; joins only strict target-date athlete confirmation; withholds optimistic low-stress use across material gaps; and never imputes physiology or promotes training.",
     "weekly_plan": "snapshots/weekly_plan.json is the weekly intent layer; a matching session feeds today_plan unless an explicit coach-authored plan overrides it, and all sources still pass through freshness, Garmin, CNS, and Sabbath constraints."
   },
   "athlete_model": {
     "current_category": "experienced",
     "current_phase": "base_rebuild",
     "do_not_assume": [
-      "Do not treat 222 W as current FTP.",
+      "Do not confuse historical 222 W P20 with the current Garmin operational FTP; use the latest dated Garmin FTP surface with its clean-test-validity caveat.",
       "Do not count elliptical load as bike-specific maintenance.",
       "Do not treat Garmin readiness as direct trail-skill readiness without subjective notes.",
+      "Do not infer exercise-time oxygenation or respiration from daily or sleep Garmin summaries.",
       "Do not treat low training load as permission for high-consequence MTB when CNS readiness is impaired or compromised.",
       "Do not use historical finger injury as a current training gate.",
       "Do not copy a full ideal week when life load, sleep, HRV, arm pump, or back-to-back trail plans require density control."
@@ -41,16 +50,16 @@
     "Modern HRV/wake Body Battery is strongest from March 2026 onward.",
     "Subjective trail notes are required for expert-skill decisions."
   ],
-  "date": "2026-07-10",
+  "date": "2026-07-31",
   "decision_hierarchy": [
     "Sabbath hard rest and current readiness.",
     "CNS readiness: cap technical consequence, novelty, speed, jumps, enduro simulation, and setup testing when nervous-system processing is not restored.",
-    "Garmin freshness: wellness, activity, and training status must be current for hard guidance.",
+    "Garmin freshness: wellness, activity, and training status must be current for hard guidance; Garmin Training Readiness is separately dated context only.",
     "Garmin diagnosis arbitration: use Training Status, ACWR, and Load Focus to decide whether the session ceiling should downshift, hold, or allow a controlled upgrade.",
     "Current phase and recent load: avoid spikes while rebuilding.",
     "Bike-specific continuity: protect the weekly minimum before adding non-bike work.",
     "MTB specificity: protect trail quality and durability exposures before gym or extra intensity.",
-    "Power prescription: use current controlled efforts, not stale historical P20.",
+    "Power prescription: use the current dated Garmin operational FTP plus RPE/HR validation; historical P20 is not FTP.",
     "Nutrition and heat: fuel technical quality before late-session skill degradation appears."
   ],
   "equipment_model": {
@@ -92,6 +101,37 @@
         "default_role": "Outdoor trail bike with current power meter.",
         "mileage_policy": "Clayton is comfortable putting training mileage on the Stumpjumper.",
         "preferred_training_use": "Power-meter climb-focused Bukit Kiara loop sessions: focus the workout on repeated climbs and cruise the same descent trail to control risk and isolate aerobic/torque fitness.",
+        "setup_history": [
+          {
+            "change": "Fork rebound damping increased by one click and shock rebound damping reduced by one click.",
+            "date": "2026-06-19",
+            "rider_rationale": "The fork rebound increase addressed front-wheel ping over big hits that had pushed Clayton rearward; treat the slower rebound as a previously successful correction rather than an untested cause."
+          },
+          {
+            "change": "Fork HSC one click firmer than the 2026-07-28 setting.",
+            "date_reported": "2026-07-28",
+            "historical_event_date": "unknown",
+            "interpretation": "Treat HSC as a provisional intent- and readiness-dependent setting: firmer attack support when fresh versus the softer compliance setting for genuinely chill riding. Validate rather than assuming either setting is universally superior.",
+            "negative_context": "During a separate illness-fatigue period Clayton could not ride the firmer setting effectively and returned HSC one click softer.",
+            "positive_context": "Clayton previously loved this setting at maximum attack on 2K+ through successive hits."
+          },
+          {
+            "change": "Tested the fork one click firmer in HSC than the 2026-07-28 setting while retaining the previously successful slower rebound direction.",
+            "date": "2026-07-30",
+            "interpretation": "Retain HSC +1 provisionally as the attack setting. The primary gain is improved rider centring and front-pressure authority; the firmer HSC is a credible secondary enabler by holding the front higher under larger impacts. Do not credit the result to setup alone and do not add another click.",
+            "objective_context": "At the 1,118.38 m distance-synchronised overlap, the 2K lap was 11.768 seconds (5.5 percent) faster than 2026-07-25 and 7.551 seconds (3.6 percent) faster than 2026-07-28, with no lap-comparator quality flags. Power was also higher, so this is not a setup-only gain. Pure Quill was shortened by a missed exit and did not reproduce the prior 38 km/h maximum-speed condition.",
+            "rider_outcome": "Clayton reported a stronger dynamically centred posture, greater willingness to load the front, no leftward veer, no perceived rear wallow, more controlled corner exits, and remaining chassis headroom.",
+            "validation_constraint": "Re-test HSC +1 on an exact familiar route at 85-90 percent with no other setup changes. Keep it only if the fork recovers between successive hits without ping, pack-down, harsh deflection, left pull, rearward hip retreat, rear wallow, kick, chassis pitch, loss of small-hit grip, or increased hand and braking fatigue."
+          },
+          {
+            "change": "Promoted fork HSC +1 relative to the 2026-07-28 setting from provisional attack setting to the working Stumpjumper baseline for normal-readiness, familiar Bukit Kiara riding.",
+            "date": "2026-07-31",
+            "interpretation": "The primary adaptation remains Clayton's dynamically centred posture, deliberate front loading and rapid recentering. HSC +1 is a secondary enabler that plausibly preserves chassis support so that rider skill can be expressed. HSC responds to damper shaft speed rather than trail speed, so a harsher feel at slower pace is acceptable only while tyre tracking, grip and hand/upper-body fatigue remain clean. Do not add another click or use HSC -1 as a workaround for declining focus.",
+            "rider_outcome": "In a chill-pace within-ride HSC +1 / HSC -1 / HSC +1 sequence, Clayton reported that +1 felt harsher but retained greater exit commitment; -1 produced more mid-turn braking and reduced commitment to the exit. Returning to +1 on a partial final 2K confirmed the preferred control direction before focus declined.",
+            "scope": "Working baseline only for normal-readiness, familiar Kiara terrain. Wet roots, long rough descents, unfamiliar terrain and impaired or compromised CNS readiness remain unvalidated; impaired or compromised CNS status blocks technical testing rather than selecting a softer setting to continue.",
+            "validation_constraint": "Hold tyre pressures, fork air/sag, rebound, shock and other setup variables constant. Falsify HSC +1 if matched runs show front ping, skip, harsh lateral deflection, reduced root or small-hit grip, travel starvation, pack-down, rear kick, chassis pitch, rearward hip retreat, left pull, reactive braking, missed exits or greater hand, braking or upper-body fatigue."
+          }
+        ],
         "trainer_swap_option": "Can replace the Marin SQ3 on the Elite Suito if needed."
       }
     },
@@ -190,7 +230,8 @@
         "p20_w": 208.0,
         "training_load": 157.5
       },
-      "current_ftp_call": "No clean current FTP test found. Treat 222 W as historical P20, not current FTP. Use current workouts to rebuild before testing.",
+      "current_ftp_call": "Current Garmin operational FTP is 211 W from the sparse activity maxFtp detection surface on 2026-07-25. Use it for current FTP-relative prescription with RPE/HR validation; it is Garmin-estimated, not equivalent to a clean laboratory or steady-state field test.",
+      "garmin_ftp_interpretation": "Top-level maxFtp is a sparse Garmin detection/max-metric surface, unlike the functionalThresholdPower setting carried into ordinary IF/TSS calculations. Preserve the detection provenance separately from clean-test validity.",
       "historical_best_p20": {
         "avg_hr": 141.0,
         "avg_power": 172.0,
@@ -239,6 +280,15 @@
         "p20_w": 125.0,
         "training_load": 37.1
       },
+      "latest_garmin_detected_ftp": {
+        "activity_id": "23723839107",
+        "age_days": 6,
+        "category": "mtb",
+        "date": "2026-07-25",
+        "ftp_w": 211.0,
+        "name": "Kuala Lumpur Mountain Biking",
+        "source_field": "maxFtp"
+      },
       "power_source_note": "Raw Garmin summaries identify indoor/outdoor activity, Garmin device/manufacturer, and power values, but not the exact power source such as Elite Suito versus bike power meter.",
       "recent_60d_best_p20": {
         "avg_hr": 146.0,
@@ -255,32 +305,70 @@
         "p10_w": 176.0,
         "p20_w": 157.0,
         "training_load": 215.4
-      }
+      },
+      "recent_60d_garmin_detected_ftp": [
+        {
+          "activity_id": "23301777471",
+          "age_days": 42,
+          "category": "mtb",
+          "date": "2026-06-19",
+          "ftp_w": 214.0,
+          "name": "Kuala Lumpur Mountain Biking",
+          "source_field": "maxFtp"
+        },
+        {
+          "activity_id": "23590320093",
+          "age_days": 17,
+          "category": "mtb",
+          "date": "2026-07-14",
+          "ftp_w": 209.0,
+          "name": "Kuala Lumpur Mountain Biking",
+          "source_field": "maxFtp"
+        },
+        {
+          "activity_id": "23614632613",
+          "age_days": 15,
+          "category": "mtb",
+          "date": "2026-07-16",
+          "ftp_w": 214.0,
+          "name": "Kuala Lumpur Mountain Biking",
+          "source_field": "maxFtp"
+        },
+        {
+          "activity_id": "23723839107",
+          "age_days": 6,
+          "category": "mtb",
+          "date": "2026-07-25",
+          "ftp_w": 211.0,
+          "name": "Kuala Lumpur Mountain Biking",
+          "source_field": "maxFtp"
+        }
+      ]
     },
     "full_range": {
-      "activity_end": "2026-07-10",
+      "activity_end": "2026-07-31",
       "activity_start": "2021-06-18",
-      "counted_sessions": 1371,
-      "duration_min": 104551.8,
+      "counted_sessions": 1381,
+      "duration_min": 105349.5,
       "elliptical_load": 7241.4,
       "elliptical_sessions": 71,
-      "indoor_bike_load": 38205.2,
-      "indoor_bike_sessions": 597,
-      "mtb_load": 97469.4,
-      "mtb_sessions": 480,
-      "training_load": 158432.0
+      "indoor_bike_load": 38270.4,
+      "indoor_bike_sessions": 599,
+      "mtb_load": 98623.0,
+      "mtb_sessions": 486,
+      "training_load": 159788.2
     },
     "hypothesis_support": {
-      "bike_specificity": "moderate",
+      "bike_specificity": "weak",
       "consistency_detraining": "strong",
       "nonbike_substitution": "moderate",
-      "recent_365_bike_specific_corr_to_p20": 0.232,
+      "recent_365_bike_specific_corr_to_p20": 0.165,
       "recent_365_elliptical_corr_to_p20": null,
-      "recent_365_indoor_bike_corr_to_p20": 0.52
+      "recent_365_indoor_bike_corr_to_p20": 0.526
     },
     "nutrition_targets": {
-      "latest_weight_date": "2026-07-09",
-      "latest_weight_kg": 76.5,
+      "latest_weight_date": "2026-07-25",
+      "latest_weight_kg": 78.84,
       "mtb_90_to_150_min": {
         "carbs_g_per_hour": [
           45,
@@ -312,19 +400,19 @@
       "note": "Use the upper end in Kuala Lumpur heat or when skill quality drops late; gut-train before race day."
     },
     "recent_28d": {
-      "bike_specific_load": 1585.7,
-      "bike_specific_ratio": 0.962,
-      "elliptical_ratio": 0.009,
-      "indoor_bike_sessions": 9,
+      "bike_specific_load": 1725.4,
+      "bike_specific_ratio": 0.906,
+      "elliptical_ratio": 0.0,
+      "indoor_bike_sessions": 5,
       "mtb_sessions": 8,
-      "training_load": 1648.3
+      "training_load": 1903.8
     },
     "recent_7d": {
-      "bike_specific_load": 506.6,
-      "bike_specific_ratio": 0.925,
-      "indoor_bike_sessions": 3,
-      "mtb_sessions": 2,
-      "training_load": 547.6
+      "bike_specific_load": 706.1,
+      "bike_specific_ratio": 0.942,
+      "indoor_bike_sessions": 1,
+      "mtb_sessions": 4,
+      "training_load": 749.8
     },
     "weekly_continuity_blocks": {
       "current_rebuild_apr_to_may_2026": {
@@ -404,15 +492,18 @@
         1200
       ]
     },
-    "heat_rule": "In Kuala Lumpur, treat fuel/hydration as skill protection: sloppy braking, weak pumping, timid jumps, or poor line choice late can be carb/sodium/heat failure."
+    "heat_rule": "In Kuala Lumpur, treat fuel/hydration as skill protection: sloppy braking, weak pumping, timid jumps, or poor line choice late can be carb/sodium/heat failure.",
+    "range_selection_rule": "Choose within the canonical band from same-day heat/humidity, actual sweat response, session consequence, and gut tolerance. Previous-session weather is not a forecast, and Garmin heat acclimation never reduces the target by itself."
   },
-  "generated_at": "2026-07-10T11:17:48+08:00",
+  "generated_at": "2026-07-31T16:34:11+08:00",
   "integrated_coaching_model": {
     "cns_readiness_model": {
       "decision_role": "Use CNS readiness as a technical-consequence ceiling after Sabbath and physical readiness, not as a replacement for Garmin readiness.",
       "inputs": [
         "Subjective CNS notes: brain fog, vision narrowing, delayed line choice, braking timing, unclipping delay, motivation, and confidence.",
         "Garmin wellness context: HRV status, overnight HRV versus baseline, resting HR, stress, sleep score, wake Body Battery, and current Body Battery.",
+        "Wear-state coverage: material internal Garmin gaps withhold positive low-stress credit; the gap itself is not fatigue or recovery evidence, while high observed stress may still lower the ceiling.",
+        "Completed rest-window cognition: poor post-rest clarity, prolonged sleep inertia, and structured illness may lower the CNS ceiling; positive stress or Body Battery response cannot raise it.",
         "Post-activity self-evaluation: weak or very weak feel, especially when RPE is low.",
         "Recent MTB neural cost: long technical duration, meaningful trail load, high-HR trail minutes, and back-to-back technical exposure, carried into the following 48 hours with declining weight."
       ],
@@ -427,6 +518,17 @@
         "impaired": "Recovery only for training purposes; no MTB quality, intervals, gym loading, or high-consequence technical work.",
         "ready": "No independent CNS cap; physical readiness, route consequence, and session contract still govern.",
         "watch": "Skill practice can proceed only if narrow, familiar, and low-to-moderate consequence."
+      },
+      "trail_specific_field_gate": {
+        "chill_rule": "Chill reduces speed, physiological load and consequence, not attentional engagement. If Clayton cannot maintain deliberate visual processing at chill pace, stop technical work rather than using a setup change or extra confirmation lap to continue.",
+        "fail_action": "A surprise deflection, delayed or missed line, reactive mid-turn braking, narrowed visual horizon, declining focus, or unusually high compensatory attention removes further setup attribution and optional descents; use the safest familiar egress.",
+        "interpretation_rule": "A later clean run achieved through materially greater conscious focus may show that the bike setup is usable, but it does not prove normal CNS reserve or erase an earlier rider-error event.",
+        "purpose": "A clean car-park or low-speed opening gate cannot by itself prove trail-speed visual processing, decision timing or steering precision. Treat the first familiar low-consequence climb and technical segment as a second diagnostic gate before granting repeats.",
+        "sequence": [
+          "Run the written low-speed opening gate for gross coordination, steering symmetry, bike-body separation and obvious physical or CNS impairment.",
+          "Compare the first deliberately easy climb with its written RPE ceiling. Disproportionate RPE or unexpectedly effortful execution removes optional technical volume even when the opening gate was clean.",
+          "On the first familiar low-consequence trail segment, check visual horizon, line-choice latency, braking timing, intentional front tracking and whether normal execution feels automatic or requires unusually deliberate compensatory focus."
+        ]
       }
     },
     "coaching_standard": "More is not better; more specific, better absorbed, and more repeatable is better.",
@@ -460,6 +562,23 @@
       ],
       "purpose": "Use Garmin's sport-specific diagnosis as a structured co-diagnostic signal while keeping the coach responsible for MTB-specific execution, route consequence, and adaptation logic."
     },
+    "garmin_surface_governance": {
+      "decision_boundary": "A non-empty Garmin response is not automatically usable evidence. Validate the required nested surface, keep latest-attempt state separate from last-known-good data, and reduce confidence rather than inferring absence.",
+      "device_metadata_rule": "Devices & Apps is usable only when the activity response contains valid device metadata. Missing metadataDTO is unknown, not evidence of wrist HR.",
+      "device_readiness_capability_rule": "Training Readiness capability is false only after a successful non-empty device response explicitly reports false for the registered devices; failed, empty, or capability-absent responses remain unknown.",
+      "endpoint_states": [
+        "success",
+        "success_empty",
+        "failed",
+        "unsupported",
+        "not_attempted"
+      ],
+      "latest_session_rule": "Use the compact latest-session block to interpret what load represented, but respect HR-source confidence, weather-unit gates, Garmin modeled-water limits, loop-estimation limits, and stale-power policy.",
+      "moving_duration_rule": "For steep hiking, preserve Garmin movingDuration as raw and withhold stopped-time subtraction when timer and elapsed duration agree but reported moving time is physiologically or mechanically implausible.",
+      "oxygenation_rule": "Keep daily, sleep, and activity-time Pulse Ox and respiration separate. Negative activity-period sentinels mean unavailable, not normal; absent activity samples cannot be inferred from sleep values, and wrist Pulse Ox cannot promote readiness or establish medical safety.",
+      "readiness_rule": "Reject wrong-date Training Readiness rows, expose source date and age, and keep the feed context-only behind Sabbath, physical readiness, CNS ceiling, and freshness constraints.",
+      "surface_manifest": "Use snapshots/garmin_surface_manifest.json to distinguish configured, collected, normalized, consumed, empty, failed, unsupported, and never-attempted Garmin surfaces."
+    },
     "operating_loop": [
       "Diagnose the current limiter from Garmin history plus recent subjective trail evidence.",
       "Choose the highest-specificity session that fits the week and recovery state.",
@@ -469,6 +588,112 @@
       "Update the next prescription and the athlete model only when the evidence changes the coaching call."
     ],
     "purpose": "Combine directive enduro-specific coaching with Garmin-backed N-of-1 verification.",
+    "sleep_work_timing_governor": {
+      "acute_short_sleep_field_gate": {
+        "admission": "Use only for an isolated 5-to-under-6-hour night with no brain fog, illness, coordination complaint, recent neural-density warning, or adverse HRV/RHR pattern.",
+        "fail_action": "Downshift to low-consequence recovery or end the session for narrowed vision, delayed line choice, reactive braking, unexpected foot or steering correction, repeated line miss, weak feel, or disproportionate RPE.",
+        "opening_dose": "Begin with 10-15 minutes of easy movement plus one familiar low-consequence skill segment; this is an execution test, not automatic clearance.",
+        "pass_action": "Permit one bounded familiar moderate-consequence submaximal dose inside the written contract; do not promote to maximum speed, novelty, jumps, race simulation, or setup testing.",
+        "pass_markers": [
+          "Normal visual scanning and decision speed.",
+          "Consistent braking markers and deliberate release.",
+          "Early familiar line choice with normal bike-body separation.",
+          "No unforced correction, RPE mismatch, or coordination error."
+        ]
+      },
+      "current_context": "Clayton's AI workflow for NYSE and Nasdaq trading often extends late into the Kuala Lumpur evening. Train after the main sleep period and before the next market-work window; exact recurring work hours still require prospective logging.",
+      "decision_role": "Keep primary sleep opportunity, completed nap evidence, late cognitive-work exposure, and autonomic recovery separate. Sleep duration constrains the call independently even when Garmin sleep score, HRV, or Body Battery look good.",
+      "evidence_order": [
+        "Primary sleep start, end, duration, and rolling short-sleep density.",
+        "Actual prior work-end time, cognitive-work strain, late caffeine, and whether work crossed midnight.",
+        "Completed nap or sleep-extension timing, duration, sleep inertia, and post-nap mental clarity.",
+        "Fresh physical readiness, CNS processing, Garmin autonomic context, and recent training density."
+      ],
+      "non_compensation_rules": [
+        "A good Garmin sleep score does not cancel a short primary sleep duration.",
+        "A Body Battery recharge later in the day is intraday recovery evidence; it must not be rewritten as the wake or morning anchor.",
+        "A planned nap is not evidence until completed and reported; a completed nap does not erase chronic short-sleep density.",
+        "Low average stress early in the day is partial pre-work evidence, not proof that the demanding workday was controlled.",
+        "A late endpoint cutoff does not make daily stress representative when the internal series contains a material wearable gap."
+      ],
+      "placement_rules": [
+        "Preserve a late-afternoon pre-market window for recoverable Suito work when it fits Clayton's actual schedule.",
+        "Place key MTB late morning or early afternoon after the best sleep opportunity and after sleep inertia has cleared.",
+        "Do not add hard post-20:00 training without prospective evidence that it preserves sleep and next-day response.",
+        "If work timing prevents two protected MTB opportunities, use the minimum viable week: one controlled Suito session and one MTB session."
+      ],
+      "provisional_gates": {
+        "primary_sleep_5_to_under_6h": "Treat an isolated night as acute short-sleep amber, not automatic CNS compromise. When current clarity and coordination are normal, illness is absent, autonomic context is stable, rolling sleep and recent neural density are acceptable, and a consequence-sensitive field gate is clean, permit controlled indoor work or familiar capped MTB. Do not permit maximum speed, jumps, novel/high-consequence lines, race simulation, setup testing, or stacked variables.",
+        "primary_sleep_at_least_6_5h": "Normal session eligibility only when current physical readiness, CNS processing, density, route consequence, and the session contract also agree.",
+        "primary_sleep_under_5h": "Recovery only when accompanied by brain fog, delayed processing, poor coordination, or other red evidence; otherwise no speed, jumps, setup testing, maximal standing efforts, or high-consequence descending.",
+        "rolling_7d_under_6h": "Cap the week at two meaningful-cost sessions; a third bike touch must be easy and optional MTB or lower-body gym density is removed first.",
+        "two_consecutive_nights_under_6h": "Postpone or convert the next high-consequence session unless the head coach documents why fresh subjective/CNS evidence safely changes the call."
+      },
+      "rest_recharge_window": {
+        "artifact": "snapshots/rest_recharge_window.json",
+        "classification_labels": [
+          "restorative",
+          "quiet_but_non_restorative",
+          "discordant",
+          "insufficient_evidence"
+        ],
+        "hard_guards": [
+          "A positive Garmin nap label may support occurrence; zero, empty, or missing Garmin nap data never disproves an athlete-confirmed nap.",
+          "Body Battery alone cannot classify a window as restorative and cannot promote high-consequence training.",
+          "Even a restorative result cannot raise physical readiness, the CNS ceiling, the technical ceiling, or the written session, and cannot erase primary-sleep, illness, freshness, density, Sabbath, or consequence constraints.",
+          "Poor post-rest clarity, prolonged inertia, and active or suspected illness may lower the CNS ceiling but positive rest evidence has no upward path.",
+          "Wrong-date outer or nested all-day data cannot satisfy a current rest window; latest failed/empty refresh state remains visible while the last nonempty target-date raw response is preserved."
+        ],
+        "joined_evidence": [
+          "Athlete-confirmed local start/end and estimated sleep or rest duration.",
+          "Descriptor-aware pre/during/post all-day stress with negative Garmin sentinels excluded from numeric summaries.",
+          "Paired near-boundary Body Battery response and recharge-onset latency without replacing the canonical wake/current readiness anchors.",
+          "Primary-sleep shortfall and a seven-day observed sleep-opportunity shortfall proxy, explicitly not clinical sleep debt.",
+          "Structured illness status, exact or elapsed-duration-derived preceding 48-hour training load, sleep inertia, and post-window clarity."
+        ]
+      },
+      "validation": "Run a 2-3 week prospective segmented-sleep/work-timing audit before treating naps or a fixed clock-time schedule as Clayton-specific architecture.",
+      "wear_state_provenance": {
+        "artifact": "snapshots/wearable_coverage.json",
+        "classifications": [
+          "confirmed_optical_hr_measurement_unavailability",
+          "partially_confirmed_optical_hr_with_unexplained_internal_unavailability",
+          "confirmed_intentional_off_wrist",
+          "partially_confirmed_with_unexplained_internal_unavailability",
+          "confirmed_interval_plus_unexplained_internal_unavailability",
+          "unexplained_internal_unavailability_with_recurring_context",
+          "unexplained_internal_unavailability",
+          "insufficient_series_coverage",
+          "discordant",
+          "reported_routine_context_only",
+          "no_material_internal_unavailability",
+          "endpoint_unavailable"
+        ],
+        "decision_role": "coverage_interpretation_only_never_readiness_clearance",
+        "hard_guards": [
+          "Missing or negative-sentinel samples never prove off-wrist status without athlete confirmation.",
+          "A direct wrist-HR gap confirms optical-HR measurement unavailability only; it cannot prove physical watch removal or assign dress-watch use, loose fit, showering, charging, or another cause.",
+          "A stress-only unavailable run with continuing wrist HR is not an optical-contact gap; retain it as stress-specific unavailability with unknown mechanism.",
+          "Keep measurement availability, physical wear state, and cause attribution as separate axes for every material run.",
+          "A recurring Sunday dress-watch habit cannot instantiate a dated window or exact timing.",
+          "Attribute every material run independently; an exact dated report explains only its overlap, and unmatched run time remains unexplained.",
+          "Wear-state context cannot convert a failed, empty, wrong-date, or retained endpoint attempt into success.",
+          "Never impute stress, Body Battery, sleep, HRV, steps, source cutoffs, or readiness across a wearable gap.",
+          "Material internal unavailability withholds positive low-stress credit in CNS and predictive models; high observed stress may still downshift.",
+          "Positive low-stress use requires dense target-date valid samples from near midnight through a declared cutoff at or after 18:00, with credible Garmin cadence and no uncovered tail.",
+          "Fresh target-date wear coverage supersedes any cached same-day model prediction that depended on low stress; mask it until rebuilt rather than letting a date-only cache preserve optimism.",
+          "Wear-state evidence cannot raise physical readiness, CNS readiness, technical consequence, or the written session."
+        ],
+        "inputs": [
+          "Descriptor-aware all-day stress timestamps, valid values, negative sentinels, and missing timestamp slots.",
+          "Body Battery measured/missing status and reset boundaries, without bridging a delta across missing wear.",
+          "Direct target-date Fenix wrist-HR samples and timestamp gaps from get_heart_rates, interpreted only as optical-HR measurement availability at sample-transition resolution.",
+          "Strict target-date athlete-confirmed off-wrist start/end windows using bounded reason categories.",
+          "Recurring wearable habits as context only; exact dated occurrence and timing are never instantiated from a usual pattern.",
+          "Endpoint success, latest-attempt state, last success, and retained-response provenance kept separate from series coverage."
+        ]
+      }
+    },
     "style_blend": {
       "directive_macro_coach": [
         "State the limiter stack plainly.",
@@ -559,6 +784,19 @@
       "mistake to fix",
       "final descent quality compared with first descent"
     ],
+    "daily_work_sleep_timing": [
+      "prior_work_start_local and prior_work_end_local",
+      "whether work crossed midnight",
+      "planned_next_work_start_local and expected cognitive demand",
+      "late_caffeine_time_and_dose",
+      "primary_sleep_start_local",
+      "primary_sleep_end_local",
+      "nap status: planned/completed/skipped",
+      "nap_start_local and nap_end_local",
+      "sleep_inertia_minutes",
+      "mental_clarity_before_and_after_nap 1-10",
+      "structured illness status"
+    ],
     "why": "Garmin sees engine and load; it does not see expert-skill execution."
   },
   "macrocycle": [
@@ -567,7 +805,7 @@
         4,
         6
       ],
-      "exit_gate": "Three consecutive weeks with 2-3 bike touches, at least 1-2 MTB exposures, no poor next-morning response, and no trail-skill collapse late in rides.",
+      "exit_gate": "Three consecutive weeks near 5-6 bike touches when logistics allow, with 2-3 low-cost touches, at least 2 MTB exposures, no density breach, no poor next-morning response, and no trail-skill collapse late in rides.",
       "key_sessions": [
         "Indoor tempo/torque: 3x8 progressing to 3x12 before raising power.",
         "MTB quality: low-to-moderate volume, high focus on braking, line choice, and corner exits.",
@@ -575,6 +813,12 @@
       ],
       "minimums": {
         "bike_touches_per_week": 2,
+        "low_cost_bike_touches_per_week": [
+          2,
+          3
+        ],
+        "maximum_normal_build_bike_touches_per_week": 6,
+        "meaningful_cost_sessions_per_week_max": 3,
         "mtb_exposures_per_week": [
           1,
           2
@@ -583,7 +827,7 @@
           250,
           400
         ],
-        "preferred_bike_touches_per_week": 3
+        "preferred_bike_touches_per_week": 5
       },
       "phase": "base_rebuild",
       "purpose": "Restore repeatable bike-specific weekly rhythm without reintroducing a load spike.",
@@ -618,12 +862,13 @@
       ],
       "exit_gate": "Power and trail handling improve together without needing non-bike load to prop up total training volume.",
       "key_sessions": [
-        "Fresh P20/FTP assessment when readiness and bike continuity are stable.",
+        "Optional clean P20/FTP validation when readiness and bike continuity are stable; do not erase the current Garmin operational FTP while waiting.",
         "Repeat 2-5 min punch work for stage surges and climb attacks.",
         "Race-format simulations with controlled Saturday/Sunday proxy around Sabbath constraints."
       ],
       "minimums": {
-        "fresh_power_test_required_before_ftp_based_prescription": true,
+        "clean_test_recommended_before_maximal_threshold_validation": true,
+        "current_garmin_ftp_allowed_for_ftp_relative_prescription": true,
         "mtb_exposures_per_week": 2,
         "structured_intensity_sessions_per_week": [
           1,
@@ -669,6 +914,7 @@
       "After Garmin sync, compare actual load, self-evaluation, and next-day response with the stored expectation.",
       "If actual load differs materially, classify execution/adherence before judging adaptation.",
       "Only complete contract-quality sessions are eligible for digital-twin calibration: matched load, modality/session-count/duration alignment, explicit stop-rule outcome, complete relevant review fields, clean technical outcome when applicable, and next-day Garmin response. Keep physiology-only matches visible but do not use them as full calibration rows.",
+      "Audit raw timing, elevation, moving/rest, device temperature, Garmin estimated water loss, power, Training Effect/TSS, Gear, HR-source confidence, matching loop context, fueling rates, and session/next-day CNS when available; these improve interpretation but cannot loosen calibration eligibility.",
       "If actual load matches but response misses, treat the miss as a model-calibration signal and inspect heat, fueling, sleep, stress, trail violence, and sensor quality.",
       "If load matches but trail skill faded, treat the workout as under-fuelled, under-recovered, too technically dense, or poorly targeted until notes prove otherwise.",
       "If CNS readiness misses the plan, update the technical-consequence gate before changing the physical load model."
@@ -687,10 +933,15 @@
   "progression_rules": [
     "Progress only one lever at a time: ride count, MTB technical consequence, duration, intensity, or gym load.",
     "A week with fewer than 2 bike touches is a maintenance failure for MTB goals unless there is a clear logistical reason.",
+    "The active build target is 5-6 unique bike days, but missed sleep, work, church/family logistics, or a hard run may reduce the count; never game frequency with doubles or hidden intensity.",
     "A week with high total load but low bike load is not a build week for enduro.",
     "After two MTB days close together, use next-morning feel and upper-body durability response before adding intensity.",
     "Use deloads by cutting non-essential load first, then intensity, while preserving at least easy bike touch when possible.",
     "If sleep is under 5.5 hours and HRV is unbalanced, remove intensity and keep only skill, Z2, recovery, or rest.",
+    "Evaluate primary sleep duration independently from Garmin sleep score, HRV, and Body Battery; autonomic green does not make sleep opportunity complete.",
+    "If primary sleep is under 5 hours, remove high-consequence technical work and maximal intensity; use recovery when mental clarity, coordination, or CNS evidence is also impaired.",
+    "If an isolated primary sleep is 5 to under 6 hours, use acute short-sleep amber: controlled familiar training requires normal current cognition and coordination, stable supporting context, low recent neural density, and a clean consequence-sensitive field gate; never auto-promote to maximum speed, jumps, novelty, race simulation, setup testing, or stacked variables.",
+    "If rolling 7-day primary sleep remains under 6 hours, allow at most two meaningful-cost sessions and make the third bike touch easy.",
     "If legs feel good but arms/grip are dead, skip jumps and high-speed DH; use braking/cornering control or recover.",
     "If CNS readiness is impaired or compromised, remove technical consequence even when legs, motivation, or Body Battery look acceptable.",
     "If CNS is watch-level, use one familiar skill target and stop when decision speed or vision narrows.",
@@ -754,14 +1005,14 @@
     },
     "indoor_tempo_torque": {
       "cadence_bias": "65-75 rpm unless knee/hip comfort says otherwise.",
-      "power_guidance": "Use current RPE/HR response; initial useful work is likely around controlled tempo, not historical 222 W P20 assumptions.",
+      "power_guidance": "Use the latest dated Garmin operational FTP for relative targets and validate against RPE/HR; do not substitute historical 222 W P20 or treat Garmin estimation as a clean-test guarantee.",
       "progression": [
         "3x8 min",
         "3x10 min",
         "3x12 min",
         "raise watts only after repeatability is easy"
       ],
-      "purpose": "Rebuild bike force and threshold durability without stale FTP chasing.",
+      "purpose": "Rebuild bike force and threshold durability using the current Garmin operational FTP, RPE, and HR without turning every bike touch into intensity.",
       "stop_rule": "Stop adding work when cadence/form degrades or HR drift makes the final rep survival."
     },
     "kiara_practice_race_proxy": {
@@ -827,16 +1078,17 @@
   "weekly_architecture": {
     "back_to_back_proxy": "Use Friday practice-style exposure plus Saturday attack-style effort to train race weekend demands while preserving Sunday Sabbath.",
     "default_week": {
-      "friday": "MTB durability/enduro-volume when available.",
-      "monday": "Indoor tempo/torque or easy bike touch.",
-      "saturday": "PCP/jump/skills or second trail exposure; downshift if driving/event load is high.",
+      "friday": "Indoor low-aerobic continuity or primer; shorten after a harder-than-written Thursday.",
+      "monday": "Preferred conversational run with Clayton's wife; optional short easy bike touch only if the run stays easy and recovery is clean.",
+      "saturday": "Optional third MTB skill-transfer/Enduro-bike exposure; skip for church/family obligations or density.",
       "sunday": "Sabbath hard rest.",
-      "thursday": "Recovery elliptical HR-capped near 120 bpm or short strength support.",
-      "tuesday": "Rest, mobility, or short support strength.",
-      "wednesday": "MTB quality/skill day when available."
+      "thursday": "Protected MTB durability or technical-quality exposure.",
+      "tuesday": "Protected MTB quality/engine exposure.",
+      "wednesday": "Indoor low-aerobic bike continuity."
     },
     "density_governor": [
-      "Start from three good bike touches before chasing four or five.",
+      "Build toward 5-6 bike touches through 2-3 low-cost Z1/Z2 or primer days; do not manufacture frequency with split files or unnecessary doubles.",
+      "Keep only 2-3 sessions meaningfully costly, and count a hard run toward that cap.",
       "If Friday and Saturday are both trail days, Thursday becomes primer or recovery, not repeatability intervals.",
       "If a Tuesday or Wednesday MTB ride creates arm pump or high load, remove lower-body strength and indoor intensity until the key trail days are protected.",
       "Use one hard engine session plus one or two trail-specific sessions as the default; do not stack threshold, repeatability, and two hard MTB days in the same rebuild week unless recovery is clearly green.",
@@ -845,7 +1097,8 @@
       "When in doubt, protect the session that most resembles the goal event demand."
     ],
     "high_return_week": [
-      "Three bike touches: indoor tempo/torque, MTB quality, MTB durability.",
+      "Five bike touches: two protected MTB exposures plus three low-cost/controlled bike touches; a sixth is optional only when recovery and calendar support it.",
+      "Only 2-3 sessions across bike and hard running may be meaningfully costly.",
       "One short strength support session.",
       "One recovery elliptical only if it improves next-day freshness."
     ],
@@ -854,13 +1107,24 @@
       "One short support strength or mobility dose only if it does not reduce bike quality.",
       "No attempt to replace missed bike with hard elliptical and call it equivalent."
     ],
+    "schedule_translation": {
+      "indoor_preference": "Use a late-afternoon pre-market slot for controlled Suito work when it leaves adequate transition time for work and does not delay the next primary sleep.",
+      "mtb_preference": "Use late morning or early afternoon after the best sleep opportunity, cleared sleep inertia, and a fresh CNS check.",
+      "rule": "The weekday template expresses session roles, not immutable clock placement. Resolve actual sessions around sleep opportunity, prior work-end time, planned market-work window, family/church obligations, readiness, and density."
+    },
     "six_week_rebuild_targets": {
       "bike_specific_sessions_per_week": {
-        "ideal": "4-5 only when recovery and calendar support it",
-        "minimum": 3
+        "maintenance_floor": 2,
+        "maximum_normal_build": 6,
+        "preferred": 5
       },
       "elliptical_or_run": "Recovery/support only; never counted as bike-specific maintenance.",
-      "hard_sessions_per_week": {
+      "low_cost_bike_touches_per_week": [
+        2,
+        3
+      ],
+      "meaningful_cost_sessions_per_week": {
+        "hard_run_counts": true,
         "maximum": 3,
         "minimum": 2
       },

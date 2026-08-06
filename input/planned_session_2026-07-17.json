@@ -1,0 +1,60 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-07-17",
+  "generated_at": "2026-07-16T13:49:26+08:00",
+  "status": "planned_recovery_after_mtb_density",
+  "revision_history": [
+    {
+      "generated_at": "2026-07-13T15:00:06+08:00",
+      "title": "Pre-event freshness",
+      "status": "superseded_after_thursday_execution_drift",
+      "coaching_correction": "Saturday's church event remains low-load social/recovery context. Friday rest is now driven primarily by the combined Tuesday and Thursday MTB load."
+    }
+  ],
+  "decision_basis": {
+    "thursday_session": "110.7 minutes, Garmin load 219.3, RPE 6, aerobic/anaerobic Training Effect 3.9/3.0, and 28.3 minutes in Z4-Z5.",
+    "mtb_density": "Tuesday plus Thursday produced 496.5 Garmin load across 226.4 minutes with 72.9 minutes in Z4-Z5.",
+    "weekly_density": "Monday, Tuesday, and Thursday total 512.7 Garmin load, above the planned 280-370 weekly range.",
+    "post_ride_state": "Readiness 60 yellow, current Body Battery 38, and Garmin ACWR 1.6 high after Thursday's ride.",
+    "saturday_context": "The church 3.5 km fun run/walk and simple telematch remain athlete-classified low-load social/recovery activity and are a secondary, not primary, reason for Friday rest."
+  },
+  "session": {
+    "title": "Post-MTB absorption day",
+    "type": "scheduled_recovery",
+    "modality": "rest",
+    "duration_min": 0,
+    "intensity": "rest",
+    "optional": false,
+    "schema_version": 3,
+    "contract_fields": ["purpose", "dose", "adaptation_hypothesis", "execution_rules", "expected_result", "stop_rules", "post_session_review_fields"],
+    "purpose": "Absorb the combined Tuesday and Thursday MTB stimulus and prevent a third meaningful load from turning productive riding into unrecovered density.",
+    "dose": {"completion": "Full rest from planned exercise; normal daily movement only, with no trainer, gym, intervals, trail riding, or compensatory session."},
+    "adaptation_hypothesis": "A full absorption day should preserve the technical gain while allowing autonomic, muscular, and MTB neural cost to fall before the weekend and Hong Kong travel week.",
+    "execution_rules": [
+      "Use normal daily movement only; an easy walk for ordinary life is not a workout.",
+      "Prioritize normal meals, carbohydrate restoration, protein distribution, hydration, and sleep.",
+      "Do not turn a green-looking Friday Garmin score into permission for training; Thursday's post-session density is the governing constraint."
+    ],
+    "expected_result": {
+      "next_day": "Improved freshness with no worsening leg, upper-body, or decision-speed fatigue.",
+      "adaptation": "Thursday's riding quality is consolidated rather than diluted by another dose."
+    },
+    "stop_rules": [
+      "Illness symptoms, unusual fatigue, poor coordination, or escalating calf, Achilles, knee, adductor, upper-body, or back symptoms require additional recovery and downshift Saturday participation as needed.",
+      "Do not use mobility, walking, or errands as a route into an unplanned workout."
+    ],
+    "post_session_review_fields": [
+      "sleep_quality",
+      "wake_body_battery",
+      "hrv_status",
+      "resting_hr",
+      "leg_soreness",
+      "upper_body_soreness",
+      "decision_speed_and_mental_clarity",
+      "calf_achilles_status",
+      "knee_adductor_status",
+      "subjective_freshness",
+      "next_morning_response"
+    ]
+  }
+}

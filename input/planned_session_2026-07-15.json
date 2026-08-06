@@ -1,0 +1,23 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-07-15",
+  "generated_at": "2026-07-13T15:00:06+08:00",
+  "status": "planned_recovery",
+  "session": {
+    "title": "Absorb Tuesday",
+    "type": "scheduled_recovery",
+    "modality": "rest",
+    "duration_min": 0,
+    "intensity": "rest",
+    "optional": false,
+    "schema_version": 3,
+    "contract_fields": ["purpose", "dose", "adaptation_hypothesis", "execution_rules", "expected_result", "stop_rules", "post_session_review_fields"],
+    "purpose": "Consolidate Tuesday's technical work and restore freshness for Thursday durability.",
+    "dose": {"completion": "No planned bike, intervals, gym, or loaded strength session."},
+    "adaptation_hypothesis": "A true absorption day preserves technical learning and improves the quality of the second protected MTB exposure.",
+    "execution_rules": ["Normal daily movement is fine; do not convert recovery into a substitute workout.", "If Tuesday was cancelled, do not automatically compress it into Wednesday."],
+    "expected_result": {"next_day": "Normal legs, stable readiness, and no residual technical-processing or upper-body fatigue."},
+    "stop_rules": ["If unusual soreness, illness, or fatigue develops, retain recovery and downshift Thursday rather than chasing the week."],
+    "post_session_review_fields": ["sleep_quality", "leg_soreness", "upper_body_soreness", "calf_achilles_status", "subjective_freshness", "next_morning_response"]
+  }
+}

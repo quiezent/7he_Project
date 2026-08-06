@@ -1,0 +1,204 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-07-11",
+  "generated_at": "2026-07-10T13:55:27+08:00",
+  "status": "provisional_requires_same_day_gate",
+  "state_basis": {
+    "date": "2026-07-10",
+    "physical_readiness_level": "red",
+    "physical_readiness_score": 27.0,
+    "cns_status": "impaired",
+    "cns_score": 38.6,
+    "garmin_training_status": "STRAINED_4",
+    "garmin_acwr_ratio": 1.2,
+    "garmin_acwr_status": "OPTIMAL",
+    "rule": "This state can constrain tomorrow but cannot clear tomorrow. Re-run live Garmin, current_state, CNS readiness, and coach_packet on Saturday morning."
+  },
+  "weather_context": {
+    "forecast_checked_at": "2026-07-10T13:50:00+08:00",
+    "source": "METMalaysia Kuala Lumpur town forecast plus current hourly forecast",
+    "forecast": "No rain in the official Saturday town forecast, with roughly 32-34 C afternoon heat; recheck radar/nowcast and actual Kiara trail condition before departure.",
+    "decision_rule": "Active thunder or lightning means no ride. Rain, wet roots, or reduced visibility lower the technical-consequence ceiling and can cancel the session even if physiological readiness is acceptable."
+  },
+  "nutrition": {
+    "body_weight_basis": "76.5 kg Garmin scale weight on 2026-07-09",
+    "pre_session": {
+      "timing": "2.5-3 hours before",
+      "carbs_g": [
+        75,
+        115
+      ],
+      "protein_g": [
+        25,
+        30
+      ],
+      "fluid_ml": [
+        400,
+        550
+      ],
+      "sodium_mg": [
+        500,
+        700
+      ],
+      "rule": "Keep fat and fibre modest. Do not use caffeine to mask brain fog, weak feel, or delayed processing."
+    },
+    "during_session_targets": {
+      "source": "coach_authored_hot_afternoon_skill_session",
+      "profile": "conditional_60_to_75_min_hot_mtb_skill",
+      "selection_reason": "Expected 32-34 C Kuala Lumpur afternoon heat with a capped skill session rather than race practice.",
+      "carbs_g_per_hour": [
+        40,
+        55
+      ],
+      "fluid_ml_per_hour": [
+        750,
+        900
+      ],
+      "sodium_mg_per_hour": [
+        750,
+        1000
+      ]
+    },
+    "green_branch_total_for_75_min": {
+      "carbs_g": [
+        50,
+        65
+      ],
+      "fluid_ml": [
+        950,
+        1100
+      ],
+      "sodium_mg": [
+        950,
+        1200
+      ]
+    },
+    "yellow_branch_total_for_45_to_60_min": {
+      "carbs_g": [
+        25,
+        45
+      ],
+      "fluid_ml": [
+        550,
+        850
+      ],
+      "sodium_mg": [
+        550,
+        900
+      ]
+    },
+    "post_session": {
+      "protein_g": [
+        25,
+        30
+      ],
+      "carbs_g": [
+        60,
+        75
+      ],
+      "rule": "Use a salty normal meal. If pre/post body mass is measured, replace each net 1 kg loss with 1.25-1.5 L over 2-4 hours. Sunday remains Sabbath, not continued race-style loading."
+    },
+    "guardrail": "Fueling supports execution quality; it does not authorize extra loops, hard pedaling, or riding through a failed readiness/CNS gate. Heat acclimation does not reduce these targets by itself."
+  },
+  "session": {
+    "title": "Kiara braking-release precision",
+    "type": "mtb_quality_skill",
+    "modality": "mtb",
+    "venue": "Bukit Kiara",
+    "bike": "Stumpjumper",
+    "duration_min": 75,
+    "intensity": "moderate",
+    "mtb_exposure": true,
+    "optional": true,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Convert secure clipless posture into repeatable braking-release timing and clean corner exit on one familiar, low-consequence 2K feature without adding another hard MTB day.",
+    "dose": {
+      "green_gate": "Readiness green (score at least 70), CNS ready (score at least 75), fresh Saturday evidence, normal subjective processing, and a clean warm-up: 60-75 minutes elapsed, one baseline/sighting descent plus two controlled work descents; three descents maximum.",
+      "yellow_or_cns_watch_gate": "Readiness yellow (45-69) with CNS ready/watch (at least 60), no neurological symptoms, and a clean warm-up: 45-60 minutes, one sighting descent plus one easy technique descent; two descents maximum and no speed intent.",
+      "red_or_cns_below_watch_gate": "Readiness red, CNS impaired/compromised, stale evidence, or any brain fog/delayed processing: no Kiara session.",
+      "warm_up": "12-15 minutes easy. Normal pace must feel at most RPE 3, legs and processing must improve, and HR must look normal for the effort.",
+      "climbs": "Seated Z1 to low-Z2, conversational, with no standing torque, surges, or on-trail hard pedaling.",
+      "load_caps": {
+        "green_garmin_load": [
+          80,
+          120
+        ],
+        "yellow_garmin_load": [
+          60,
+          80
+        ],
+        "session_rpe_max": 4,
+        "intentional_z4_z5_minutes": 0
+      },
+      "time_of_day": "Prefer approximately 16:30-17:45 rather than peak early-afternoon heat, subject to radar, trail condition, and daylight."
+    },
+    "adaptation_hypothesis": "Clipless foot security should let Clayton remain dynamically centred, preserve front-tyre authority, and create enough bike-body separation to complete meaningful braking before the rooted feature, taper the brake cleanly as the front tyre loads, and recover the chassis for an earlier exit roll. Repeating the same marker should improve rider timing without requiring higher entry speed or a setup change.",
+    "execution_rules": [
+      "Use the same familiar 2K line and one safe-runout rooted or rough feature on every descent.",
+      "Run 1 is the baseline at roughly 65-70 percent. Runs 2 and 3 are controlled work at roughly 75-80 percent only if the gate remains clean.",
+      "Choose one visible braking marker. Do the meaningful braking on predictable ground, then taper and release before loading the front wheel through the feature.",
+      "Keep eyes through the exit, pressure through the feet, torso quiet and dynamically centred, and let the bike move under the body.",
+      "No corrective front-brake grab on the root. Pedal only after traction and chassis recovery.",
+      "Keep cleat position, suspension clicks, tyre pressures, and cockpit unchanged. This is a rider-timing session, not a setup test.",
+      "Do not chase Strava time, entry speed, jump progression, standing torque, or a fourth descent."
+    ],
+    "expected_result": {
+      "technical": "Both work descents hit the chosen release marker without a reactive brake grab; the final descent preserves or improves the first descent's line choice, posture, visual width, braking timing, and decision speed.",
+      "mechanical": "Front traction remains repeatable; fork does not pack down or harshly bottom, rear does not kick, and chassis does not pitch. These validate that the fixed setup is not obstructing the rider adaptation; they are not the primary target.",
+      "speed_rule": "Exit roll may become earlier or cleaner, but entry speed does not increase deliberately.",
+      "garmin_load_range": [
+        80,
+        120
+      ],
+      "session_rpe": [
+        3,
+        4
+      ],
+      "next_day": "Sunday Sabbath with no unusual sympathetic overhang, headache, heat illness symptoms, or worsening recovery beyond the expected effect of a capped skill session."
+    },
+    "stop_rules": [
+      "Do not start if Saturday Garmin evidence is stale, physical readiness is red, CNS is impaired/compromised, or subjective processing is abnormal.",
+      "Stop or downshift after warm-up if easy pace exceeds RPE 3, legs feel weak at low effort, HR is disproportionate, or processing does not sharpen.",
+      "Stop immediately for brain fog, narrowed vision, delayed line choice, delayed braking, unclipping delay, confusion, coordination loss, a near miss, or an unexpected line.",
+      "Stop after two consecutive missed braking-release markers, late/reactive braking events, or corrective front-brake grabs through the feature.",
+      "Stop if arm/braking fatigue exceeds 4/10, rises by at least 2 points from the first descent, or causes tall posture, death grip, poor modulation, or reduced bike-body separation.",
+      "Stop if fork pack-down/harsh bottoming, rear kick, chassis pitching, or inconsistent traction appears repeatedly; log it for a later isolated setup test and do not change clicks mid-session.",
+      "Active thunder/lightning means no ride. Rain, wet roots/rocks, or reduced visibility that raises consequence beyond controlled practice means downshift or leave.",
+      "The session ends after the written descent cap. Extra loops or hard pedaling are execution drift, not successful completion."
+    ],
+    "post_session_review_fields": [
+      "actual_duration_min",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "loop_count",
+      "trail_condition",
+      "wet_roots_rocks",
+      "release_marker_hit_by_run",
+      "corrective_brake_grabs",
+      "technical_quality_notes",
+      "late_session_skill_fade",
+      "final_descent_quality_vs_first",
+      "braking_fatigue",
+      "upper_body_fatigue",
+      "brain_fog_or_processing_change",
+      "front_tyre_authority_and_posture",
+      "fork_pack_down_or_bottoming",
+      "rear_kick_or_chassis_pitching",
+      "fueling_carbs_g_per_hour",
+      "fluid_ml_per_hour",
+      "sodium_mg_per_hour",
+      "stop_rule_outcome",
+      "next_morning_response"
+    ]
+  }
+}

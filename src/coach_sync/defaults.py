@@ -81,7 +81,10 @@ def default_athlete_context() -> dict:
             "acute_chronic_load_spike_ratio": 1.5,
             "bike_specific_continuity": {
                 "minimum_bike_touches_per_week": 2,
-                "preferred_rebuild_bike_touches_per_week": 3,
+                "preferred_rebuild_bike_touches_per_week": 5,
+                "maximum_normal_build_bike_touches_per_week": 6,
+                "meaningful_cost_sessions_per_week_max": 3,
+                "low_cost_bike_touches_per_week": [2, 3],
                 "protect_mtb_exposures_per_week": 2,
                 "maximum_mtb_exposures_per_week": 3,
                 "downshift_warning": "Do not allow high elliptical/non-bike load to hide a bike-specific drought.",

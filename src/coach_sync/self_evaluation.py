@@ -101,6 +101,7 @@ def _text_report(report: dict) -> str:
         "",
         f"Checked activities: {report['checked_activities']}",
         f"Evaluated activities: {report['evaluated_activities']}",
+        f"Coverage: {(report.get('coverage') or {}).get('status', 'unknown')}",
         "",
         "Recent Self Evaluations:",
     ]
@@ -144,6 +145,10 @@ def build_self_evaluation_report(
             "type": row.get("type") or activity.get("type"),
             "category": row.get("category") or activity.get("category"),
             "detail_fetch_ok": row.get("detail_fetch_ok"),
+            "detail_fetch_error": row.get("detail_fetch_error"),
+            "fetch": row.get("fetch"),
+            "latest_attempt": row.get("latest_attempt"),
+            "last_success_at": row.get("last_success_at"),
             "has_self_evaluation": bool(row.get("has_self_evaluation")),
             "feel_score": row.get("feel_score"),
             "feel_label": row.get("feel_label"),
@@ -155,6 +160,64 @@ def build_self_evaluation_report(
 
     evaluated = [row for row in rows if row.get("has_self_evaluation")]
     recent = sorted(evaluated, key=lambda item: item.get("date") or "", reverse=True)[:10]
+    eligible_ids = {
+        str(activity.get("id"))
+        for activity in activities.values()
+        if activity.get("id")
+        and activity.get("counts_for_training_load")
+        and (activity_date := parse_date(activity.get("date"))) is not None
+        and start <= activity_date <= target
+    }
+    indexed_ids = {
+        row.get("activity_id") for row in rows if row.get("activity_id") in eligible_ids
+    }
+    successful_fetches = sum(
+        1
+        for row in rows
+        if row.get("activity_id") in eligible_ids and row.get("detail_fetch_ok") is True
+    )
+    coverage_status = (
+        "complete"
+        if eligible_ids and indexed_ids == eligible_ids and successful_fetches == len(eligible_ids)
+        else "partial"
+        if indexed_ids
+        else "missing"
+    )
+    flags = []
+    failed_rows = [
+        row
+        for row in rows
+        if row.get("activity_id") in eligible_ids and row.get("detail_fetch_ok") is False
+    ]
+    if failed_rows:
+        flags.append(
+            {
+                "type": "self_evaluation_fetch_failures",
+                "severity": "yellow",
+                "count": len(failed_rows),
+                "message": f"Garmin self-evaluation metadata failed for {len(failed_rows)} recent activity record(s).",
+            }
+        )
+    cached_after_failed_refresh = [
+        row
+        for row in rows
+        if row.get("activity_id") in eligible_ids
+        and row.get("detail_fetch_ok") is True
+        and isinstance(row.get("latest_attempt"), dict)
+        and row["latest_attempt"].get("status") in {"failed", "unsupported"}
+    ]
+    if cached_after_failed_refresh:
+        flags.append(
+            {
+                "type": "self_evaluation_refresh_failed_using_cached",
+                "severity": "yellow",
+                "count": len(cached_after_failed_refresh),
+                "message": (
+                    f"Garmin self-evaluation refresh failed for {len(cached_after_failed_refresh)} "
+                    "recent activity record(s); using preserved last-known-good values."
+                ),
+            }
+        )
     report = {
         "date": target.isoformat(),
         "generated_at": iso_now(DEFAULT_TIMEZONE),
@@ -162,7 +225,15 @@ def build_self_evaluation_report(
         "lookback_days": lookback_days,
         "checked_activities": len(rows),
         "evaluated_activities": len(evaluated),
+        "coverage": {
+            "status": coverage_status,
+            "eligible_activities": len(eligible_ids),
+            "indexed_activities": len(indexed_ids),
+            "successful_fetches": successful_fetches,
+            "missing_activities": max(0, len(eligible_ids) - len(indexed_ids)),
+        },
         "recent_self_evaluations": recent,
+        "flags": flags,
     }
     write_json(snapshots_dir(root) / "self_evaluation_report.json", report)
     write_text(snapshots_dir(root) / "self_evaluation_report.txt", _text_report(report))

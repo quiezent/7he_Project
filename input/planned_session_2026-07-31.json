@@ -1,0 +1,101 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-07-31",
+  "generated_at": "2026-07-30T17:56:00+08:00",
+  "status": "provisional_low_cost_mtb_awaiting_fresh_friday_gate",
+  "decision_basis": {
+    "athlete_clarification": "Clayton considers Thursday's athlete-entered RPE 8 a controlled session rather than an overreach and notes that Garmin load 182.1 was only 7.1 above the written upper estimate.",
+    "coach_reassessment": "RPE remains a real cost signal, but the 4.1-percent load exceedance is too small to operate as a standalone hard veto when stop rules were not triggered, posture and steering improved, and no fade was reported.",
+    "density": "Friday must remain a genuinely low-cost continuity touch after Thursday's meaningful MTB session; it cannot become another attack, repeatability or setup-comparison day.",
+    "forward_calendar": "Saturday is a full church day, Sunday is Sabbath, and 2026-08-03 through 2026-08-07 is a family trip to Sabah with no bike session currently planned."
+  },
+  "supersedes": [
+    {
+      "path": "input/planned_session_2026-07-31_superseded_hsc_chill.json",
+      "reason": "HSC -1 next-day comparison would confound setup with fatigue and day order."
+    },
+    {
+      "path": "input/planned_session_2026-07-31_superseded_absorption.json",
+      "reason": "Mandatory rest treated small threshold exceedances too literally and did not incorporate the athlete's controlled-execution clarification or the approaching travel interruption."
+    }
+  ],
+  "session": {
+    "title": "Stumpjumper low-cost posture and visual-horizon continuity",
+    "type": "mtb_skill_recovery",
+    "garmin_ceiling_class": "low_consequence_familiar_skill",
+    "modality": "mtb",
+    "venue": "Bukit Kiara",
+    "duration_min": 60,
+    "intensity": "easy_skill",
+    "density_cost": "low",
+    "mtb_exposure": true,
+    "optional": true,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Add one low-cost bike-specific touch before the church, Sabbath and Sabah interruption while consolidating Thursday's dynamically centred posture and moving visual processing one trail feature earlier.",
+    "dose": {
+      "same_day_gate": "Run the live Garmin decision sync, current_state and coach_packet before rollout. Require non-red physical readiness, CNS ready, normal illness status, clarity at least 8/10, leg and upper-body soreness no more than 3/10, and a clear bike inspection.",
+      "setup": "Keep fork HSC at Thursday's +1 position. Keep rebound, pressure, sag, shock, tyres, cockpit and cleats unchanged. This is not an A/B setup test.",
+      "opening_gate": "Ten to twelve minutes at RPE 2 with figure eights, symmetric steering, progressive front loading and the cue 'rear pressure, then immediately recenter.'",
+      "climb": "RPE 2-3. Brief natural standing is allowed where terrain asks for it, but there is no deliberate standing-torque dose.",
+      "first_descent": "One familiar 2K at 70-75 percent. Complete braking before the turn, identify the exit before the apex, and move the eyes to the next feature before brake release.",
+      "optional_second_descent": "A second 2K at the same or lower speed is earned only if the intervening climb remains RPE 3 or lower, vision and decision speed are unchanged, braking and upper-body fatigue are no more than 2/10, front tracking is fully intentional, and there is no urge to turn the ride into a speed test.",
+      "egress": "Use the easiest familiar exit at transport pace.",
+      "hard_cap": "Forty-five to seventy minutes, no more than two 2K descents. No 2K+, Pure Quill, Twin Peaks, standing-torque work, sprinting, jumps, setup change or segment chase."
+    },
+    "adaptation_hypothesis": "A short familiar MTB exposure should retain front-pressure authority, rapid recentering and earlier exit recognition without adding enough physiological or neural cost to impair the church day, Sabbath or travel recovery.",
+    "execution_rules": [
+      "Speed is capped even if HSC +1 feels excellent; tomorrow does not validate maximum-speed chassis capacity.",
+      "Load the rear through timed leg and hip pressure rather than parking the torso behind the bottom bracket; return to centre before the next steering or impact demand.",
+      "The technical success marker is correctly anticipating every exit, not descending faster.",
+      "For a fed ride under 70 minutes, no honey is required. Bring 500-750 ml fluid and approximately 400-600 mg sodium total for actual Kuala Lumpur heat and sweat conditions."
+    ],
+    "expected_result": {
+      "technical": "Symmetric steering, stable front tracking, no missed exit, no reactive braking and unchanged decision speed from the first to final descent.",
+      "physiology": "Climbs remain RPE 2-3 and whole-session RPE 2-4, with no meaningful late high-intensity accumulation.",
+      "rpe_range_out_of_10": [
+        2,
+        4
+      ],
+      "garmin_training_load": "Approximately 35-80.",
+      "week": "Friday provides the final bike-specific bridge before Saturday church, Sunday Sabbath and the family-first Sabah week."
+    },
+    "stop_rules": [
+      "Red physical readiness, impaired or compromised CNS status, abnormal clarity, illness, soreness above 3/10 or any unresolved bike concern cancels MTB.",
+      "Any opening-gate left pull, steering asymmetry, front ping or harsh deflection, pack-down, rearward retreat, rear wallow/kick or chassis pitch removes the descent and ends the ride via the safest easy route.",
+      "Any missed line or exit, reactive braking, delayed decision, vision narrowing, braking or upper-body fatigue above 2/10, or climb above RPE 3 removes the optional second descent.",
+      "Do not upgrade because the first 2K feels effortless."
+    ],
+    "post_session_review_fields": [
+      "opening_gate_result",
+      "actual_duration_min",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "trail_condition",
+      "descent_count",
+      "climb_rpe_by_cycle",
+      "correct_exit_recognition",
+      "front_tracking_and_intended_steering",
+      "rider_hip_retreat",
+      "front_ping_pack_down_or_deflection",
+      "rear_wallow_kick_or_chassis_pitch",
+      "vision_and_decision_speed_first_vs_final",
+      "braking_fatigue",
+      "upper_body_fatigue",
+      "late_session_skill_fade",
+      "fluid_ml_per_hour",
+      "sodium_mg_per_hour",
+      "stop_rule_outcome",
+      "next_morning_response"
+    ]
+  }
+}

@@ -224,6 +224,7 @@ def summarize_activity(payload: dict, path: Path | None = None) -> dict:
         "avg_power": as_number(find_value(payload, ("avgPower", "averagePower", "avgWatts"))),
         "normalized_power": as_number(find_value(payload, ("normPower", "normalizedPower"))),
         "intensity_factor": as_number(find_value(payload, ("intensityFactor", "intensity_factor"))),
+        "garmin_detected_ftp": as_number(find_value(payload, ("maxFtp", "max_ftp"))),
         "aerobic_te": as_number(find_value(payload, ("aerobicTrainingEffect", "aerobic_te"))),
         "anaerobic_te": as_number(find_value(payload, ("anaerobicTrainingEffect", "anaerobic_te"))),
         "hr_zone_min": {
@@ -242,7 +243,10 @@ def _activity_fingerprint(base: Path) -> tuple[int, int, int]:
     count = 0
     latest_mtime_ns = 0
     total_size = 0
-    for path in base.glob("**/*.json"):
+    # Only top-level Garmin activity summaries belong in the longitudinal load table.
+    # Rich key-session detail is preserved under activities/details and must not become
+    # a duplicate synthetic activity row.
+    for path in base.glob("*.json"):
         try:
             stat = path.stat()
         except OSError:
@@ -263,7 +267,7 @@ def _load_activities_cached(
     summaries: list[dict] = []
     # file_count/latest_mtime_ns/total_size are part of the cache key.
     _ = (file_count, latest_mtime_ns, total_size)
-    for path in Path(base_dir).glob("**/*.json"):
+    for path in Path(base_dir).glob("*.json"):
         payload = read_json(path, {})
         if isinstance(payload, dict):
             summaries.append(summarize_activity(payload, path))
@@ -298,6 +302,7 @@ def redacted_activity_summary(activity: dict | None) -> dict | None:
         "avg_power": activity.get("avg_power"),
         "normalized_power": activity.get("normalized_power"),
         "intensity_factor": activity.get("intensity_factor"),
+        "garmin_detected_ftp": activity.get("garmin_detected_ftp"),
         "aerobic_te": activity.get("aerobic_te"),
         "anaerobic_te": activity.get("anaerobic_te"),
         "hr_zone_min": activity.get("hr_zone_min"),

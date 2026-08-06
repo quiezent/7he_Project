@@ -103,24 +103,37 @@ def _fetch_activity_detail(root: str | Path | None, activity_id: str) -> dict[st
         calls[label] = _safe_call(method_name, method, activity_id)
 
     artifact = {
+        "artifact_type": "raw_garmin_key_activity_detail",
         "generated_at": iso_now(DEFAULT_TIMEZONE),
+        "fetched_at": iso_now(DEFAULT_TIMEZONE),
         "activity_id": str(activity_id),
         "auth": auth,
+        "privacy": "raw_private_local_only",
         "calls": calls,
     }
-    write_json(snapshots_dir(root) / f"activity_detail_{activity_id}.json", artifact)
+    write_json(
+        activities_dir(root) / "details" / f"garmin_{activity_id}_detail.json",
+        artifact,
+    )
     return artifact
 
 
 def _load_activity_detail(root: str | Path | None, activity_id: str, fetch_live: bool) -> dict[str, Any]:
-    path = snapshots_dir(root) / f"activity_detail_{activity_id}.json"
-    existing = read_json(path, None)
-    if existing:
-        return existing
+    paths = (
+        activities_dir(root) / "details" / f"garmin_{activity_id}_detail.json",
+        snapshots_dir(root) / f"activity_detail_{activity_id}.json",
+    )
+    for path in paths:
+        existing = read_json(path, None)
+        if existing:
+            return existing
     if not fetch_live:
         return {
             "status": "failed",
-            "reason": f"Missing {path}; rerun with live fetch enabled.",
+            "reason": (
+                "Missing preserved or legacy Garmin activity detail; "
+                "rerun with live fetch enabled."
+            ),
         }
     return _fetch_activity_detail(root, activity_id)
 

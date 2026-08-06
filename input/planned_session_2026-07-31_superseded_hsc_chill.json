@@ -1,0 +1,79 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-07-31",
+  "generated_at": "2026-07-28T15:09:00+08:00",
+  "status": "superseded_after_thursday_exceeded_load_and_rpe_gate",
+  "decision_basis": {
+    "athlete_direction": "Return fork HSC one click softer to the 2026-07-28 setting for a chill Stumpjumper ride after Thursday's attack-setting validation.",
+    "density": "This would be the third MTB exposure in four days after Tuesday's load-218/RPE-10 session. It is permitted only as a genuinely low-cost skill/compliance touch.",
+    "interpretation_limit": "Friday is not a counterbalanced HSC performance comparison because Thursday fatigue and day-order effects remain; it tests whether the softer setting still provides calm small-hit compliance at chill speed."
+  },
+  "session": {
+    "title": "Stumpjumper HSC softer-setting chill compliance ride",
+    "type": "mtb_skill_recovery",
+    "garmin_ceiling_class": "low_consequence_familiar_skill",
+    "modality": "mtb",
+    "venue": "Bukit Kiara",
+    "duration_min": 55,
+    "intensity": "easy_skill",
+    "density_cost": "low",
+    "mtb_exposure": true,
+    "optional": true,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Use a short, low-consequence Stumpjumper touch to confirm that the 2026-07-28 HSC setting remains a calm compliance option for chill riding without turning Friday into a second setup or intensity session.",
+    "dose": {
+      "precondition": "Thursday must finish within its duration, load, RPE, and technical contract with no unintended steering or triggered stop rule; Friday physical/CNS readiness and subjective clarity must remain clean.",
+      "setup": "Return fork HSC exactly one click softer to the 2026-07-28 setting before riding. Leave every other variable unchanged.",
+      "ride": "Forty-five to sixty minutes total. Use easy access riding and at most one familiar low-consequence 2K descent at approximately 65-75 percent, then exit.",
+      "climbs": "RPE 2-3, seated or naturally standing only where terrain requires; no torque target.",
+      "hard_cap": "One descent and 60 minutes. No 2K+, Pure Quill, Twin Peaks repeat, speed chase, jumps, or additional setup change."
+    },
+    "adaptation_hypothesis": "The softer HSC setting should preserve small-hit compliance and calm chill-speed tracking while Friday's low dose supports bike continuity without adding meaningful high-aerobic or neural debt.",
+    "execution_rules": [
+      "Treat this as recovery skill, not an A/B verdict against Thursday's attack setting.",
+      "Use familiar lines, early braking, wide vision, dynamically centred posture, and no deliberate large-hit attack.",
+      "Keep tyre pressure, rebound, shock, cockpit, and cleats unchanged.",
+      "Fuel normally; for a ride approaching 60 minutes in Kuala Lumpur heat, bring fluid and enough sodium for actual sweat conditions."
+    ],
+    "expected_result": {
+      "technical": "Small-hit tracking remains calm and intentional with no left pull, front ping, rearward retreat, wallow, or correction.",
+      "physiology": "Whole-session RPE 2-4 with stable or improving legs and no meaningful high-intensity accumulation.",
+      "garmin_training_load": "Approximately 35-80.",
+      "week": "Saturday church commitment and Sunday Sabbath remain fully protected."
+    },
+    "stop_rules": [
+      "Skip Friday for red readiness, impaired/compromised CNS status, poor sleep response, unusual soreness/fatigue, or any unresolved bike concern.",
+      "Skip Friday if Thursday exceeds RPE 7, load 175, the written duration cap, or produces any unintended steering, deflection, near miss, late skill fade, or triggered stop rule.",
+      "Any leftward steering tendency, unexpected front behaviour, reactive braking, or worsening legs ends the ride via the safest easy exit.",
+      "Do not upgrade the chill ride because the bike feels good."
+    ],
+    "post_session_review_fields": [
+      "opening_gate_result",
+      "actual_duration_min",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "trail_condition",
+      "hsc_position_confirmed",
+      "small_hit_compliance",
+      "front_tracking_and_intended_steering",
+      "front_ping_or_deflection",
+      "rider_hip_retreat",
+      "rear_wallow_or_kick",
+      "braking_fatigue",
+      "upper_body_fatigue",
+      "late_session_skill_fade",
+      "stop_rule_outcome",
+      "next_morning_response"
+    ]
+  }
+}

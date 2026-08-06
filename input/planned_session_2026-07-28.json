@@ -1,0 +1,90 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-07-28",
+  "generated_at": "2026-07-28T07:42:00+08:00",
+  "status": "active_same_day_controlled_upgrade",
+  "decision_basis": {
+    "physical_readiness": "Readiness 73/green; sleep 6.07 h with score 75; wake/current Body Battery 88; overnight HRV 48 ms balanced; resting HR 45 versus the seven-day average of 47.",
+    "cns_readiness": "CNS 89/ready with no independent technical-consequence cap. No current subjective sharpness report exists, so the opening trail segment remains the required field gate.",
+    "recent_load": "No Monday run or other Monday training occurred. The last seven days contain two sessions, 151.2 minutes and load 212.6, versus prior-seven-day load 313.0.",
+    "garmin_diagnosis": "Garmin reports Recovery with ACWR 0.5 LOW, but current Load Focus is balanced: low aerobic 280.2 within target, high aerobic 836.1 within target but near its upper bound, and anaerobic 295.4 within target. Low acute load is not evidence of fatigue; it limits open-ended intensity rather than deleting the protected MTB exposure.",
+    "density": "Today is meaningful exposure one. If Thursday and Friday are both MTB, Thursday must be a low-cost Enduro primer and Friday is the conditional second meaningful exposure.",
+    "route_selection": "Use familiar 2K as the mandatory field gate, then earn one Pure Quill stage. Repeated Twin Peaks, TnT, Flintstone, the full DH Line, novelty, and setup testing are excluded."
+  },
+  "session": {
+    "title": "Kiara Stumpjumper precision gate plus conditional Pure Quill",
+    "type": "mtb_skill_familiar_capped",
+    "garmin_ceiling_class": "controlled_familiar_skill",
+    "modality": "mtb",
+    "venue": "Bukit Kiara",
+    "duration_min": 90,
+    "intensity": "skill",
+    "density_cost": "meaningful",
+    "mtb_exposure": true,
+    "optional": false,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Use the first protected MTB exposure to validate repeatable front-wheel authority, brake-release timing, and clean corner exits on familiar terrain while adding bounded bike-specific climbing load without compromising the planned Thursday primer and Friday key Enduro exposure.",
+    "dose": {
+      "opening_gate": "Use the access riding and first 10-15 minutes at RPE 2-3 to confirm normal breathing-to-RPE, improving or normal legs, wide vision, early line preview, deliberate braking, centred posture, and no unexpected steering or foot correction.",
+      "first_cycle": "Ride one familiar 2K descent at approximately 80-85 percent execution speed. This is the mandatory technical field gate, not a time trial.",
+      "post_2k_gate": "Earn Pure Quill only if breathing settles within about five minutes, legs remain normal, vision and decision speed are unchanged, braking release is deliberate, front tracking is accurate, and braking/upper-body fatigue are no more than 2/10.",
+      "second_cycle": "If the gate passes, climb to Twin Peaks at RPE 4-5 and ride one Pure Quill stage at approximately 85-90 percent execution speed. Normal standing on selected steep pitches is allowed, but no maximal torque, sprint, or power chase.",
+      "egress": "Use the required climb-out and partial DH-Line exit at transport pace. It is not a third quality repeat.",
+      "hard_cap": "One 2K gate, one conditional Pure Quill, required egress, 75-95 minutes expected and 100 minutes absolute cap. No second Twin Peaks repeat or substitute stage."
+    },
+    "adaptation_hypothesis": "A short familiar precision gate followed by one earned longer stage should reinforce dynamically centred posture, progressive front loading, brake completion and release before turn-in, and clean exit acceleration under moderate accumulated climbing cost, while keeping neural and high-aerobic density low enough for later-week Enduro transfer.",
+    "execution_rules": [
+      "Primary cue: brake firmly while the bike is upright, finish the release before turn-in, remain dynamically centred with progressive front load, then pick the bike up and drive the exit.",
+      "Use only familiar lines. Do not test aggressive root lines, jumps, novelty, race pace, segment times, or another rider's speed.",
+      "Keep suspension, tyre pressure, cockpit, and cleat settings unchanged.",
+      "Climbs are controlled transport and bike-specific load, not threshold or VO2 work. Standing is allowed only when smooth and deliberate.",
+      "Do not add another loop because the first two descents feel excellent.",
+      "For the full route in Kuala Lumpur heat, target approximately 45-60 g carbohydrate, 650-900 ml fluid, and 600-900 mg sodium per hour. Record actual intake."
+    ],
+    "expected_result": {
+      "technical": "2K and Pure Quill show stable front tracking, completed brake release before turn-in, earlier line choice, and clean corner exits without reactive correction, near miss, or late skill fade.",
+      "physiology": "Access and Twin Peaks climbing remain RPE 3-5, whole-session RPE approximately 5-6, with no deliberate sprint, VO2, or threshold block.",
+      "garmin_training_load": "Approximately 120-165 if the opening gate passes and the full route executes.",
+      "training_effect": "Aerobic TE approximately 3.0-3.7 and anaerobic TE approximately 1.0-2.3, governed by controlled climbing and submaximal descending.",
+      "next_session": "Thursday remains available as a low-cost Enduro primer rather than another meaningful durability day."
+    },
+    "stop_rules": [
+      "Fail the opening gate and use the safest easy exit for abnormal breathing-to-RPE, legs that worsen rather than improve, narrowed vision, delayed line preview, unexpected steering/foot correction, illness symptoms, or climb RPE above 4 before the technical dose.",
+      "Do not add Pure Quill after 2K if braking becomes reactive or dragged into the apex, front tracking requires correction, posture freezes rearward, a line miss or near miss occurs, or braking/upper-body fatigue exceeds 2/10.",
+      "End technical intent for delayed choice, narrowed vision, unclipping delay, front push or deflection, confidence outrunning precision, or any late-session skill fade.",
+      "Downshift to transport pace if climb RPE exceeds 6, HR/breathing becomes disproportionate, heat becomes oppressive, or trail conditions raise consequence beyond familiar controlled execution.",
+      "Wet roots or active rain remove speed intent. No same-day upgrade, second Twin Peaks repeat, alternate stage, sprint, jump progression, or setup change."
+    ],
+    "post_session_review_fields": [
+      "opening_gate_result",
+      "actual_duration_min",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "climb_rpe_by_cycle",
+      "trail_condition",
+      "technical_quality_notes",
+      "vision_and_decision_speed_first_vs_final",
+      "braking_release_consistency",
+      "front_tracking",
+      "unforced_correction_or_near_miss",
+      "braking_fatigue",
+      "upper_body_fatigue",
+      "late_session_skill_fade",
+      "fueling_carbs_g_per_hour",
+      "fluid_ml_per_hour",
+      "sodium_mg_per_hour",
+      "stop_rule_outcome",
+      "next_morning_response"
+    ]
+  }
+}

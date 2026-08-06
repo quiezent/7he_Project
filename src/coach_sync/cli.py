@@ -40,10 +40,13 @@ from .reports import (
 )
 from .self_evaluation import build_self_evaluation_report
 from .state import build_current_state
+from .surface_manifest import build_garmin_surface_manifest
 from .training_status import build_training_status_current
+from .training_readiness import build_training_readiness_current
 from .training_predictor import build_training_predictor
 from .training_hypotheses import build_training_hypotheses
 from .training_architecture import build_training_architecture
+from .wearable_coverage import build_wearable_coverage
 from .wellness import build_wellness_trends
 from .wellness_verification import build_wellness_verification
 from .weekly_planning import build_weekly_plan
@@ -69,6 +72,15 @@ def build_parser() -> argparse.ArgumentParser:
     _add_root(sync)
     sync.add_argument("--wellness-days", type=int, default=30)
     sync.add_argument("--activity-limit", type=int, default=200)
+    sync.add_argument(
+        "--key-detail-limit",
+        type=int,
+        default=3,
+        help=(
+            "On full live syncs, preserve rich Garmin detail/original evidence for this many "
+            "recent key MTB, structured-bike, or gym sessions. Decision-only syncs always use 0."
+        ),
+    )
     sync.add_argument("--rebuild-only", action="store_true")
     sync.add_argument("--cleanup-derived", action="store_true")
     sync.add_argument(
@@ -96,9 +108,12 @@ def build_parser() -> argparse.ArgumentParser:
         ("brief", "Build daily brief JSON and text."),
         ("wellness-trends", "Build normalized Garmin wellness trends."),
         ("wellness-verification", "Verify Garmin sleep and Body Battery summary against raw series."),
+        ("wearable-coverage", "Build internal Garmin wear-state and sensor-coverage provenance."),
         ("activity-profile", "Build normalized Garmin activity profile."),
         ("data-inventory", "Build Garmin data availability inventory."),
+        ("garmin-surface-manifest", "Build Garmin collection, lineage, and coverage manifest."),
         ("training-status", "Build normalized Garmin training-status snapshot."),
+        ("training-readiness", "Build separately normalized Garmin Training Readiness context."),
         ("activity-index", "Build redacted per-activity summary index."),
         ("modality-rollups", "Build training-load rollups by modality."),
         ("data-quality", "Build data quality and coverage report."),
@@ -241,6 +256,7 @@ def run(args: argparse.Namespace) -> Any:
             rebuild_only=args.rebuild_only,
             cleanup_after=args.cleanup_derived,
             decision_only=args.decision_only,
+            key_detail_limit=args.key_detail_limit,
         )
     if args.command == "rebuild":
         return sync_connect(args.root, rebuild_only=True, decision_only=args.decision_only)
@@ -260,18 +276,24 @@ def run(args: argparse.Namespace) -> Any:
         return build_wellness_trends(args.root, args.date)
     if args.command == "wellness-verification":
         return build_wellness_verification(args.root, args.date)
+    if args.command == "wearable-coverage":
+        return build_wearable_coverage(args.root, args.date)
     if args.command == "activity-profile":
         return build_activity_profile(args.root, args.date)
     if args.command == "data-inventory":
-        return build_data_inventory(args.root)
+        return build_data_inventory(args.root, args.date)
+    if args.command == "garmin-surface-manifest":
+        return build_garmin_surface_manifest(args.root, args.date)
     if args.command == "training-status":
         return build_training_status_current(args.root, args.date)
+    if args.command == "training-readiness":
+        return build_training_readiness_current(args.root, args.date)
     if args.command == "activity-index":
         return build_activity_summary_index(args.root, args.date)
     if args.command == "modality-rollups":
         return build_modality_load_rollups(args.root, args.date)
     if args.command == "data-quality":
-        return build_data_quality_report(args.root)
+        return build_data_quality_report(args.root, args.date)
     if args.command == "body-battery-model":
         return build_body_battery_model(args.root, args.date)
     if args.command == "training-predictor":

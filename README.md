@@ -36,6 +36,7 @@
   - `GARMIN_PASSWORD`
 - Main sync:
   `python tools/sync_connect.py --wellness-days 30 --activity-limit 200`
+- Full sync preserves rich Garmin detail plus the original FIT/ZIP for up to three recent key MTB, indoor-bike, or gym sessions by default. Set the bound explicitly with `--key-detail-limit <N>`; the decision-only path skips this heavier collection.
 - Same-day decision sync:
   `python tools/sync_connect.py --wellness-days 3 --activity-limit 5 --decision-only`
 - Sync creates a current-week plan when one is missing; daily planning then uses that matching weekly intent unless `input/planned_session_YYYY-MM-DD.json` provides an explicit coach adjustment.
@@ -60,9 +61,12 @@ Preferred direct commands:
 - Review block: `python tools/review_block.py`
 - Forecast: `python tools/microcycle_forecast.py --days 24`
 - Garmin data inventory: `python tools/data_inventory.py`
+- Garmin surface manifest: `python tools/garmin_surface_manifest.py`
 - Wellness trends: `python tools/wellness_trends.py`
 - Wellness verification: `python tools/wellness_verification.py --date <YYYY-MM-DD>`
+- Wear-state coverage: `python tools/wearable_coverage.py --date <YYYY-MM-DD>`
 - Training status: `python tools/training_status.py`
+- Garmin Training Readiness: `python tools/training_readiness.py --date <YYYY-MM-DD>`
 - Activity profile: `python tools/activity_profile.py`
 - N-of-1 adaptation profile: `python tools/adaptation_profile.py --all`
 - Training hypothesis tests: `python tools/training_hypotheses.py --date <YYYY-MM-DD>`
@@ -85,7 +89,7 @@ Preferred direct commands:
 - Historical activity baselines: `python tools/historical_baselines.py`
 - Coach evidence packet: `python tools/coach_packet.py`
 - Controlled Garmin history backfill: `python tools/historical_backfill.py --start-date 2021-07-01 --wellness-max-days 180`
-- Cleanup safe derived caches and transient activity-detail JSON: `python tools/cleanup_derived.py --apply`
+- Cleanup safe derived caches: `python tools/cleanup_derived.py --apply`
 
 After editable install, the same stack is available through:
 - `python -m coach_sync sync --wellness-days 30 --activity-limit 200`
@@ -95,6 +99,8 @@ After editable install, the same stack is available through:
 - `python -m coach_sync brief`
 - `python -m coach_sync report --days 7`
 - `python -m coach_sync training-architecture --date <YYYY-MM-DD>`
+- `python -m coach_sync garmin-surface-manifest --date <YYYY-MM-DD>`
+- `python -m coach_sync training-readiness --date <YYYY-MM-DD>`
 - `python -m coach_sync gear-audit --date <YYYY-MM-DD>`
 - `python -m coach_sync device-audit --date <YYYY-MM-DD>`
 - `python -m coach_sync self-evaluation --date <YYYY-MM-DD>`
@@ -136,6 +142,45 @@ After editable install, the same stack is available through:
 ```
 
 - Use `triggered_and_stopped`, `triggered_and_downshifted`, or `triggered_but_continued` when a stop rule fires. The last value is an unsafe/uncalibratable session, not a successful completion.
+- For an athlete-confirmed nap or quiet rest window, record exact local timing and the subjective response. Garmin `napTimeSeconds=0` or a missing nap label does not disprove the report:
+
+```json
+{
+  "date": "YYYY-MM-DD",
+  "sleep_work_timing_review": {
+    "nap_status": "completed",
+    "nap_source": "athlete_report",
+    "nap_start_local": "10:20",
+    "nap_end_local": "11:50",
+    "time_in_bed_minutes": 90,
+    "estimated_sleep_minutes": 75,
+    "sleep_inertia_minutes": 10,
+    "post_nap_clarity_10_range": [7, 8],
+    "illness_status": "none"
+  }
+}
+```
+
+- For a completed intentional Fenix-off interval, report exact target-date timing. A usual Sunday dress-watch habit is context only and does not create a dated interval:
+
+```json
+{
+  "date": "YYYY-MM-DD",
+  "wearable_context": {
+    "off_wrist_windows": [
+      {
+        "status": "confirmed",
+        "start_local": "09:00",
+        "end_local": "12:30",
+        "reason_category": "church_dress_watch",
+        "replacement_device_category": "dress_watch"
+      }
+    ]
+  }
+}
+```
+
+The wear-state layer never fills missing samples or interprets them as rest. It keeps endpoint health, optical-HR measurement availability, physical wear state, and cause attribution separate. Direct `get_heart_rates` sample transitions can confirm that wrist-HR measurement was unavailable, but cannot prove the watch was physically removed or distinguish dress-watch use, a loose strap, showering, charging, or another cause. Exact dated athlete reports may assign physical removal and cause only to their matching interval. The layer cannot raise readiness, CNS status, technical consequence, or the written session. Positive low-stress use additionally requires dense valid target-date samples from near midnight through a declared cutoff at or after 18:00, with credible Garmin cadence and no uncovered tail. A recurring habit remains context only and does not soften an unexplained gap.
 
 ## Context Updates
 - Set goal phase:
@@ -169,13 +214,23 @@ Blank template fields are ignored.
 - `snapshots/training_load.json`
   - recent load, prior-week comparison, load spike flags
 - `snapshots/wellness_daily.json`
-  - normalized daily sleep, HRV, Body Battery, stress, SpO2, respiration, steps, calories, and intensity minutes
+  - normalized daily sleep, HRV, Body Battery, stress, separately sourced daily/sleep Pulse Ox, respiration coverage, monitoring altitude, steps, calories, and intensity minutes; valid and negative-sentinel counts keep unavailable activity-time physiology explicit
 - `snapshots/wellness_trends.json`
   - 7-day and prior-7-day recovery trends
 - `snapshots/wellness_verification.json` / `snapshots/wellness_verification_YYYY-MM-DD.json`
   - checks Garmin sleep and Body Battery summary against the raw Body Battery series, including post-wake recharge after interrupted sleep
+- `snapshots/rest_recharge_window.json` / `snapshots/rest_recharge_window_YYYY-MM-DD.json`
+  - joins an athlete-confirmed nap/rest window to Garmin all-day stress and Body Battery series, recharge latency, primary-sleep shortfall proxy, illness context, preceding 48-hour load, sleep inertia, and clarity; classifies the window as restorative, quiet-but-non-restorative, discordant, or insufficient evidence
+- `snapshots/wearable_coverage.json` / `snapshots/wearable_coverage_YYYY-MM-DD.json`
+  - separates endpoint health, stress/Body Battery availability, optical-HR measurement availability, physical wear state, and cause attribution; blocks optimistic low-stress use without imputing physiology
 - `snapshots/garmin_training_status_current.json`
   - training status, ACWR, load focus, VO2 max, and acclimation
+- `snapshots/garmin_training_readiness_current.json`
+  - separate Garmin Training Readiness feed with endpoint, date, freshness, and device-capability provenance; context only, never a replacement for physical or CNS readiness gates
+- `snapshots/garmin_surface_manifest.json`
+  - endpoint-by-endpoint collection state, raw/normalized field coverage, contiguous data eras and gaps, units, lineage, privacy verification, and downstream coaching use
+- `snapshots/last_live_sync_status.json` / `snapshots/sync_run_ledger.json`
+  - durable last live-contact result plus bounded rebuild/live history; rebuilds do not erase the last live-sync outcome
 - `snapshots/activity_summary_index.json`
   - redacted activity rows without names or source paths
 - `snapshots/activity_loop_load_current.json` / `snapshots/activity_loop_load_YYYY-MM-DD_<activity_id>.json`
@@ -198,6 +253,8 @@ Blank template fields are ignored.
   - 7/14/28/42-day load by modality
 - `snapshots/data_quality_report.json`
   - source coverage, missing fields, and privacy/redaction checks
+- `snapshots/current_state.json:latest_session_evidence`
+  - bounded latest-session block joining raw timing, terrain, load, power, environment, Gear, HR source, self-evaluation, Garmin gym set/rep/rest detail, and matching/recent loop evidence with explicit provenance and confidence
 - `snapshots/body_battery_model_report.json`
   - simple pure-Python decision tree for good wake Body Battery
 - `snapshots/body_battery_decision_tree.json`
@@ -236,6 +293,7 @@ Blank template fields are ignored.
   - compact human handoff
 - `activities/`
   - immutable Garmin activity evidence
+  - `activities/details/` retains bounded rich API detail and `activities/fit/` retains original Garmin FIT/ZIP downloads; neither is treated as another longitudinal activity row or removed by derived-cache cleanup
 
 ## Architecture Boundary
 - Code answers: what data exists, what changed, what is stale, what rules are triggered.
@@ -243,6 +301,9 @@ Blank template fields are ignored.
 - CNS readiness answers: whether technical consequence, speed, jumps, enduro simulation, novelty, and setup testing should be capped even if physiological load looks manageable.
 - Constraint resolution answers: whether a weekly or explicit session must be replaced because Sabbath, physical readiness, data freshness, Garmin arbitration, or CNS readiness sets a lower ceiling.
 - Predictive loop answers: what response was expected from the prescribed session, what actually happened, and whether the miss was execution, external stress, or model error.
+- Surface manifest answers: what Garmin endpoint was configured, attempted, empty, failed, unsupported, or not attempted; what fields survived normalization; and which coaching surface consumes them.
+- Latest-session evidence answers: what the most recent load physically represented, while keeping weather units, HR source, Garmin water estimates, loop estimates, steep-hike moving-time plausibility, and old power values inside their stated confidence boundaries.
+- Rest/recharge evidence answers whether a reported intraday rest window worked. It never rewrites the wake anchor, treats a missing Garmin nap label as proof of no nap, or raises physical, CNS, technical, or written-session ceilings.
 - Weekly planner answers: what the week is trying to buy before daily readiness gates adjust execution.
 - Session contract answers: what adaptation the session is buying, what the dose is, when to stop, and what must be reviewed afterward.
 - Density governor answers: whether the ideal week should be downshifted so Friday/Saturday trail quality is protected.
@@ -257,22 +318,27 @@ Blank template fields are ignored.
 
 ## Clayton-Specific Coaching Rules
 - Every major prescription should follow the schema v3 session contract: purpose, dose, adaptation hypothesis, execution rules, expected result, stop rules, and post-session review fields.
-- Bike-specific continuity is the highest-yield lever. Maintenance floor is about 2 bike touches/week; rebuild target is 3 bike touches/week.
+- Bike-specific continuity is the highest-yield lever. Maintenance floor is about 2 bike touches/week; the active rebuild target is 5-6 unique bike days when recovery and calendar allow.
+- Keep only 2-3 sessions meaningfully costly. The remaining 2-3 bike touches are low-cost Z1/Z2 or primers; a hard run counts toward the cost cap.
 - Protect 2 MTB exposures/week when possible: one quality/skill day and one durability/enduro-volume day.
 - Allow up to 3 MTB exposures/week when readiness, logistics, and load density support it; more than 3 is an event/race block, not a default build week.
-- Use the density governor: start from 3 good bike touches, do not stack threshold, repeatability, and two hard MTB days unless recovery is clearly green.
+- Use the density governor: build frequency through low-cost touches, protect 2 key MTB exposures, and do not stack threshold, repeatability, and two hard MTB days unless recovery is clearly green.
 - Use CNS readiness as the technical-quality governor: `impaired` or `compromised` replaces technical, structured, or high-consequence work with low-consequence recovery rather than merely adding a caution label.
 - Use one structured indoor tempo/torque session per week and progress `3x8 -> 3x10 -> 3x12` before raising watts.
-- Treat `222 W` as historical P20 from `2024-04-24`, not current FTP.
+- Current Garmin operational cycling FTP is `211 W` from `2026-07-25`, backed by the activity `maxFtp` surface, ANT+ bike power, athlete-confirmed auto-detection, and prior preserved FIT update evidence. Use it with RPE/HR validation; `222 W` remains historical P20, not FTP.
 - Elliptical is recovery/support during bike-performance blocks, not the backbone unless constraints require it.
 - Gym is useful only if it supports trail quality; reduce or move it if it creates DOMS before key rides.
 - In Kuala Lumpur heat, fuel skill quality early: late sloppy braking, weak pumping, timid jumps, or poor line choice can be under-fuelling or heat load.
+- For MTB sessions of 90-150 minutes, the canonical range is 45-75 g carbohydrate, 500-900 ml fluid, and 600-1000 mg sodium per hour. For rides over 150 minutes or explicit race practice, use 60-90 g, 650-1000 ml, and 800-1200 mg per hour. Select within the range from same-day conditions, sweat response, consequence, and gut tolerance; prior-session weather and Garmin heat acclimation never justify reducing the target by themselves.
 - Garmin Gear is the bike/source truth layer. Flag MTB activities tagged with `Elite Suito` so the Gear field can be corrected.
 - Garmin Devices & Apps is the HR-source truth layer. MTB activities without an external `HEART_RATE` sensor should have lower-confidence HR/load interpretation because Fenix wrist HR can under-read during technical riding. Partial Gear/device coverage remains partial evidence.
+- Daily/sleep Pulse Ox and respiration are contextual wellness evidence, not activity traces. Never infer exercise oxygenation from a sleep average, treat a negative activity-period sentinel as a normal reading, or use wrist Pulse Ox as a medical diagnosis or training-clearance signal.
+- Garmin `movingDuration` can undercount slow vertical hiking. When timer and elapsed duration agree but reported moving time is implausibly small, preserve the Garmin value as raw, flag it as unreliable, and do not manufacture stopped time from subtraction.
 - For MTB manual-lap interpretation, do not coach from max HR alone. Check the lap timeline for `max_hr_likely_boundary_carryover`, long stops, `first_moving_after_longest_stop`, and `action_terrain_summary` before deciding whether a lap was a hard effort, recovery, technical descent, or enduro-specific standing/punchy pedaling work.
 
 ## Data Boundaries
 - Treat raw Garmin exports and `activities/` as preserved evidence.
+- Preserve `activities/details/` and `activities/fit/` as private raw evidence. They are intentionally excluded from summary activity counts and ordinary cleanup.
 - Store session-specific predictions and reviews in `snapshots/predictive_session_*.json`, `snapshots/predictive_session_review_*.json`, and `snapshots/predictive_training.json`.
 - Do not store session-specific predictions, reviews, or daily coaching decisions in `README.md` or `AGENTS.md`.
 - Use the private GitHub repository as the durable backup for code, tests, documentation, coaching architecture, `config/athlete_context.json`, and curated `input/feedback_*.json` notes.

@@ -1,0 +1,18 @@
+{
+  "date": "2026-07-11",
+  "entries": [
+    {
+      "timestamp_local": "2026-07-11T15:23:00+08:00",
+      "source": "athlete_report",
+      "subjective_report": "Tough AGM and Clayton has just arrived home. It has rained, so trail riding is off; if he trains at all, his available option is an indoor session on the Elite Suito.",
+      "coaching_interpretation": "Treat the AGM as unmeasured cognitive and life stress that Garmin may under-read, without inventing an unreported CNS symptom or processing deficit. Rain removes the planned Kiara technical exposure. Any indoor option must remain under the fresh physical-readiness and CNS ceilings rather than attempting to replace the missed trail load."
+    },
+    {
+      "timestamp_local": "2026-07-11T15:43:24+08:00",
+      "source": "athlete_report",
+      "subjective_report": "Clayton confirms that Garmin average stress 45 and the 229 high-stress minutes correspond to the tough AGM. He will rest for the remainder of Saturday and proposed an indoor session after church on Sunday afternoon to prepare for next week.",
+      "coaching_interpretation": "Attribute the observed daytime stress burden to the AGM rather than counting it as an additional separate stressor. Saturday rest is the selected outcome. Sunday remains the hard Sabbath with no planned exercise; reassess fresh readiness for the next trainable day instead.",
+      "coaching_decision": "Rest for the remainder of Saturday. No Sunday trainer session because Sunday Sabbath overrides readiness and training intent."
+    }
+  ]
+}

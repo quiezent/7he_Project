@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .evidence import wellness_snapshot_is_usable
-from .garmin_sync import _safe_call
+from .garmin_sync import _method_call, _safe_call
 from .io import read_json, write_json
 from .paths import activities_dir, snapshots_dir
 from .time_utils import DEFAULT_TIMEZONE, iso_now, parse_date, today_local
@@ -45,15 +45,15 @@ def _call(label: str, func: Callable[..., Any], *args: Any) -> dict:
 
 
 def _wellness_payload(client: Any, day: str) -> list[dict]:
-    payloads = [
-        _call("get_stats", client.get_stats, day),
-        _call("get_user_summary", client.get_user_summary, day),
+    return [
+        _method_call(client, "get_stats", day),
+        _method_call(client, "get_user_summary", day),
+        _method_call(client, "get_body_battery", day, day),
+        _method_call(client, "get_body_battery_events", day),
+        _method_call(client, "get_sleep_data", day),
+        _method_call(client, "get_hrv_data", day),
+        _method_call(client, "get_body_composition", day),
     ]
-    for method_name in ("get_sleep_data", "get_hrv_data", "get_body_composition"):
-        method = getattr(client, method_name, None)
-        if method:
-            payloads.append(_call(method_name, method, day))
-    return payloads
 
 
 def _daterange(start: date, end: date) -> list[date]:
@@ -151,6 +151,7 @@ def backfill_wellness(
         payloads = _wellness_payload(client, day_text)
         snapshot = {
             "date": day_text,
+            "fetched_at": iso_now(DEFAULT_TIMEZONE),
             "source": "garminconnect_backfill",
             "payloads": payloads,
         }

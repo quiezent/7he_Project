@@ -7,8 +7,8 @@ from typing import Any
 from .context import load_context
 from .evidence import as_number
 from .garmin_arbitration import build_garmin_arbitration
-from .io import write_json, write_text
-from .paths import snapshots_dir
+from .io import read_json, write_json, write_text
+from .paths import input_dir, snapshots_dir
 from .planning import SESSION_CONTRACT_FIELDS
 from .state import build_current_state
 from .time_utils import DEFAULT_TIMEZONE, iso_now, parse_date, today_local
@@ -33,12 +33,19 @@ def _training_rules(context: dict[str, Any]) -> dict[str, int]:
         .get("bike_specific_continuity", {})
     )
     minimum_bike = int(continuity.get("minimum_bike_touches_per_week") or 2)
-    preferred_bike = int(continuity.get("preferred_rebuild_bike_touches_per_week") or max(3, minimum_bike))
+    preferred_bike = int(continuity.get("preferred_rebuild_bike_touches_per_week") or max(5, minimum_bike))
+    maximum_bike = int(
+        continuity.get("maximum_normal_build_bike_touches_per_week")
+        or max(6, preferred_bike)
+    )
+    meaningful_cost_max = int(continuity.get("meaningful_cost_sessions_per_week_max") or 3)
     protect_mtb = int(continuity.get("protect_mtb_exposures_per_week") or 2)
     max_mtb = int(continuity.get("maximum_mtb_exposures_per_week") or 3)
     return {
         "minimum_bike_touches": minimum_bike,
         "preferred_bike_touches": max(preferred_bike, minimum_bike),
+        "maximum_bike_touches": max(maximum_bike, preferred_bike, minimum_bike),
+        "meaningful_cost_sessions_max": max(1, meaningful_cost_max),
         "protect_mtb_exposures": protect_mtb,
         "maximum_mtb_exposures": max(max_mtb, protect_mtb),
     }
@@ -61,10 +68,6 @@ def _feedback_family(feedback: Any) -> str:
     if "peaking" in text:
         return "peaking"
     return "unknown"
-
-
-def _current_wellness(state: dict[str, Any]) -> dict[str, Any]:
-    return (state.get("wellness_trends") or {}).get("latest") or {}
 
 
 def _load_focus_position(value: Any, target_min: Any, target_max: Any) -> dict[str, Any]:
@@ -205,6 +208,8 @@ def _session(
     load_target: str | None = None,
     stop_rules: list[str] | None = None,
     post_session_review_fields: list[str] | None = None,
+    bike_touch_status: str = "none",
+    density_cost: str = "low",
 ) -> dict[str, Any]:
     session = {
         "date": day.isoformat(),
@@ -215,6 +220,8 @@ def _session(
         "priority": priority,
         "optional": optional,
         "mtb_exposure": mtb_exposure,
+        "bike_touch_status": bike_touch_status,
+        "density_cost": density_cost,
         "duration_min": duration_min,
         "intensity": intensity,
         "load_target": load_target,
@@ -242,6 +249,8 @@ def _scheduled_rest(day: date) -> dict[str, Any]:
         "priority": "hard_constraint",
         "optional": False,
         "mtb_exposure": False,
+        "bike_touch_status": "none",
+        "density_cost": "none",
         "duration_min": 0,
         "intensity": "recovery",
         "purpose": "Honor Sunday Sabbath as a hard no-exercise day.",
@@ -253,6 +262,50 @@ def _scheduled_rest(day: date) -> dict[str, Any]:
             "recovery": "Physical and mental space before the next week.",
         },
     }
+
+
+def _apply_explicit_session_overrides(
+    root: str | Path | None,
+    sessions: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    overrides: dict[str, dict[str, Any]] = {}
+    for day_text in {str(item.get("date") or "") for item in sessions}:
+        if not day_text:
+            continue
+        payload = read_json(input_dir(root) / f"planned_session_{day_text}.json", {})
+        session = payload.get("session") if isinstance(payload, dict) else None
+        if not isinstance(session, dict):
+            continue
+        payload_date = parse_date(payload.get("date"))
+        if payload_date is not None and payload_date.isoformat() != day_text:
+            continue
+        override = dict(session)
+        override.setdefault("date", day_text)
+        day = parse_date(day_text)
+        override.setdefault("day_name", _day_name(day) if day else None)
+        override.setdefault("optional", False)
+        override.setdefault("mtb_exposure", False)
+        override.setdefault("bike_touch_status", "none")
+        override.setdefault("density_cost", "none")
+        override["weekly_intent_override"] = {
+            "source": f"input/planned_session_{day_text}.json",
+            "status": payload.get("status"),
+        }
+        overrides[day_text] = override
+
+    if not overrides:
+        return sessions
+    result: list[dict[str, Any]] = []
+    emitted: set[str] = set()
+    for session in sessions:
+        day_text = str(session.get("date") or "")
+        override = overrides.get(day_text)
+        if override is None:
+            result.append(session)
+        elif day_text not in emitted:
+            result.append(override)
+            emitted.add(day_text)
+    return result
 
 
 def _recovery_gate() -> dict[str, Any]:
@@ -276,13 +329,6 @@ def _build_sessions(
     state: dict[str, Any],
     rules: dict[str, int],
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    readiness = state.get("readiness") or {}
-    wellness = _current_wellness(state)
-    level = readiness.get("readiness_level")
-    hrv_status = str(wellness.get("hrv_status") or "").lower()
-    wake_bb = as_number(wellness.get("body_battery_wake"))
-    monday_tempo = level == "green" and "unbalanced" not in hrv_status and (wake_bb is None or wake_bb >= 65)
-
     sessions: list[dict[str, Any]] = []
     monday = week_start
     tuesday = week_start + timedelta(days=1)
@@ -292,223 +338,142 @@ def _build_sessions(
     saturday = week_start + timedelta(days=5)
     sunday = week_start + timedelta(days=6)
 
-    if monday_tempo:
-        sessions.append(
-            _session(
-                monday,
-                title="Indoor tempo/torque",
-                session_type="indoor_tempo_torque",
-                modality="bike_indoor",
-                priority="key_engine",
-                duration_min=70,
-                intensity="moderate",
-                load_target="controlled, not threshold",
-                purpose="Start the week with controlled bike-specific engine work while readiness is clean.",
-                dose={
-                    "main_set": "3 x 10 min tempo/torque with 4 min easy between.",
-                    "power_anchor": "Use current controlled tempo, not stale FTP.",
-                    "cap": "No extra interval if the final block is not repeatable.",
-                },
-                adaptation_hypothesis=(
-                    "Controlled tempo should rebuild sustainable climbing power without adding trail consequence or anaerobic debt."
-                ),
-                execution_rules=[
-                    "Keep cadence and breathing controlled.",
-                    "Use HR/RPE drift to cap the dose.",
-                    "Finish able to ride skillfully the next day.",
-                ],
-                expected_result={
-                    "physiology": "High-aerobic durability without threshold survival.",
-                    "next_day": "No loss of MTB skill readiness.",
-                },
-                readiness_gate=_quality_gate(),
-            )
+    sessions.append(
+        _session(
+            monday,
+            title="Conversational run with optional recovery spin",
+            session_type="social_run_optional_bike",
+            modality="run_with_optional_bike",
+            priority="support",
+            duration_min=60,
+            intensity="easy",
+            load_target="low",
+            purpose="Preserve the preferred social run with Clayton's wife while allowing a sixth low-cost bike day only when the run and recovery stay genuinely easy.",
+            dose={
+                "run": "30-50 min conversational / RPE 2-3.",
+                "optional_bike": "20-30 min easy Suito at RPE 2 later in the day only if the run stays conversational and legs feel normal.",
+                "cap": "If the run becomes moderate or hard, omit the bike and count the run toward the meaningful-cost cap.",
+            },
+            adaptation_hypothesis=(
+                "A truly easy social run supports general aerobic continuity; an optional easy spin can add bike frequency without stealing Tuesday trail quality."
+            ),
+            execution_rules=[
+                "No pace target, hills, strides, or finish surge.",
+                "The optional bike is circulation only, not a second workout.",
+                "Do not use a double to manufacture the weekly touch count.",
+            ],
+            expected_result={
+                "run": "Conversational throughout with normal legs afterward.",
+                "next_day": "Full technical and physical availability for Tuesday Kiara.",
+            },
+            readiness_gate=_recovery_gate(),
+            bike_touch_status="optional",
+            density_cost="low",
         )
-        tuesday_title = "Recovery and activation"
-        tuesday_type = "recovery_activation"
-        tuesday_priority = "support"
-        tuesday_duration = 25
-        tuesday_purpose = "Absorb Monday's engine dose before the MTB quality day."
-    else:
-        sessions.append(
-            _session(
-                monday,
-                title="Easy bike continuity",
-                session_type="easy_bike_continuity",
-                modality="bike",
-                priority="support",
-                duration_min=45,
-                intensity="easy",
-                load_target="low",
-                purpose="Keep bike rhythm without carrying weekend debt into the build week.",
-                dose={
-                    "duration_min": "30-45",
-                    "intensity": "Z1-Z2 / RPE 2-4",
-                    "cap": "Finish fresher than you started.",
-                },
-                adaptation_hypothesis=(
-                    "A low-cost bike touch preserves continuity while allowing Tuesday or Wednesday to carry the useful stimulus."
-                ),
-                execution_rules=[
-                    "Use indoor trainer or low-consequence terrain.",
-                    "No climbs that become work.",
-                    "No technical progression.",
-                ],
-                expected_result={
-                    "garmin_load": "low",
-                    "next_day": "same or better readiness",
-                },
-                readiness_gate=_recovery_gate(),
-            )
-        )
-        tuesday_title = "Indoor tempo/torque"
-        tuesday_type = "indoor_tempo_torque"
-        tuesday_priority = "key_engine"
-        tuesday_duration = 70
-        tuesday_purpose = "Add the week's controlled engine stimulus after Monday confirms recovery."
+    )
 
     sessions.append(
         _session(
             tuesday,
-            title=tuesday_title,
-            session_type=tuesday_type,
-            modality="bike_indoor" if tuesday_type == "indoor_tempo_torque" else "recovery",
-            priority=tuesday_priority,
-            duration_min=tuesday_duration,
-            intensity="moderate" if tuesday_type == "indoor_tempo_torque" else "recovery",
-            load_target="controlled" if tuesday_type == "indoor_tempo_torque" else "very low",
-            purpose=tuesday_purpose,
+            title="Kiara MTB quality/engine",
+            session_type="mtb_quality_engine",
+            modality="mtb",
+            priority="key_skill_engine",
+            duration_min=90,
+            intensity="moderate_hard",
+            mtb_exposure=True,
+            load_target="meaningful but bounded by technical quality",
+            purpose="Use the first protected MTB exposure for one clearly named engine or technical objective.",
             dose={
-                "main_set": "3 x 10 min tempo/torque with 4 min easy between."
-                if tuesday_type == "indoor_tempo_torque"
-                else "20-30 min easy cardio, mobility, or light activation.",
-                "yellow_day_option": "2 x 10 min only if HRV/RHR is still off."
-                if tuesday_type == "indoor_tempo_torque"
-                else "Keep it purely restorative.",
-                "cap": "No extra work.",
+                "venue": "Kiara.",
+                "primary_target": "Choose one: climb repeatability/torque, or descent braking and line quality. Do not stack both as maximal targets.",
+                "cap": "Stop adding quality when decision speed, front tracking, or repeatability drops.",
             },
             adaptation_hypothesis=(
-                "Tempo work builds repeatable climbing support without the noise of trail intensity."
-                if tuesday_type == "indoor_tempo_torque"
-                else "A small support dose should improve readiness for the MTB quality day."
+                "A focused fresh-state MTB session should convert aerobic power into more repeatable climbing and deliberate descending without hidden mission creep."
             ),
             execution_rules=[
-                "Use current RPE/HR response rather than stale FTP.",
-                "Keep the final repetition repeatable.",
-                "Do not turn this into threshold testing.",
-            ]
-            if tuesday_type == "indoor_tempo_torque"
-            else [
-                "No DOMS-producing strength.",
-                "No high-intensity cardio.",
-                "Stop if it does not improve freshness.",
+                "Declare the primary target before the first quality effort.",
+                "Keep setup unchanged unless the session is explicitly rewritten as a setup test.",
+                "Compare the first and final quality rep.",
             ],
             expected_result={
-                "physiology": "High-aerobic support for Kiara climbs.",
-                "next_day": "Ready for MTB skill quality.",
-            }
-            if tuesday_type == "indoor_tempo_torque"
-            else {
-                "recovery": "Better freshness for Wednesday.",
+                "technical": "Stable vision, braking release, front-wheel authority, and line choice.",
+                "physiology": "One meaningful MTB dose that remains absorbable before Thursday.",
             },
-            readiness_gate=_quality_gate() if tuesday_type == "indoor_tempo_torque" else _recovery_gate(),
+            readiness_gate=_quality_gate(),
+            bike_touch_status="normal",
+            density_cost="meaningful",
         )
     )
 
     sessions.append(
         _session(
             wednesday,
-            title="Kiara MTB quality/skill",
-            session_type="mtb_quality_skill",
-            modality="mtb",
-            priority="key_skill",
-            duration_min=90,
-            intensity="moderate",
-            mtb_exposure=True,
-            load_target="moderate, capped by skill quality",
-            purpose="Build repeatable technical speed while keeping the session narrow and measurable.",
+            title="Indoor low-aerobic continuity",
+            session_type="indoor_low_aerobic",
+            modality="bike_indoor",
+            priority="aerobic_support",
+            duration_min=60,
+            intensity="easy",
+            load_target="low aerobic",
+            purpose="Add bike-specific aerobic volume without carrying high-aerobic or neural debt into Thursday.",
             dose={
-                "venue": "Kiara, Stumpjumper or chosen skill bike.",
-                "laps": "3-4 controlled 2K / 2K+ style loops.",
-                "cap": "No KOM chasing and no extra trail novelty.",
+                "duration_min": "45-60",
+                "power_anchor": "Approximately 55-65% of current Garmin FTP; with 211 W, about 116-137 W. Clayton's validated easy anchor is near 125 W.",
+                "intensity": "RPE 2-3, conversational, seated.",
+                "cap": "No tempo, torque blocks, standing surges, or sprint finish.",
             },
             adaptation_hypothesis=(
-                "Repeated same-venue laps should convert fitness into braking timing, corner exits, and clipless body-position confidence."
+                "A low-cost continuous bike dose should build mitochondrial and capillary support while improving between-stage recovery without compromising technical freshness."
             ),
             execution_rules=[
-                "One technical target only.",
-                "Climb steady enough that descents stay precise.",
-                "Review first descent versus final descent.",
+                "Hold power and cadence steady enough to assess HR drift.",
+                "Reduce 5-10 W if RPE rises above 3 or HR becomes disproportionate.",
+                "Finish with normal legs for Thursday.",
             ],
             expected_result={
-                "technical": "More centred posture, cleaner braking release, better corner-exit speed.",
-                "physiology": "Moderate MTB load without deep recovery debt.",
+                "physiology": "Low-aerobic Training Effect with zero intentional high-intensity minutes.",
+                "next_day": "Normal legs, clarity, and technical appetite.",
             },
-            readiness_gate=_quality_gate(),
+            readiness_gate=_recovery_gate(),
+            bike_touch_status="normal",
+            density_cost="low",
         )
     )
 
     sessions.append(
         _session(
             thursday,
-            title="Recovery and durability support",
-            session_type="recovery_activation",
-            modality="recovery_gym",
-            priority="support",
-            duration_min=30,
-            intensity="recovery",
-            load_target="very low",
-            purpose="Prepare for Friday/Saturday trail quality without stealing freshness.",
-            dose={
-                "options": "20-30 min easy cardio, mobility, or light activation strength.",
-                "strength": "Split squat/lunge, hinge, row, push, core, calf, all sub-DOMS.",
-                "cap": "If it compromises Friday, it was too much.",
-            },
-            adaptation_hypothesis=(
-                "A small support dose improves tissue readiness and posture durability without interfering with key MTB sessions."
-            ),
-            execution_rules=[
-                "No heavy legs.",
-                "No metabolic conditioning.",
-                "Leave the gym feeling better than when you entered.",
-            ],
-            expected_result={
-                "recovery": "Better trail readiness for Friday.",
-            },
-            readiness_gate=_recovery_gate(),
-        )
-    )
-
-    sessions.append(
-        _session(
-            friday,
-            title="Kiara Enduro durability",
-            session_type="mtb_durability_enduro",
+            title="Kiara MTB durability/technical quality",
+            session_type="mtb_durability_quality",
             modality="mtb",
             priority="key_durability",
             duration_min=120,
             intensity="moderate_hard",
             mtb_exposure=True,
             load_target="meaningful but bounded",
-            purpose="Rebuild enduro repeatability: climb, recover, descend with precision, then repeat.",
+            purpose="Use the second protected MTB exposure to build repeatability while preserving final-descent precision.",
             dose={
-                "venue": "Kiara or equivalent enduro repeatability venue.",
-                "laps": "3 climb-plus-descent loops; 4th only if first 3 are technically sharp.",
-                "cap": "Stop adding loops when descent quality drops.",
+                "venue": "Kiara or equivalent enduro-repeatability venue.",
+                "primary_target": "Choose one: additional clean repeat, standing-climb torque, or technical durability. Do not maximize all three.",
+                "cap": "Stop adding loops when the final descent would no longer match the first in vision, braking, front tracking, and line choice.",
             },
             adaptation_hypothesis=(
-                "A bounded enduro-density day should improve the ability to finish the final descent with the aggression and precision of the first."
+                "A bounded repeatability session should improve the ability to climb, recover, and descend precisely under accumulating fatigue."
             ),
             execution_rules=[
-                "Climb controlled; descend deliberately.",
-                "Treat final descent quality as the main metric.",
-                "No setup experiments unless the session is explicitly converted into a setup test.",
+                "Climb deliberately; descend with one named technical cue.",
+                "Keep setup unchanged unless this is explicitly converted into a setup test.",
+                "Technical quality, not elapsed time, decides the final repeat.",
             ],
             expected_result={
-                "technical": "Stable braking, posture, and line choice late in the ride.",
-                "physiology": "Enduro-specific fatigue resistance without uncontrolled overreach.",
+                "technical": "The final descent remains assertive and deliberate rather than merely survived.",
+                "physiology": "Meaningful MTB load without Friday recovery failure.",
             },
             readiness_gate=_quality_gate(),
+            bike_touch_status="normal",
+            density_cost="meaningful",
             post_session_review_fields=[
                 *_review_fields(),
                 "loop_count",
@@ -516,6 +481,40 @@ def _build_sessions(
                 "braking_fatigue",
                 "upper_body_fatigue",
             ],
+        )
+    )
+
+    sessions.append(
+        _session(
+            friday,
+            title="Indoor low-aerobic continuity or primer",
+            session_type="indoor_low_aerobic",
+            modality="bike_indoor",
+            priority="aerobic_support",
+            duration_min=50,
+            intensity="easy",
+            load_target="low aerobic",
+            purpose="Accumulate bike-specific aerobic time while absorbing Thursday and preserving Saturday optionality.",
+            dose={
+                "green": "45-60 min near 120-125 W / RPE 2-3.",
+                "after_harder_than_written_thursday": "30-45 min recovery at 100-115 W or skip.",
+                "cap": "No intensity added to repair load or frequency.",
+            },
+            adaptation_hypothesis=(
+                "A low-aerobic touch should support cycling durability and speed recovery from the key MTB dose without adding high-aerobic debt."
+            ),
+            execution_rules=[
+                "Let Thursday's actual cost choose the duration.",
+                "Keep the entire session conversational and seated.",
+                "If the spin does not improve the legs by 15 minutes, stop.",
+            ],
+            expected_result={
+                "physiology": "Low-aerobic continuity with stable or improving leg feel.",
+                "next_day": "Saturday remains optional, never owed.",
+            },
+            readiness_gate=_recovery_gate(),
+            bike_touch_status="normal",
+            density_cost="low",
         )
     )
 
@@ -555,10 +554,19 @@ def _build_sessions(
                 "yellow": "Reduce to easy technique only.",
                 "red": "Skip.",
             },
+            bike_touch_status="conditional",
+            density_cost="low",
         )
     )
     sessions.append(_scheduled_rest(sunday))
 
+    return sessions, _summarize_session_plan(sessions, rules)
+
+
+def _summarize_session_plan(
+    sessions: list[dict[str, Any]],
+    rules: dict[str, int],
+) -> dict[str, Any]:
     exposure_summary = {
         "protected_mtb_exposures": rules["protect_mtb_exposures"],
         "maximum_normal_build_mtb_exposures": rules["maximum_mtb_exposures"],
@@ -566,7 +574,35 @@ def _build_sessions(
         "optional_mtb_exposures": sum(1 for item in sessions if item.get("mtb_exposure") and item.get("optional")),
         "rule": "Protect 2 MTB exposures; allow up to 3 when readiness, logistics, and density support it. More than 3 is a race/event block, not a default build week.",
     }
-    return sessions, exposure_summary
+    normal_bike_days = sorted(
+        {
+            item["date"]
+            for item in sessions
+            if item.get("bike_touch_status") in {"normal", "conditional"}
+        }
+    )
+    optional_bike_days = sorted(
+        {
+            item["date"]
+            for item in sessions
+            if item.get("bike_touch_status") == "optional"
+        }
+    )
+    exposure_summary["bike_touch_plan"] = {
+        "planned_normal_unique_bike_days": normal_bike_days,
+        "planned_normal_count": len(normal_bike_days),
+        "optional_additional_unique_bike_days": optional_bike_days,
+        "planned_max_count": len(set(normal_bike_days + optional_bike_days)),
+        "planned_meaningful_cost_sessions": sum(
+            1 for item in sessions if item.get("density_cost") == "meaningful"
+        ),
+        "counting_rule": (
+            "Count unique bike days, not split activity files. Five is the normal build shape; "
+            "six requires the optional Monday microtouch and clean recovery. A hard run counts "
+            "toward the meaningful-cost cap."
+        ),
+    }
+    return exposure_summary
 
 
 def _weekly_objective(state: dict[str, Any], load_focus: dict[str, Any]) -> dict[str, Any]:
@@ -611,7 +647,7 @@ def _daily_gates() -> list[dict[str, str]]:
         },
         {
             "gate": "density",
-            "rule": "If a key MTB day drifts harder than written, the next non-key day becomes recovery.",
+            "rule": "Keep at most three meaningful-cost sessions including hard running. If a key MTB day drifts harder than written, the next non-key bike touch becomes recovery or is skipped; do not chase 5-6.",
         },
         {
             "gate": "MTB exposure cap",
@@ -656,7 +692,9 @@ def _text_summary(plan: dict[str, Any]) -> str:
         "",
         "Targets:",
         f"- Load range: {plan['targets']['training_load_range'][0]}-{plan['targets']['training_load_range'][1]}",
-        f"- Bike touches: {plan['targets']['bike_touches']['minimum']}-{plan['targets']['bike_touches']['preferred']}",
+        f"- Bike touches: maintenance {plan['targets']['bike_touches']['minimum']}; preferred "
+        f"{plan['targets']['bike_touches']['preferred']}-{plan['targets']['bike_touches']['maximum_normal_build']} "
+        f"(planned normal {plan['targets']['bike_touches']['planned_normal_count']})",
         f"- MTB exposures: protect {plan['targets']['mtb_exposures']['protected_mtb_exposures']}, max {plan['targets']['mtb_exposures']['maximum_normal_build_mtb_exposures']}",
         "",
         "Sessions:",
@@ -713,12 +751,17 @@ def build_weekly_plan(
     load_focus = _load_focus_summary(state)
     load_target = _weekly_load_target(state)
     sessions, exposure_summary = _build_sessions(start, state, rules)
+    sessions = _apply_explicit_session_overrides(root, sessions)
+    exposure_summary = _summarize_session_plan(sessions, rules)
     freshness = state.get("data_freshness") or {}
     readiness = state.get("readiness") or {}
     arbitration = build_garmin_arbitration(state)
 
     status = "ready"
-    if freshness.get("status") != "current":
+    state_basis_date = parse_date(state.get("date"))
+    if state_basis_date is not None and state_basis_date != target:
+        status = "provisional_prior_day_basis"
+    elif freshness.get("status") != "current":
         status = "provisional_stale_data"
     elif readiness.get("readiness_level") == "red":
         status = "downshifted_readiness"
@@ -734,6 +777,8 @@ def build_weekly_plan(
         "week_end": end.isoformat(),
         "status": status,
         "planning_basis": {
+            "state_basis_date": state_basis_date.isoformat() if state_basis_date else None,
+            "plan_target_date": target.isoformat(),
             "readiness": {
                 "level": readiness.get("readiness_level"),
                 "score": readiness.get("readiness_score"),
@@ -754,7 +799,10 @@ def build_weekly_plan(
             "bike_touches": {
                 "minimum": rules["minimum_bike_touches"],
                 "preferred": rules["preferred_bike_touches"],
-                "note": "Bike-specific continuity is the durable fitness currency; elliptical/gym do not replace this.",
+                "maximum_normal_build": rules["maximum_bike_touches"],
+                "meaningful_cost_sessions_max": rules["meaningful_cost_sessions_max"],
+                **exposure_summary["bike_touch_plan"],
+                "note": "Bike-specific continuity is the durable fitness currency; elliptical/gym do not replace this, and low-cost touches carry the frequency target.",
             },
             "mtb_exposures": exposure_summary,
             "strength_sessions": {

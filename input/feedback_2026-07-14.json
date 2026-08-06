@@ -1,0 +1,135 @@
+{
+  "date": "2026-07-14",
+  "entries": [
+    {
+      "activity_id": "23590320093",
+      "timestamp_local": "2026-07-15T00:39:30+08:00",
+      "source": "athlete_post_session_report",
+      "stage": "Pure Quill Stage",
+      "lap_route_annotations": [
+        {
+          "laps": [
+            2,
+            4
+          ],
+          "stage_id": "pure_quill",
+          "classification": "full_stage_descent"
+        },
+        {
+          "laps": [
+            5,
+            6
+          ],
+          "stage_id": "dh_line",
+          "classification": "required_egress",
+          "portion": "approximately_one_third"
+        }
+      ],
+      "route_egress": "Laps 5-6 were the required route out using approximately one third of Twin Peak DH Line; they were not a third Twin Peak stage loop.",
+      "climb_context": {
+        "rpe_by_loop": [
+          4,
+          6
+        ],
+        "start_difference": "The climbs began from different locations; only the final approximately 50 percent was shared.",
+        "rest_after_first_descent_min": 6
+      },
+      "fueling_reported_totals": {
+        "carbs_g": 70,
+        "fluid_ml": 1200,
+        "sodium_mg": 430,
+        "rate_basis_elapsed_min": 115.7
+      },
+      "session_contract_review": {
+        "loop_count": 2,
+        "release_marker_hit_by_run": {
+          "descent_1": "ok",
+          "descent_2": "much_better_more_confident"
+        },
+        "technical_quality_notes": "The second Pure Quill descent was better: greater confidence, better body position, and tighter, straighter line choice over rough terrain. The fork seemed to need more support, or the rider may need to load the front more; this remains a rider-loading-versus-setup question.",
+        "final_descent_quality_vs_first": "better",
+        "braking_fatigue": 0,
+        "upper_body_fatigue": 3,
+        "fueling_carbs_g_per_hour": 36.3,
+        "fluid_ml_per_hour": 622.3,
+        "sodium_mg_per_hour": 223.0,
+        "stop_rule_outcome": "not_triggered"
+      }
+    },
+    {
+      "activity_id": "23590320093",
+      "timestamp_local": "2026-07-15T00:56:02+08:00",
+      "source": "athlete_followup_report",
+      "reconciles_prior_report": {
+        "prior_timestamp_local": "2026-07-15T00:39:30+08:00",
+        "prior_stop_rule_outcome": "not_triggered",
+        "reason": "A later athlete report disclosed one near miss on descent 2; the planned contract explicitly lists a near miss as a stop-rule trigger. The action taken after the incident has not yet been reported."
+      },
+      "trail_condition": "Damp soil after heavy rain the previous evening; neither dry nor wet/muddy.",
+      "setup_change_during_ride": "none",
+      "setup_hypothesis": "Athlete felt one additional HSC click might add confidence but might also increase front-tyre deflection off roots; untested and no setup was changed during this ride.",
+      "session_contract_review": {
+        "late_session_skill_fade": "none",
+        "reactive_braking": false,
+        "delayed_line_choice": false,
+        "near_miss_count": 1,
+        "near_miss_details": {
+          "run": 2,
+          "terrain": "damp off-camber roots",
+          "line_choice": "straighter line over roots",
+          "event": "The bike pinged left down the cambered roots.",
+          "athlete_attributed_mechanism": "Body position moved rearward.",
+          "post_incident_action": "not_reported"
+        },
+        "technical_quality": "degraded",
+        "technical_quality_notes": "No late skill fade, reactive braking, or delayed line choice was reported, and run 2 was otherwise technically better. However, one near miss occurred on damp off-camber roots when the bike pinged left; the athlete felt his body position had moved rearward. The session is therefore not a clean MTB technical calibration sample.",
+        "stop_rule_triggered": true,
+        "stop_rule_trigger": "near_miss_on_descent_2",
+        "stop_rule_action": "not_reported",
+        "stop_rule_outcome": "triggered_action_unknown"
+      }
+    },
+    {
+      "activity_id": "23590320093",
+      "timestamp_local": "2026-07-15T01:09:02+08:00",
+      "source": "athlete_stop_rule_clarification",
+      "reconciles_prior_report": {
+        "prior_timestamp_local": "2026-07-15T00:56:02+08:00",
+        "prior_provisional_stop_rule_outcome": "triggered_action_unknown",
+        "new_evidence": "The athlete explicitly classified the stop-rule outcome and described the immediate correction after the front-wheel deflection."
+      },
+      "line_context": {
+        "run": 2,
+        "line_novelty": "Aggressive straighter line not used on run 1.",
+        "terrain": "damp off-camber roots"
+      },
+      "post_incident_response": {
+        "timing": "immediate",
+        "athlete_description": "Loaded the front, increased pressure through the right/front foot, reduced pressure through the left/rear foot, stabilized the bike, and continued into easier terrain.",
+        "result": "stabilized",
+        "continuation": "continued_into_easier_terrain"
+      },
+      "session_contract_review": {
+        "late_session_skill_fade": "none",
+        "reactive_braking": false,
+        "delayed_line_choice": false,
+        "technical_quality": "degraded",
+        "technical_quality_scope": "calibration_cleanliness_not_global_ride_quality",
+        "technical_quality_notes": "Run 2 was otherwise technically better and the athlete immediately corrected the front-wheel deflection by reloading the front and changing foot pressure. However, the previously reported near-miss wording and an aggressive line not attempted on run 1 mean this was not a clean same-action technical comparison for nominal digital-twin calibration.",
+        "stop_rule_triggered": false,
+        "stop_rule_outcome": "not_triggered",
+        "stop_rule_outcome_source": "athlete_explicit_clarification",
+        "stop_rule_outcome_rationale": "The athlete classified the event as a recoverable deflection while testing an aggressive new line, not as a stop-rule trigger, and stabilized immediately before continuing into easier terrain.",
+        "calibration_disposition": "exclude_from_nominal_digital_twin_calibration"
+      },
+      "coach_contract_audit": {
+        "status": "conflicted_but_athlete_outcome_preserved",
+        "athlete_reported_stop_rule_outcome": "not_triggered",
+        "contract_language": "The stored stop rule says to stop for a near miss.",
+        "conflict_basis": "The athlete previously used the term near miss, and run 2 introduced a novel aggressive line not present on run 1.",
+        "coach_interpretation": "Preserve the athlete's explicit valid stop-rule outcome without reclassifying it, but do not treat the technical execution as a clean nominal calibration sample.",
+        "nominal_calibration_clean": false
+      }
+    }
+  ]
+}

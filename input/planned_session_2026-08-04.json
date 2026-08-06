@@ -1,0 +1,77 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-08-04",
+  "generated_at": "2026-08-04T07:32:51+08:00",
+  "status": "active_family_hike",
+  "session": {
+    "title": "Maragang Hill controlled family hike",
+    "type": "hiking",
+    "modality": "hike",
+    "duration_min": 90,
+    "intensity": "controlled_aerobic",
+    "density_cost": "low_to_moderate_life_load",
+    "mtb_exposure": false,
+    "optional": false,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Enjoy the confirmed Kundasang family hike while using the 1900-2350 m ascent as controlled aerobic, uphill torque and hiking-durability exposure without manufacturing fatigue that delays the post-travel Enduro reacquisition block.",
+    "dose": {
+      "planned_start_local": "2026-08-04T09:00:00+08:00",
+      "planned_duration_min": 90,
+      "start_elevation_m": 1900,
+      "high_point_elevation_m": 2350,
+      "approximate_ascent_m": 450,
+      "effort": "RPE 3-4 for most of the ascent; brief RPE 5 is acceptable on steep steps, with no intensity target.",
+      "day_rule": "This hike is today's only substantive exposure. Do not add a run, gym session or bike workout."
+    },
+    "adaptation_hypothesis": "A conversational 450 m ascent provides useful low-consequence aerobic and uphill muscular endurance, while a controlled descent adds modest eccentric durability. Keeping intensity and descent impact controlled should allow this travel exposure to be absorbed before the August 10 Enduro reacquisition block.",
+    "execution_rules": [
+      "Complete an altitude symptom gate before leaving: no new headache with nausea or dizziness, no unusual fatigue, no breathlessness at rest, no chest tightness or persistent cough, and normal balance and coordination.",
+      "Use the talk test and RPE rather than normal sea-level heart-rate expectations; altitude can raise ventilation and heart rate at a given pace.",
+      "Walk the first 15 minutes deliberately easy, then hold a sustainable family pace. Do not chase elevation speed, steps, intensity minutes or Garmin load.",
+      "On wet steps or roots, shorten stride, keep the centre of mass over the feet and control the descent; do not bound or run downhill.",
+      "The 90-minute duration is the stated itinerary, not permission to under-carry. Carry enough fluid, carbohydrate and weather protection for a longer return if 90 minutes describes only the outward leg.",
+      "Aim to be off exposed terrain before the forecast afternoon thunderstorm window."
+    ],
+    "expected_result": {
+      "during": "Conversational breathing, stable coordination and RPE 3-4 without progressive altitude symptoms.",
+      "after": "Pleasant leg work with no marked quadriceps damage, headache, nausea, dizziness or disproportionate exhaustion.",
+      "next_day": "Normal walking, cognition and recovery; the hike is absorbed as travel-life load rather than a hidden hard session."
+    },
+    "stop_rules": [
+      "Do not ascend if headache is accompanied by nausea, dizziness or unusual fatigue, or if there is breathlessness at rest, chest tightness, persistent cough, confusion or abnormal coordination.",
+      "Stop ascending and descend if altitude symptoms appear or worsen despite rest; confusion, ataxia, breathlessness at rest or chest symptoms require prompt descent and medical assessment.",
+      "Lightning, thunder, rapidly building cloud, unsafe wet footing or guide concern overrides the route and turnaround plan.",
+      "Musculoskeletal pain that changes gait ends the training interpretation; use the safest family return."
+    ],
+    "nutrition": {
+      "pre_hike": "Espresso is fine if customary, but pair it with breakfast containing approximately 40-60 g carbohydrate and some protein, plus 300-500 ml fluid before rollout.",
+      "carry_for_90_min": "Carry at least 750-1000 ml fluid and 30-45 g carbohydrate; include roughly 300-600 mg sodium per litre if sweating meaningfully.",
+      "longer_route_rule": "If 90 minutes is the ascent rather than total duration, plan 30-45 g carbohydrate and approximately 400-700 ml fluid per hour, with enough carried or refill access for the full return."
+    },
+    "post_session_review_fields": [
+      "actual_duration_min",
+      "actual_distance_km",
+      "actual_ascent_m",
+      "high_point_elevation_m",
+      "hike_rpe",
+      "heart_rate_response_vs_effort",
+      "altitude_symptoms_during_or_after",
+      "descent_leg_fatigue",
+      "footing_and_weather",
+      "carbohydrate_g_total",
+      "fluid_ml_total",
+      "sodium_mg_total",
+      "stop_rule_outcome",
+      "next_morning_response"
+    ]
+  }
+}

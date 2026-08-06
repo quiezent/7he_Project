@@ -1,0 +1,101 @@
+{
+  "date": "2026-07-30",
+  "entries": [
+    {
+      "timestamp_local": "2026-07-30T11:00:00+08:00",
+      "source": "athlete_pre_session_report",
+      "reported_context": {
+        "garmin_sync_status": "athlete_confirmed_before_chat_and_live_sync_verified",
+        "location_intent": "Leaving for Bukit Kiara.",
+        "subjective_readiness": "Athlete feels the planned 2K+ and 85-90 percent Pure Quill session is good to go.",
+        "setup_intent": "Increase fork HSC damping by exactly one click relative to the 2026-07-28 setting and assess it without changing other setup variables."
+      }
+    },
+    {
+      "timestamp_local": "2026-07-30T16:13:00+08:00",
+      "source": "athlete_post_session_report_with_coach_contract_audit",
+      "activity_id": "23784487746",
+      "reported_context": {
+        "overall_setup_feel": "HSC +1 felt like the right direction. The athlete felt substantially stronger and more dynamically centred, did not veer left, did not perceive rear wallow, and no longer felt that the Stumpjumper was at its limit.",
+        "rider_loading_interpretation": "The athlete suspects that leaning rearward to enjoy loading the rear had mentally exaggerated rearward movement. With greater perceived front support, he was more willing to load the front.",
+        "egress": "The athlete stood on the steeper egress-climb pitches because energy remained available."
+      },
+      "route_execution": {
+        "lap_2": "2K rather than the prescribed 2K+. The athlete deliberately selected 2K as the cleaner comparison and reported being faster and more controlled.",
+        "lap_3": "Paced climb at RPE 3.",
+        "lap_4": "Pure Quill intent, but one exit immediately after a corner arrived sooner than expected and was missed. The athlete continued safely down the joining trail, shortening the recorded route by approximately 100 m and omitting part of the flow section.",
+        "comparison_guardrail": "Lap 2 is a useful matched-profile comparison. Lap 4 is not a full-route Pure Quill time comparison because the route was shortened."
+      },
+      "objective_lap_comparison": {
+        "method": "Distance-synchronised Garmin detail traces at the common 1,118.38 m overlap, with movement anchoring and 3-second median sample interval.",
+        "versus_2026_07_25": "201.000 s today versus 212.768 s; today faster by 11.768 s or 5.5 percent.",
+        "versus_2026_07_28": "201.000 s today versus 208.551 s; today faster by 7.551 s or 3.6 percent.",
+        "quality": "Full overlap to the shorter trace and no lap-comparator quality flags. GNSS-derived distance and speed under tree cover still limit very small differences.",
+        "causal_guardrail": "Today also had higher recorded average and normalized lap power, so the improvement is a combined rider-output, execution, and plausible setup-support result rather than an HSC-only effect.",
+        "artifacts": [
+          "snapshots/lap_comparison_23784487746_vs_23723839107_lap_2.json",
+          "snapshots/lap_comparison_23784487746_vs_23758129689_lap_2.json"
+        ]
+      },
+      "session_contract_review": {
+        "opening_gate_result": "passed",
+        "opening_gate_notes": "Figure eights felt more centred with good bike-body separation.",
+        "climb_rpe_by_cycle": {
+          "lap_3": 3
+        },
+        "fork_hsc_baseline_and_test_position": "Exactly one click more HSC damping than the 2026-07-28 setting.",
+        "front_tracking_and_intended_steering": "No leftward veer was reported. The athlete felt more able to load and command the front because the fork felt more supportive.",
+        "rider_hip_retreat": "Not observed by the athlete; posture felt stronger and more centred.",
+        "rear_wallow_or_kick": "No rear wallow reported; rear kick was not explicitly reviewed.",
+        "technical_quality": "degraded",
+        "technical_quality_scope": "calibration_cleanliness_not_global_ride_quality",
+        "technical_quality_notes": "The 2K execution was faster and more controlled, posture was stronger and more centred, no left veer occurred, and no rear wallow was reported. However, on Pure Quill the athlete missed a known exit because the corner exit arrived faster than anticipated. This was not reported as a near miss or loss of control, but it is a route-timing and line-selection error, and the shortened route prevents a clean nominal setup or speed calibration.",
+        "late_session_skill_fade": null,
+        "unforced_correction_or_near_miss": "No near miss was reported. One known route exit was missed after a faster-than-usual corner exit; the athlete continued safely on the joining trail.",
+        "fueling_consumed": {
+          "carbs_g_total": 70.6,
+          "fluid_ml_total": 1200,
+          "sodium_mg_total": 438.8,
+          "contents": "1 L 100Plus Active, 200 ml water, and two 15 g honey sachets",
+          "timing": "One honey sachet at the start of lap 2 and one midway through lap 3."
+        },
+        "fueling_carbs_g_per_hour": 43.4,
+        "fluid_ml_per_hour": 738.5,
+        "sodium_mg_per_hour": 270.0,
+        "rate_basis_elapsed_min": 97.5,
+        "stop_rule_outcome": "not_triggered",
+        "stop_rule_outcome_source": "athlete_explicit_report",
+        "calibration_disposition": "exclude_from_nominal_digital_twin_calibration_but_retain_as_useful_setup_evidence"
+      },
+      "coach_contract_audit": {
+        "action_alignment": "route_and_distance_mismatch",
+        "reason": "The planned 2K+ was intentionally replaced with 2K, and Pure Quill was shortened after a missed exit. Modality, session count, total duration, and overall test purpose remained broadly aligned, but the exact action required for true digital-twin calibration did not.",
+        "load_alignment": "actual Garmin load 182.1 versus expected 120-175; slight upper-bound exceedance",
+        "rpe_alignment": "actual Garmin RPE 8 versus expected approximately 5-7",
+        "technical_outcome": "strong_global_execution_but_not_clean_for_nominal_calibration"
+      }
+    },
+    {
+      "timestamp_local": "2026-07-30T17:56:00+08:00",
+      "source": "athlete_post_review_clarification_and_travel_schedule",
+      "activity_id": "23784487746",
+      "reported_context": {
+        "rpe_clarification": "RPE 8 was the athlete's personal assessment of the session; he considers the ride controlled rather than overreached.",
+        "load_clarification": "The athlete notes that Garmin load 182.1 was only 7.1 above the written upper estimate of 175.",
+        "friday_preference": "The athlete would like to ride on Friday 2026-07-31.",
+        "travel": {
+          "dates": "2026-08-03 through 2026-08-07",
+          "location": "Sabah: Kota Kinabalu island hopping and Kundasang.",
+          "purpose": "Family trip.",
+          "possible_activity": "A sunrise-viewing hike in Kundasang may occur; exact date, route, duration and elevation are not yet known."
+        }
+      },
+      "coach_interpretation": {
+        "rpe": "Retain RPE 8 as a real subjective cost signal, but do not equate it with loss of technical control when the athlete explicitly distinguishes the two and reports no fade or stop-rule trigger.",
+        "load": "A 7.1-point or 4.1-percent exceedance is too small to function as a standalone hard veto given Garmin load uncertainty and the otherwise controlled execution.",
+        "friday_revision": "Replace mandatory rest with a conditional low-cost MTB continuity touch. The ride is not a setup comparison, repeatability session or attack day.",
+        "travel_week": "Treat the family trip as a bike-continuity interruption but not a fitness emergency. Island hopping, heat, travel, walking and any sunrise hike are life load; a substantive hike replaces rather than supplements training."
+      }
+    }
+  ]
+}

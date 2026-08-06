@@ -1,0 +1,52 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-08-07",
+  "generated_at": "2026-07-30T17:56:00+08:00",
+  "status": "active_family_travel_override",
+  "session": {
+    "title": "Sabah family trip — travel and family activity only",
+    "type": "scheduled_rest",
+    "modality": "rest",
+    "duration_min": 0,
+    "intensity": "recovery",
+    "density_cost": "none",
+    "mtb_exposure": false,
+    "optional": false,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Keep the Kota Kinabalu and Kundasang family trip family-first without manufacturing a workout to satisfy nominal weekly frequency.",
+    "dose": {
+      "planned_training": "None.",
+      "life_activity": "Travel, walking, island activity, sightseeing and any family-selected hike are allowed as life load.",
+      "hike_rule": "If the sunrise hike occurs today, record it on Garmin and do not add another workout."
+    },
+    "adaptation_hypothesis": "Consolidation plus normal travel activity preserves the preceding bike block better than forcing low-quality training around family logistics, sleep disruption and heat.",
+    "execution_rules": [
+      "Do not chase steps, intensity minutes or a training-load target.",
+      "Use fluids, sodium, shade and food according to actual heat exposure and family logistics.",
+      "A substantive hike replaces training for the day."
+    ],
+    "expected_result": {
+      "week": "Family activity is absorbed without hidden training-density debt."
+    },
+    "stop_rules": [
+      "Illness, poor sleep, travel fatigue or heat symptoms remove optional hiking intensity and increase recovery attention."
+    ],
+    "post_session_review_fields": [
+      "actual_family_activity",
+      "walking_or_hike_duration",
+      "hike_elevation_gain",
+      "hike_rpe",
+      "heat_and_hydration_notes",
+      "illness_status"
+    ]
+  }
+}

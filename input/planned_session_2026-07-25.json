@@ -1,0 +1,86 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-07-25",
+  "generated_at": "2026-07-25T15:16:00+08:00",
+  "status": "active_same_day_coach_override_after_architecture_audit",
+  "decision_basis": {
+    "local_context": "Clayton is at the Bukit Kiara carpark after returning from family travel on 2026-07-24 night.",
+    "physical_readiness": "Yellow/caution: 5.03 hours primary sleep, but wake Body Battery 75, current Body Battery 48, HRV 50 ms balanced, resting HR 46 versus 48 seven-day average, no illness, and body feel great.",
+    "cns_interpretation": "Acute short-sleep amber with fresh mental clarity and no brain fog; use a consequence-sensitive field gate rather than automatic CNS compromise.",
+    "density": "No recorded training in the preceding seven days; ACWR 0.1 LOW represents underload rather than overload.",
+    "route_selection": "Pure Quill is the smoothest and most familiar Twin Peaks enduro stage, so it is the appropriate controlled transfer surface. TnT, Flintstone, the full DH Line, 2K+, and novelty are excluded.",
+    "architecture_correction": "A deterministic 5.0-to-under-5.5-hour sleep ceiling had converted short sleep alone into compromised CNS and a blanket trail ban; the revised graded rule preserves uncertainty while allowing bounded familiar skill after a clean field gate."
+  },
+  "session": {
+    "title": "Kiara acute-short-sleep familiar skill gate",
+    "type": "mtb_skill_familiar_capped",
+    "modality": "mtb",
+    "venue": "Bukit Kiara",
+    "duration_min": 70,
+    "intensity": "skill",
+    "mtb_exposure": true,
+    "optional": false,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Restore one bike-specific and trail-specific touch after travel while testing whether current cognition and coordination support familiar submaximal execution despite one short night.",
+    "dose": {
+      "opening_gate": "Five minutes of easy carpark braking, corner entry, and bike-body separation, followed by the first 10-15 minutes of the Twin Peaks climb at RPE 2-3. Continue only with normal visual scanning, coordination, steering precision, breathing-to-RPE, and early line choice.",
+      "climb": "Complete one controlled climb to Twin Peaks at RPE 3-4. Normal standing for traction is allowed; no maximal standing attack, sprint, threshold effort, or breath-catching surge.",
+      "descent": "One Pure Quill descent on the familiar reference line at approximately 70-75 percent execution speed. Prioritize dynamically centred posture, early line choice, deliberate brake release, and stable front tracking.",
+      "egress": "Use only the required partial DH-Line egress at transport pace, then end the session.",
+      "hard_cap": "One climb, one Pure Quill descent, required egress, and 60-75 minutes elapsed. No second stage or substitute route.",
+      "load_intent": "Low-to-moderate training cost; session RPE 3-5, with no attempt to repair ACWR in one ride."
+    },
+    "adaptation_hypothesis": "A single clean familiar descent after a low-consequence field gate should refresh trail timing and centred-bike mechanics without the decision-quality risk created by speed, novelty, repeat density, or stacked setup variables under acute short sleep.",
+    "execution_rules": [
+      "Pass the opening gate before committing to Twin Peaks; excellent motivation cannot substitute for normal coordination and decision timing.",
+      "Pure Quill only. Exclude TnT, Flintstone, 2K+, the full DH Line, jumps or doubles, novel aggressive lines, race pace, and setup testing.",
+      "Keep suspension, tyre pressure, cockpit, and cleat settings unchanged.",
+      "Use familiar braking markers and the familiar line; no segment time, chasing another rider, or speed target.",
+      "Finish after the required egress even if the first descent feels exceptional.",
+      "For a ride extending beyond 60 minutes in afternoon heat, target roughly 30-45 g carbohydrate per hour and 500-750 ml fluid per hour; record actual sodium rather than inventing it."
+    ],
+    "expected_result": {
+      "technical": "Wide vision, early line choice, deliberate braking, stable front tracking, and normal bike-body separation from the opening gate through egress, with no unforced correction or late fade.",
+      "physiology": "Climb remains RPE 3-4, whole-session RPE 3-5, and the ride does not become threshold, sprint, or repeatability work.",
+      "next_day": "Sunday Sabbath with no unusual cognitive, upper-body, or autonomic cost from the capped exposure."
+    },
+    "stop_rules": [
+      "Turn back during the opening gate for narrowed vision, delayed scanning, unexpected steering or foot correction, weak/heavy feel, or RPE that does not match the easy dose.",
+      "Do not descend Pure Quill if braking-marker recall, line anticipation, or coordination feels even subtly delayed at the top.",
+      "End technical intent for reactive braking, delayed line choice, rearward freezing, front-wheel deflection requiring emergency recovery, an unforced line miss, a near miss, or confidence outrunning precision.",
+      "Downshift and take the safest direct exit if climb RPE exceeds 5, breathing becomes disproportionate, upper-body fatigue exceeds 3/10, or heat/trail conditions exceed the session purpose.",
+      "The first Pure Quill descent ends the quality dose; no second climb, other stage, jump progression, sprint, or setup change."
+    ],
+    "post_session_review_fields": [
+      "opening_gate_result",
+      "actual_duration_min",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "climb_rpe",
+      "trail_condition",
+      "technical_quality_notes",
+      "vision_and_decision_speed",
+      "braking_marker_consistency",
+      "front_tracking",
+      "unforced_correction_or_near_miss",
+      "braking_fatigue",
+      "upper_body_fatigue",
+      "late_session_skill_fade",
+      "fueling_carbs_g_per_hour",
+      "fluid_ml_per_hour",
+      "sodium_mg_per_hour",
+      "stop_rule_outcome",
+      "next_morning_response"
+    ]
+  }
+}
