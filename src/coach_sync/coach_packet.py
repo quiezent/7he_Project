@@ -1198,10 +1198,14 @@ def _today_decision(state: dict, plan: dict, cautions: list[dict]) -> dict:
         or session_lifecycle.get("stance") == "post_session_review"
     ):
         stance = "post_session_review"
-    elif session.get("type") == "scheduled_rest":
+    elif (
+        session.get("type") == "scheduled_rest"
+        and decision_inputs.get("scheduled_rest")
+        and not decision_inputs.get("sabbath_exception")
+    ):
         stance = "sabbath_rest"
     elif (
-        session.get("type") == "scheduled_recovery"
+        session.get("type") in {"scheduled_rest", "scheduled_recovery"}
         or session.get("modality") == "rest"
         or session.get("intensity") == "rest"
     ):

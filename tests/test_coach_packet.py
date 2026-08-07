@@ -115,6 +115,43 @@ def test_coach_packet_promotes_sabbath_constraint(tmp_path):
     assert packet["evidence"]["trusted"][0]["name"] == "Scheduled rest"
 
 
+def test_coach_packet_labels_non_sabbath_scheduled_rest_as_recovery(tmp_path):
+    load_context(tmp_path)
+    state = {
+        "date": "2026-08-07",
+        "readiness": {
+            "readiness_level": "green",
+            "readiness_score": 78,
+            "confidence": "medium",
+            "reasons": [],
+        },
+        "data_freshness": {
+            "status": "current",
+            "activity_data": {"status": "current"},
+        },
+        "phase": {"name": "base_rebuild"},
+        "training_status_current": {},
+    }
+    plan = {
+        "date": "2026-08-07",
+        "decision_inputs": {
+            "scheduled_rest": None,
+            "sabbath_exception": None,
+        },
+        "session": {
+            "title": "Sabah family trip — travel and family activity only",
+            "type": "scheduled_rest",
+            "modality": "rest",
+            "duration_min": 0,
+            "intensity": "recovery",
+        },
+    }
+
+    packet = build_coach_packet(tmp_path, "2026-08-07", state=state, plan=plan)
+
+    assert packet["today_call"]["stance"] == "recovery"
+
+
 def test_coach_packet_labels_zero_dose_scheduled_recovery_as_recovery(tmp_path):
     load_context(tmp_path)
     state = {
