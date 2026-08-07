@@ -1,0 +1,110 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-08-08",
+  "generated_at": "2026-08-07T08:19:42+08:00",
+  "status": "active_conditional_next_day_coach_override",
+  "decision_basis": {
+    "state_basis_date": "2026-08-07",
+    "freshness": "Wellness endpoints were current through 2026-08-07T08:02+08:00; Saturday clearance still requires a fresh live sync.",
+    "recovery": "Primary sleep 7.40 hours with score 93, wake Body Battery 88, HRV 51 BALANCED, resting HR 46 versus 49 seven-day average, custom readiness 78 green and CNS readiness 93 ready.",
+    "load": "Last seven days contain one 173.2-minute hike with Garmin load 51.2 and no MTB; Garmin ACWR is LOW at 0.3 with a low-aerobic shortage.",
+    "recent_mtb": "The last MTB ride was 2026-07-31. Focus reduction correctly triggered a stop on the partial third descent, after a clean HSC +1 confirmation. It followed MTB on the preceding day and is not treated as a permanent two-descent ceiling.",
+    "travel": "Friday includes the Kota Kinabalu-to-Kuala Lumpur flight. Post-flight hydration, stiffness, sleep and subjective sharpness remain unobserved until Saturday morning.",
+    "calendar": "Neighbour brunch precedes the possible ride; digestion and the safe weather window control rollout timing.",
+    "weather": "Showers alone are conditional trail context. Thunder, lightning, an active local warning or a rapidly worsening cell blocks rollout or ends the ride by the shortest safe familiar egress.",
+    "progression": "This is the two-cycle entry proof for a two-to-three-to-four Twin Peaks Enduro reacquisition sequence."
+  },
+  "session": {
+    "title": "Kiara Enduro re-entry — conditional two-cycle Pure Quill repeatability",
+    "type": "mtb_repeatability_controlled",
+    "modality": "mtb",
+    "venue": "Bukit Kiara",
+    "bike": "Enduro bike with last-known stable setup",
+    "duration_min": 135,
+    "duration_range_min": [
+      120,
+      150
+    ],
+    "intensity": "skill",
+    "density_cost": "meaningful",
+    "mtb_exposure": true,
+    "optional": true,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Restore Twin Peaks climbing, trail-processing and descending repeatability after the travel gap while establishing a clean two-cycle starting point for the return to four Enduro cycles.",
+    "dose": {
+      "saturday_live_gate": "Run the live Garmin decision sync, current_state and coach_packet before clearance. Two cycles require physical readiness above red, CNS ready, no illness, mental clarity at least 8/10 with normal vision and processing, normal legs and upper body, and no travel-dehydration or stiffness signal.",
+      "knee_gate": "The right knee must be symptom-free in normal walking, stairs and five slow controlled bodyweight step-downs per side without guarding or altered movement. Any recurrent or worsening discomfort removes Twin Peaks volume.",
+      "opening_gate": "At the car park complete bike checks, figure-eights both ways, deliberate front/rear loading and recentring, two to three progressive firm stops and intended steering. Any asymmetry, delayed processing or unexplained front pull fails the technical gate.",
+      "cycle_one": "Climb conversationally at RPE 3-4, using natural short standing efforts only. Descend the familiar Pure Quill stage at 70-75 percent in dry stable conditions as the admission audit.",
+      "cycle_two_gate": "Start cycle two only if cycle one used early line choice and pre-turn braking release, every known exit was recognized in time, front tracking and intended steering were clean, no rescue or near miss occurred, breathing normalized after a short reset, climb RPE was 4 or lower, right knee remained quiet, braking and upper-body fatigue were each 3/10 or lower, and weather and grip remained stable.",
+      "cycle_two_if_admitted": "Climb at RPE 5 or lower and repeat Pure Quill at 75-80 percent, seeking the same posture, vision, brake release and exit commitment rather than more speed.",
+      "wet_adjustment": "With stable damp soil or showers but no thunder, cap both descents at 65-75 percent, use familiar lines and treat the ride as wet-surface skill exposure rather than a matched progression proof.",
+      "yellow_or_failed_gate": "Complete one low-consequence Pure Quill cycle at 65-70 percent or skip MTB according to the failed gate, then use only the required safest familiar egress.",
+      "red_cns_or_weather_block": "No technical MTB if physical readiness is red, CNS is impaired or compromised, illness or cognitive delay is present, the knee gate fails, or thunder/lightning risk is active at Kiara.",
+      "hard_cap": "Two complete Twin Peaks-to-Pure-Quill cycles, 120-150 minutes elapsed, approximately 9-12 km and 400-500 m ascent. No third or bonus descent."
+    },
+    "adaptation_hypothesis": "Two controlled same-stage cycles will restore bike-specific aerobic and technical timing without making an abrupt jump from a low acute load. Matching the second descent to the first builds the precise repeatability needed before progressing to three and then four Twin Peaks cycles.",
+    "execution_rules": [
+      "Use the Enduro bike with its last-known stable setup. Do not combine re-entry, weather variability and a setup experiment.",
+      "Ride Pure Quill only; no TnT, Flintstone, full DH Line, novel race line, jump progression, segment chase, sprint or maximal torque target.",
+      "Complete braking before turn-in, recognize the exit before the apex, stay dynamically centred and recenter before steering or impact so front-tyre authority comes from rider position rather than a rearward brace.",
+      "Standing on steep climb pitches is allowed when natural, but climbing is transport and remains inside the stated RPE gates.",
+      "After brunch, wait until the stomach feels settled: usually 90-120 minutes after a normal meal and longer after a heavy or fatty meal. Do not trade weather safety for a rushed rollout.",
+      "Fuel from the first 20 minutes. For the 120-150-minute KL-heat dose target 45-75 g carbohydrate, 500-900 ml fluid and 600-1000 mg sodium per hour, selecting toward the upper fluid and sodium end in hotter or more humid conditions.",
+      "Showers do not automatically cancel. Flowing water on trail, non-repeatable grip, poor visibility, fresh branch fall or unsafe runoff lowers the dose or ends the ride.",
+      "Do not start if thunder is audible, lightning is visible, an active local warning or approaching cell covers Kiara, or safe egress is doubtful. If thunder begins on trail, take the shortest safe familiar exit to a substantial building or vehicle; do not add a lap or wait under the canopy."
+    ],
+    "expected_result": {
+      "technical": "The second descent, if earned, matches the first for visual width, early line choice, centred posture, front tracking, brake release and exit recognition with no rescue correction.",
+      "physiology": "Climbs remain RPE 3-4 then 5 or lower, braking and upper-body fatigue remain 3/10 or lower, and the session finishes before technical quality fades.",
+      "progression": "A dry or stable-condition two-cycle result with stop rules not triggered and a normal Sunday-morning response earns three cycles at the next key Enduro exposure. A wet ride remains valuable but is not a matched progression proof.",
+      "next_day": "Sunday Sabbath remains exercise-free while recovery evidence is reviewed for disproportionate fatigue, knee response or sympathetic overhang."
+    },
+    "stop_rules": [
+      "Do not begin technical MTB if the fresh Saturday physical, CNS, illness, mental-clarity, knee or weather gate fails.",
+      "Do not start cycle two after a missed or delayed line, reactive mid-turn braking, unintended front deflection or left pull, rescue correction, near miss, narrowed vision, declining focus, compensatory concentration or loss of intended steering.",
+      "Stop technical intent for front ping or pack-down, rear kick, wallow or chassis pitch that changes steering, or any mechanical or tyre-pressure concern.",
+      "Stop and take the safest egress for worsening or greater-than-2/10 right-knee discomfort, heat symptoms, braking or upper-body fatigue above 3/10, climb RPE above 6, or breathing and legs that do not normalize during the reset.",
+      "Thunder or lightning is an immediate environmental stop. The second Pure Quill descent is the absolute session end even when Clayton feels capable of more."
+    ],
+    "post_session_review_fields": [
+      "opening_gate_result",
+      "right_knee_gate_and_ride_response",
+      "actual_duration_min",
+      "actual_distance_km",
+      "actual_ascent_m",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "bike_and_setup",
+      "trail_condition_and_rain",
+      "loop_count",
+      "climb_rpe_by_loop",
+      "cycle_two_gate_result",
+      "descent_intent_by_loop",
+      "known_exit_recognition",
+      "front_tracking_and_intended_steering",
+      "reactive_braking_or_rescue",
+      "fork_ping_or_pack_down",
+      "rear_kick_wallow_or_pitch",
+      "vision_and_decision_speed_first_vs_final",
+      "braking_fatigue",
+      "upper_body_fatigue",
+      "late_session_skill_fade",
+      "fueling_carbs_g_per_hour",
+      "fluid_ml_per_hour",
+      "sodium_mg_per_hour",
+      "stop_rule_outcome",
+      "next_morning_response"
+    ]
+  }
+}
