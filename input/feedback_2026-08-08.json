@@ -53,7 +53,7 @@
         },
         "trail_condition": "dry",
         "right_knee_response": "no issue or pain",
-        "upper_body_response": "Some stiffness that improved as ride time accumulated; numerical fatigue score was not reported.",
+        "upper_body_response": "Some stiffness that improved as ride time accumulated; upper-body fatigue was 3/10.",
         "fueling_totals": {
           "carbs_g": 81.9,
           "fluid_ml": 1000,
@@ -71,7 +71,7 @@
         "actual_training_load": 242.5,
         "actual_rpe": 5,
         "workout_feel": "strong",
-        "bike_and_setup": "Garmin Gear confirms S-Works Enduro MY25; post-session setup-change status was not explicitly reported.",
+        "bike_and_setup": "Garmin Gear confirms S-Works Enduro MY25; athlete explicitly confirmed the setup was unchanged.",
         "trail_condition_and_rain": "dry; no rain reported",
         "loop_count": 2,
         "climb_rpe_by_loop": [
@@ -84,19 +84,25 @@
           "approximately 65 percent and cautious while reacquainting with the Enduro",
           "approximately 75 percent and chill"
         ],
-        "known_exit_recognition": "not_reported",
-        "front_tracking_and_intended_steering": "Athlete reported authoritative front-wheel loading on lap 4; unintended deflection or left pull was not explicitly reviewed.",
-        "reactive_braking_or_rescue": "Braking improved on lap 4; reactive braking, rescue correction and near miss were not explicitly reviewed.",
-        "fork_ping_or_pack_down": "not_reported",
-        "rear_kick_wallow_or_pitch": "not_reported",
-        "vision_and_decision_speed_first_vs_final": "Athlete reported that clarity returned by lap 3; an explicit first-versus-final vision and decision-speed comparison was not reported.",
-        "braking_fatigue": "not_reported; braking quality improved on lap 4",
-        "upper_body_fatigue": "Some initial stiffness that improved during the ride; numerical rating not reported.",
-        "technical_quality_notes": "Lap 2 was a cautious Enduro reacquaintance run. On lap 4 the athlete reported improved braking and authoritative front-wheel loading. Clean exit recognition, absence of rescue corrections or near misses, suspension behavior and final-versus-first decision speed remain unconfirmed rather than inferred from silence.",
-        "late_session_skill_fade": "not_reported",
+        "known_exit_recognition": "All expected exits were recognized; no exit was missed.",
+        "front_tracking_and_intended_steering": "Authoritative front-wheel loading with no unintended deflection or left pull.",
+        "reactive_braking_or_rescue": "None; no reactive braking, rescue correction or near miss.",
+        "fork_ping_or_pack_down": "Fork behaved as expected with no abnormal behavior reported.",
+        "rear_kick_wallow_or_pitch": "Rear behaved as expected with no abnormal behavior reported.",
+        "vision_and_decision_speed_first_vs_final": "Cycle 1 processing was slower than cycle 2. Cycle 2 vision and decision speed reached approximately 90 percent of Clayton's normal full-speed Enduro level, not 90 percent RPE or descent intent. Clayton does not yet feel 100 percent reacclimated to Enduro speed and bike timing after a 57-day gap since the last Gear-confirmed Enduro ride on 2026-06-12.",
+        "braking_fatigue": 0,
+        "upper_body_fatigue": 3,
+        "technical_quality": "clean",
+        "technical_quality_notes": "Lap 2 was a cautious 65-percent Enduro reacquaintance run. Lap 4 remained a 75-percent riding-intent run and showed improved braking, authoritative front-wheel loading, no missed exit, no deflection or left pull, no reactive braking, no rescue correction, no near miss, and expected fork and rear behavior. Cycle 2 processing improved to approximately 90 percent of Clayton's normal full-speed Enduro level but was not yet fully restored.",
+        "late_session_skill_fade": "none; cycle 2 processing improved rather than faded, while remaining approximately 90 percent of Clayton's normal Enduro level",
         "fueling_carbs_g_per_hour": 44.8,
         "fluid_ml_per_hour": 547,
         "sodium_mg_per_hour": 242,
+        "honey_timing_min": [
+          20,
+          50,
+          70
+        ],
         "stop_rule_outcome": "not_triggered",
         "stop_rule_outcome_source": "athlete_explicit_report",
         "next_morning_response": null
@@ -105,7 +111,26 @@
         "action_alignment": "cycle_two_admission_gate_mismatch",
         "action_alignment_notes": "Modality, bike, session count, two-cycle structure, route family, second-descent intent and maximum-cycle cap aligned. The first dry descent was deliberately downshifted to 65 percent, total duration finished 10.2 minutes below the written 120-minute lower bound, and cycle two was started even though the first climb RPE 5 did not satisfy the written RPE-4-or-lower admission gate.",
         "load_alignment": "actual Garmin load 242.5 versus expected 123.8 and expected range 86.6-167.1; actual was 45.1 percent above the predicted upper bound",
-        "calibration_disposition": "physiology and technical calibration remain pending the completed technical review fields and next-morning response; action mismatch prevents nominal true digital-twin calibration of the written contract"
+        "calibration_disposition": "The MTB technical outcome is clean but processing was only approximately 90 percent of Clayton's normal Enduro level. Actual load is not a physiology-only match, and the cycle-two admission-gate mismatch prevents nominal true digital-twin calibration. The next-morning response remains necessary for progression and recovery interpretation, not to rescue calibration eligibility."
+      }
+    },
+    {
+      "timestamp_local": "2026-08-08T21:02:18+08:00",
+      "source": "athlete_post_session_clarification",
+      "activity_id": "23897483147",
+      "reported_context": {
+        "setup": "unchanged",
+        "braking_fatigue_10": 0,
+        "upper_body_fatigue_10": 3,
+        "technical_incidents": "No missed exit, unintended deflection, reactive braking, rescue correction or near miss.",
+        "fork_and_rear_behavior": "as expected",
+        "vision_and_decision_speed": "Cycle 1 was slower than cycle 2. Cycle 2 reached approximately 90 percent of Clayton's normal full-speed Enduro vision and decision speed; 90 percent does not refer to RPE or riding-intent percentage.",
+        "enduro_reacclimation": "Clayton does not yet feel 100 percent reacclimated to Enduro speed and bike timing after not riding the Enduro for roughly one to two months. Garmin Gear history confirms a 57-day gap since 2026-06-12.",
+        "honey_timing_min": [
+          20,
+          50,
+          70
+        ]
       }
     }
   ]
