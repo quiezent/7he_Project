@@ -1,17 +1,31 @@
 {
   "artifact_type": "coach_authored_planned_session",
   "date": "2026-08-08",
-  "generated_at": "2026-08-07T08:19:42+08:00",
-  "status": "active_conditional_next_day_coach_override",
+  "generated_at": "2026-08-08T14:47:52+08:00",
+  "status": "active_same_day_coach_override",
+  "revision_history": [
+    {
+      "generated_at": "2026-08-07T08:19:42+08:00",
+      "status": "active_conditional_next_day_coach_override",
+      "title": "Kiara Enduro re-entry — conditional two-cycle Pure Quill repeatability",
+      "reason": "Stored before the Saturday wellness, post-flight subjective and live-weather gates were available."
+    }
+  ],
+  "same_day_clearance": {
+    "timestamp_local": "2026-08-08T14:47:52+08:00",
+    "athlete_report": "Mental clarity 10/10, no illness, no right-knee issue or pain, brunch fully settled and slight hunger.",
+    "coach_verdict": "Execute one guaranteed and one earned Twin Peaks-to-Pure-Quill cycle, subject to opening, first-cycle and weather gates.",
+    "garmin_interpretation": "Recovery status plus LOW ACWR 0.2 reflects low recent acute stimulus rather than overload. It caps intensity and extension but does not veto this bounded familiar session when physical readiness is green and CNS is ready."
+  },
   "decision_basis": {
-    "state_basis_date": "2026-08-07",
-    "freshness": "Wellness endpoints were current through 2026-08-07T08:02+08:00; Saturday clearance still requires a fresh live sync.",
-    "recovery": "Primary sleep 7.40 hours with score 93, wake Body Battery 88, HRV 51 BALANCED, resting HR 46 versus 49 seven-day average, custom readiness 78 green and CNS readiness 93 ready.",
-    "load": "Last seven days contain one 173.2-minute hike with Garmin load 51.2 and no MTB; Garmin ACWR is LOW at 0.3 with a low-aerobic shortage.",
+    "state_basis_date": "2026-08-08",
+    "freshness": "Live wellness and activity contact succeeded at 2026-08-08T14:42+08:00 with Garmin data through 14:22; overall sync was partial only because two recent Devices & Apps responses were semantically empty.",
+    "recovery": "Primary sleep 7.47 hours with score 85, wake Body Battery 90, current Body Battery 59, HRV 49 BALANCED, resting HR 47 versus 48 seven-day average, custom readiness 78 green and CNS readiness 93 ready.",
+    "load": "Last seven days contain one 173.2-minute hike with Garmin load 51.2 and no MTB; Garmin acute load is 86 versus chronic 355, ACWR is LOW at 0.2 and low aerobic is short while high aerobic is near its upper target.",
     "recent_mtb": "The last MTB ride was 2026-07-31. Focus reduction correctly triggered a stop on the partial third descent, after a clean HSC +1 confirmation. It followed MTB on the preceding day and is not treated as a permanent two-descent ceiling.",
-    "travel": "Friday includes the Kota Kinabalu-to-Kuala Lumpur flight. Post-flight hydration, stiffness, sleep and subjective sharpness remain unobserved until Saturday morning.",
-    "calendar": "Neighbour brunch precedes the possible ride; digestion and the safe weather window control rollout timing.",
-    "weather": "Showers alone are conditional trail context. Thunder, lightning, an active local warning or a rapidly worsening cell blocks rollout or ends the ride by the shortest safe familiar egress.",
+    "travel": "Friday's Kota Kinabalu-to-Kuala Lumpur flight is absorbed without a current objective or subjective recovery flag.",
+    "calendar": "Neighbour brunch is fully settled and the athlete reports slight hunger; use a small carbohydrate top-up before rollout rather than beginning under-fuelled.",
+    "weather": "At 13:30 METMalaysia's active warning covered parts of Pahang and Johor, not Kuala Lumpur, while Kuala Lumpur retained an isolated-thunderstorm forecast. Showers alone are conditional trail context. Thunder, lightning, an active local warning or a rapidly worsening cell blocks rollout or ends the ride by the shortest safe familiar egress.",
     "progression": "This is the two-cycle entry proof for a two-to-three-to-four Twin Peaks Enduro reacquisition sequence."
   },
   "session": {
@@ -26,6 +40,12 @@
       150
     ],
     "intensity": "skill",
+    "garmin_ceiling_class": "controlled_familiar_repeatability",
+    "novelty_allowed": false,
+    "open_ended": false,
+    "race_simulation": false,
+    "setup_changes_allowed": false,
+    "setup_test": false,
     "density_cost": "meaningful",
     "mtb_exposure": true,
     "optional": true,
@@ -41,6 +61,7 @@
     ],
     "purpose": "Restore Twin Peaks climbing, trail-processing and descending repeatability after the travel gap while establishing a clean two-cycle starting point for the return to four Enduro cycles.",
     "dose": {
+      "max_cycles": 2,
       "saturday_live_gate": "Run the live Garmin decision sync, current_state and coach_packet before clearance. Two cycles require physical readiness above red, CNS ready, no illness, mental clarity at least 8/10 with normal vision and processing, normal legs and upper body, and no travel-dehydration or stiffness signal.",
       "knee_gate": "The right knee must be symptom-free in normal walking, stairs and five slow controlled bodyweight step-downs per side without guarding or altered movement. Any recurrent or worsening discomfort removes Twin Peaks volume.",
       "opening_gate": "At the car park complete bike checks, figure-eights both ways, deliberate front/rear loading and recentring, two to three progressive firm stops and intended steering. Any asymmetry, delayed processing or unexplained front pull fails the technical gate.",

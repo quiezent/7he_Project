@@ -470,6 +470,8 @@ def _contract_for_session(session: dict) -> dict:
 def _with_session_contract(session: dict) -> dict:
     if session.get("type") not in TRAINABLE_SESSION_TYPES:
         return session
+    if _has_complete_session_contract(session):
+        return dict(session)
     contracted = {**session, **_contract_for_session(session)}
     contracted["schema_version"] = 3
     contracted["contract_fields"] = list(SESSION_CONTRACT_FIELDS)
@@ -563,12 +565,74 @@ def _is_bounded_familiar_controlled_skill(session: dict) -> bool:
     )
 
 
-def _session_fits_garmin_ceiling(session: dict, arbitration: dict) -> bool:
+def _is_explicit_bounded_familiar_repeatability(
+    session: dict,
+    state: dict,
+    arbitration: dict,
+    plan_source: dict,
+) -> bool:
+    readiness = state.get("readiness") or {}
+    cns = state.get("cns_readiness") or {}
+    freshness = state.get("data_freshness") or {}
+    dose = session.get("dose") or {}
+    max_cycles = dose.get("max_cycles")
+    valid_cycle_cap = bool(
+        isinstance(max_cycles, (int, float))
+        and not isinstance(max_cycles, bool)
+        and 1 <= max_cycles <= 2
+    )
+    explicit_no_expansion = all(
+        session.get(field) is False
+        for field in (
+            "novelty_allowed",
+            "open_ended",
+            "race_simulation",
+            "setup_changes_allowed",
+            "setup_test",
+        )
+    )
+    duration = int(session.get("duration_min") or 0)
+    return bool(
+        plan_source.get("type") == "input_planned_session"
+        and arbitration.get("ceiling") == "controlled_familiar_skill_or_aerobic_continuity"
+        and arbitration.get("feedback_family") == "recovery"
+        and (arbitration.get("acwr") or {}).get("status") == "LOW"
+        and readiness.get("readiness_level") == "green"
+        and readiness.get("hard_session_guidance") in {"allow", "ok"}
+        and str(cns.get("status") or "").lower() == "ready"
+        and freshness.get("status") == "current"
+        and freshness.get("hard_session_confidence") != "limited"
+        and _is_mtb_session(session)
+        and str(session.get("type") or "").lower() == "mtb_repeatability_controlled"
+        and str(session.get("intensity") or "").lower() == "skill"
+        and str(session.get("garmin_ceiling_class") or "").lower()
+        == "controlled_familiar_repeatability"
+        and 0 < duration <= 150
+        and valid_cycle_cap
+        and bool(dose.get("hard_cap"))
+        and explicit_no_expansion
+        and _has_complete_session_contract(session)
+    )
+
+
+def _session_fits_garmin_ceiling(
+    session: dict,
+    arbitration: dict,
+    state: dict,
+    plan_source: dict,
+) -> bool:
     if _session_is_already_low_consequence(session):
         return True
-    return bool(
+    if bool(
         arbitration.get("ceiling") == "controlled_familiar_skill_or_aerobic_continuity"
         and _is_bounded_familiar_controlled_skill(session)
+    ):
+        return True
+    return _is_explicit_bounded_familiar_repeatability(
+        session,
+        state,
+        arbitration,
+        plan_source,
     )
 
 
@@ -661,6 +725,7 @@ def _apply_session_constraints(
     session: dict,
     state: dict,
     arbitration: dict,
+    plan_source: dict,
 ) -> tuple[dict, list[dict]]:
     """Apply safety ceilings after resolving the source session but before prediction."""
     effective = dict(session)
@@ -699,7 +764,12 @@ def _apply_session_constraints(
         effective = replacement
     elif (
         arbitration.get("recommended_action") in {"downshift", "no_hard_guidance"}
-        and not _session_fits_garmin_ceiling(effective, arbitration)
+        and not _session_fits_garmin_ceiling(
+            effective,
+            arbitration,
+            state,
+            plan_source,
+        )
     ):
         replacement = _garmin_aerobic_continuity_plan(arbitration)
         constraints.append(
@@ -904,7 +974,12 @@ def build_today_plan(
     if post_session_review:
         applied_constraints = []
     else:
-        session, applied_constraints = _apply_session_constraints(session, state, garmin_arbitration)
+        session, applied_constraints = _apply_session_constraints(
+            session,
+            state,
+            garmin_arbitration,
+            plan_source,
+        )
     session = _with_session_contract(session)
 
     nutrition_context = {

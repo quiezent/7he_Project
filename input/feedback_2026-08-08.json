@@ -1,0 +1,40 @@
+{
+  "date": "2026-08-08",
+  "entries": [
+    {
+      "timestamp_local": "2026-08-08T14:47:52+08:00",
+      "source": "athlete_pre_session_report_and_same_day_coach_clearance",
+      "location_intent": "Bukit Kiara",
+      "readiness_self_report": {
+        "mental_clarity_10": 10,
+        "mental_clarity": "fully_sharp",
+        "illness_status": "none",
+        "right_knee_pain_or_response_issue": "none",
+        "brunch_digestion": "fully_settled",
+        "hunger": "slightly_hungry"
+      },
+      "fresh_garmin_evidence": {
+        "data_cutoff_local": "2026-08-08T14:22:00+08:00",
+        "primary_sleep_hours": 7.47,
+        "sleep_score": 85,
+        "wake_body_battery": 90,
+        "current_body_battery": 59,
+        "overnight_hrv_ms": 49,
+        "hrv_status": "BALANCED",
+        "resting_hr_bpm": 47,
+        "resting_hr_7d_bpm": 48,
+        "custom_readiness": "green 78",
+        "cns_readiness": "ready 93",
+        "garmin_training_status": "RECOVERY_2",
+        "garmin_acwr": "LOW 0.2",
+        "recent_load": "One 173.2-minute hike with Garmin load 51.2 and zero MTB sessions in the preceding seven days."
+      },
+      "coach_interpretation": {
+        "verdict": "Clear the conditional two-cycle Enduro contract, subject to the car-park opening gate, first-cycle admission gate and live weather gates.",
+        "garmin_arbitration": "Garmin Recovery with LOW ACWR reflects a very low recent acute stimulus rather than overload. It caps intensity, novelty and extension but does not justify replacing the explicit bounded familiar Enduro session with 45 minutes indoors when physical readiness is green, CNS is ready and the athlete reports full sharpness.",
+        "weather": "The 13:30 METMalaysia warning did not include Kuala Lumpur, but the Kuala Lumpur district forecast retained isolated-thunderstorm risk. Recheck warning, radar and sky before rollout and before cycle two; thunder or lightning blocks or ends MTB.",
+        "dose_ceiling": "Enduro bike on unchanged stable setup; two earned Twin Peaks-to-Pure-Quill cycles, 120-150 minutes maximum, no third or bonus descent."
+      }
+    }
+  ]
+}

@@ -542,6 +542,34 @@ def _bounded_familiar_skill_session() -> dict:
     }
 
 
+def _bounded_controlled_repeatability_session(max_cycles: int = 2) -> dict:
+    return {
+        "title": "Kiara two-cycle familiar repeatability",
+        "type": "mtb_repeatability_controlled",
+        "modality": "mtb",
+        "duration_min": 135,
+        "intensity": "skill",
+        "garmin_ceiling_class": "controlled_familiar_repeatability",
+        "novelty_allowed": False,
+        "open_ended": False,
+        "race_simulation": False,
+        "setup_changes_allowed": False,
+        "setup_test": False,
+        "schema_version": 3,
+        "contract_fields": SESSION_CONTRACT_FIELDS,
+        "purpose": "Restore familiar same-stage repeatability without open-ended extension.",
+        "dose": {
+            "max_cycles": max_cycles,
+            "hard_cap": "Two familiar cycles maximum and no bonus descent.",
+        },
+        "adaptation_hypothesis": "Two bounded cycles restore repeatability without novelty.",
+        "execution_rules": ["Use the same familiar stage and unchanged setup."],
+        "expected_result": {"technical": "Final execution matches the first cycle."},
+        "stop_rules": ["Stop after any reactive braking or delayed line choice."],
+        "post_session_review_fields": ["stop_rule_outcome", "technical_quality_notes"],
+    }
+
+
 def test_trainable_today_plan_sessions_include_schema_v3_contract(tmp_path):
     load_context(tmp_path)
 
@@ -660,6 +688,71 @@ def test_garmin_recovery_low_acwr_preserves_bounded_familiar_skill_contract(tmp_
     assert plan["constraint_resolution"]["applied"] == []
     assert plan["coaching_status"] == "proposal_for_llm_coach"
     assert plan["decision_inputs"]["session_lifecycle"]["stance"] == "pre_session"
+
+
+def test_garmin_recovery_low_acwr_preserves_explicit_green_ready_two_cycle_contract(tmp_path):
+    load_context(tmp_path)
+    target = "2026-08-08"
+    state = _with_training_status(
+        _green_state(target),
+        feedback="RECOVERY_2",
+        acwr_status="LOW",
+        acwr_ratio=0.2,
+    )
+    state["cns_readiness"] = {
+        "status": "ready",
+        "session_ceiling": {"level": "normal_if_physical_readiness_allows"},
+    }
+    session = _bounded_controlled_repeatability_session()
+    write_json(
+        tmp_path / "input" / f"planned_session_{target}.json",
+        {
+            "date": target,
+            "generated_at": f"{target}T14:47:52+08:00",
+            "status": "active_same_day_coach_override",
+            "session": session,
+        },
+    )
+
+    plan = build_today_plan(tmp_path, target, state=state)
+
+    assert plan["session"]["title"] == session["title"]
+    assert plan["session"]["type"] == "mtb_repeatability_controlled"
+    assert plan["session"]["duration_min"] == 135
+    assert plan["session"]["dose"] == session["dose"]
+    assert plan["session"]["stop_rules"] == session["stop_rules"]
+    assert plan["constraint_resolution"]["applied"] == []
+
+
+def test_garmin_recovery_low_acwr_rejects_more_than_two_familiar_cycles(tmp_path):
+    load_context(tmp_path)
+    target = "2026-08-08"
+    state = _with_training_status(
+        _green_state(target),
+        feedback="RECOVERY_2",
+        acwr_status="LOW",
+        acwr_ratio=0.2,
+    )
+    state["cns_readiness"] = {
+        "status": "ready",
+        "session_ceiling": {"level": "normal_if_physical_readiness_allows"},
+    }
+    write_json(
+        tmp_path / "input" / f"planned_session_{target}.json",
+        {
+            "date": target,
+            "generated_at": f"{target}T14:47:52+08:00",
+            "status": "active_same_day_coach_override",
+            "session": _bounded_controlled_repeatability_session(max_cycles=3),
+        },
+    )
+
+    plan = build_today_plan(tmp_path, target, state=state)
+
+    assert plan["session"]["type"] == "garmin_aerobic_continuity"
+    assert plan["constraint_resolution"]["applied"][0]["source"] == (
+        "garmin_diagnosis_arbitration"
+    )
 
 
 def test_post_session_rebuild_preserves_executed_coach_authored_contract(tmp_path):
