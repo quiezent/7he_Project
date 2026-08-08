@@ -300,7 +300,15 @@
               }
             ]
           },
-          "power_meter_preference": "Do not move the power meter here by default; Clayton prefers to ride the Enduro bike on feel."
+          "power_meter_preference": "Do not move the power meter here by default; Clayton prefers to ride the Enduro bike on feel.",
+          "clipless_adaptation": {
+            "latest_observed_date": "2026-08-08",
+            "latest_observed_system": "clipless",
+            "athlete_response": "Clipless felt natural on the Enduro and possibly slightly more comfortable than flat pedals.",
+            "comparison_context": "The prior 2026-06-12 Enduro exposure used flat pedals; the 2026-08-08 re-entry followed a 57-day Enduro-specific gap while clipless skill had been developed on the Stumpjumper.",
+            "coaching_interpretation": "The primary adaptation is transfer of clipless automaticity and dynamically centred rider behavior from the Stumpjumper to the Enduro. Foot security is a secondary enabler of front-tyre authority and bike-body separation, not evidence that the pedals alone created the technical improvement.",
+            "validation_constraint": "Keep the pedal system fixed during the next matched Enduro repeat. Retain clipless as successful Enduro transfer only while release remains automatic, knee and hip response stay clean, centred posture and front tracking persist, and the rider does not rely on pulling against the pedals to correct the bike."
+          }
         },
         "specialized_stumpjumper": {
           "default_role": "Outdoor trail bike with current power meter.",

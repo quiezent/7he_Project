@@ -71,7 +71,9 @@
         "actual_training_load": 242.5,
         "actual_rpe": 5,
         "workout_feel": "strong",
-        "bike_and_setup": "Garmin Gear confirms S-Works Enduro MY25; athlete explicitly confirmed the setup was unchanged.",
+        "bike_and_setup": "Garmin Gear confirms S-Works Enduro MY25; athlete explicitly confirmed the suspension and bike setup was unchanged. Pedal system was clipless.",
+        "pedal_system": "clipless",
+        "pedal_feel": "natural and possibly slightly more comfortable than flat pedals",
         "trail_condition_and_rain": "dry; no rain reported",
         "loop_count": 2,
         "climb_rpe_by_loop": [
@@ -93,7 +95,7 @@
         "braking_fatigue": 0,
         "upper_body_fatigue": 3,
         "technical_quality": "clean",
-        "technical_quality_notes": "Lap 2 was a cautious 65-percent Enduro reacquaintance run. Lap 4 remained a 75-percent riding-intent run and showed improved braking, authoritative front-wheel loading, no missed exit, no deflection or left pull, no reactive braking, no rescue correction, no near miss, and expected fork and rear behavior. Cycle 2 processing improved to approximately 90 percent of Clayton's normal full-speed Enduro level but was not yet fully restored.",
+        "technical_quality_notes": "Lap 2 was a cautious 65-percent Enduro reacquaintance run. Lap 4 remained a 75-percent riding-intent run and showed improved braking, authoritative front-wheel loading, no missed exit, no deflection or left pull, no reactive braking, no rescue correction, no near miss, and expected fork and rear behavior. Clipless felt natural and possibly slightly more comfortable than flat pedals. Because both laps used clipless, the within-session improvement remains rider reacclimation rather than a pedal A/B effect. Cycle 2 processing improved to approximately 90 percent of Clayton's normal full-speed Enduro level but was not yet fully restored.",
         "late_session_skill_fade": "none; cycle 2 processing improved rather than faded, while remaining approximately 90 percent of Clayton's normal Enduro level",
         "fueling_carbs_g_per_hour": 44.8,
         "fluid_ml_per_hour": 547,
@@ -111,6 +113,7 @@
         "action_alignment": "cycle_two_admission_gate_mismatch",
         "action_alignment_notes": "Modality, bike, session count, two-cycle structure, route family, second-descent intent and maximum-cycle cap aligned. The first dry descent was deliberately downshifted to 65 percent, total duration finished 10.2 minutes below the written 120-minute lower bound, and cycle two was started even though the first climb RPE 5 did not satisfy the written RPE-4-or-lower admission gate.",
         "load_alignment": "actual Garmin load 242.5 versus expected 123.8 and expected range 86.6-167.1; actual was 45.1 percent above the predicted upper bound",
+        "cross_date_equipment_caveat": "The 2026-06-12 four-cycle Enduro comparison used flat pedals, whereas 2026-08-08 used clipless. June remains valid capacity/load context but is not a pedal-system-matched technical comparison.",
         "calibration_disposition": "The MTB technical outcome is clean but processing was only approximately 90 percent of Clayton's normal Enduro level. Actual load is not a physiology-only match, and the cycle-two admission-gate mismatch prevents nominal true digital-twin calibration. The next-morning response remains necessary for progression and recovery interpretation, not to rescue calibration eligibility."
       }
     },
@@ -126,6 +129,11 @@
         "fork_and_rear_behavior": "as expected",
         "vision_and_decision_speed": "Cycle 1 was slower than cycle 2. Cycle 2 reached approximately 90 percent of Clayton's normal full-speed Enduro vision and decision speed; 90 percent does not refer to RPE or riding-intent percentage.",
         "enduro_reacclimation": "Clayton does not yet feel 100 percent reacclimated to Enduro speed and bike timing after not riding the Enduro for roughly one to two months. Garmin Gear history confirms a 57-day gap since 2026-06-12.",
+        "pedal_comparison": {
+          "2026-06-12": "Enduro with flat pedals",
+          "2026-08-08": "Enduro with clipless pedals",
+          "athlete_feel": "Clipless already felt natural and possibly slightly more comfortable than flat pedals."
+        },
         "honey_timing_min": [
           20,
           50,

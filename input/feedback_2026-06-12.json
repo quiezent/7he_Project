@@ -23,5 +23,11 @@
     "gear_check": "Garmin Gear is tagged as Stumpjumper Expert MY25; if the ride was on the Enduro, update the Garmin Gear field.",
     "execution_classification": "Fourth climb was earned by feel but produced a high total load; treat this as a major enduro durability day.",
     "recovery_priority": "No more training on 2026-06-12; protect 2026-06-13 PCP quality with morning readiness gate."
+  },
+  "retrospective_athlete_clarification": {
+    "reported_at_local": "2026-08-08T21:08:54+08:00",
+    "bike": "S-Works Enduro MY25",
+    "pedal_system": "flat pedals",
+    "comparison_use": "The 2026-06-12 four-cycle Enduro activity is valid physical-capacity and load evidence, but it is not a pedal-system-matched technical comparison with the clipless 2026-08-08 Enduro re-entry."
   }
 }
