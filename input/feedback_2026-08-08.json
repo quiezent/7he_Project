@@ -35,6 +35,78 @@
         "weather": "The 13:30 METMalaysia warning did not include Kuala Lumpur, but the Kuala Lumpur district forecast retained isolated-thunderstorm risk. Recheck warning, radar and sky before rollout and before cycle two; thunder or lightning blocks or ends MTB.",
         "dose_ceiling": "Enduro bike on unchanged stable setup; two earned Twin Peaks-to-Pure-Quill cycles, 120-150 minutes maximum, no third or bonus descent."
       }
+    },
+    {
+      "timestamp_local": "2026-08-08T19:47:05+08:00",
+      "source": "athlete_post_session_report_with_garmin_and_contract_audit",
+      "activity_id": "23897483147",
+      "reported_context": {
+        "opening_gate_result": "good",
+        "route_and_laps": {
+          "lap_1": "First Twin Peaks climb; athlete-reported RPE 5 despite deliberately easy pacing.",
+          "lap_2": "Pure Quill at approximately 65 percent while reacquainting with the Enduro bike.",
+          "lap_3": "Second Twin Peaks climb; athlete-reported RPE 4, with clarity restored and the effort feeling easier.",
+          "lap_4": "Pure Quill at approximately 75 percent with improved braking and authoritative front-wheel loading.",
+          "lap_5": "Required egress climb.",
+          "lap_6": "Approximately half of the DH Line used as the final-stage egress descent.",
+          "lap_7": "Short transition at activity end."
+        },
+        "trail_condition": "dry",
+        "right_knee_response": "no issue or pain",
+        "upper_body_response": "Some stiffness that improved as ride time accumulated; numerical fatigue score was not reported.",
+        "fueling_totals": {
+          "carbs_g": 81.9,
+          "fluid_ml": 1000,
+          "sodium_mg": 443.2,
+          "contents": "1 L 100Plus Active plus three 15 g honey sachets",
+          "basis": "Athlete-supplied product values preserved in coaching memory: 48 g carbohydrate and 430 mg sodium per litre of 100Plus Active; 11.3 g carbohydrate and 4.4 mg sodium per honey sachet."
+        }
+      },
+      "session_contract_review": {
+        "opening_gate_result": "good",
+        "right_knee_gate_and_ride_response": "passed; no right-knee issue or pain reported",
+        "actual_duration_min": 109.8,
+        "actual_distance_km": 12.69,
+        "actual_ascent_m": 500.4,
+        "actual_training_load": 242.5,
+        "actual_rpe": 5,
+        "workout_feel": "strong",
+        "bike_and_setup": "Garmin Gear confirms S-Works Enduro MY25; post-session setup-change status was not explicitly reported.",
+        "trail_condition_and_rain": "dry; no rain reported",
+        "loop_count": 2,
+        "climb_rpe_by_loop": [
+          5,
+          4
+        ],
+        "cycle_two_gate_result": "failed_first_climb_rpe_gate_cycle_two_continued",
+        "cycle_two_gate_passed": false,
+        "descent_intent_by_loop": [
+          "approximately 65 percent and cautious while reacquainting with the Enduro",
+          "approximately 75 percent and chill"
+        ],
+        "known_exit_recognition": "not_reported",
+        "front_tracking_and_intended_steering": "Athlete reported authoritative front-wheel loading on lap 4; unintended deflection or left pull was not explicitly reviewed.",
+        "reactive_braking_or_rescue": "Braking improved on lap 4; reactive braking, rescue correction and near miss were not explicitly reviewed.",
+        "fork_ping_or_pack_down": "not_reported",
+        "rear_kick_wallow_or_pitch": "not_reported",
+        "vision_and_decision_speed_first_vs_final": "Athlete reported that clarity returned by lap 3; an explicit first-versus-final vision and decision-speed comparison was not reported.",
+        "braking_fatigue": "not_reported; braking quality improved on lap 4",
+        "upper_body_fatigue": "Some initial stiffness that improved during the ride; numerical rating not reported.",
+        "technical_quality_notes": "Lap 2 was a cautious Enduro reacquaintance run. On lap 4 the athlete reported improved braking and authoritative front-wheel loading. Clean exit recognition, absence of rescue corrections or near misses, suspension behavior and final-versus-first decision speed remain unconfirmed rather than inferred from silence.",
+        "late_session_skill_fade": "not_reported",
+        "fueling_carbs_g_per_hour": 44.8,
+        "fluid_ml_per_hour": 547,
+        "sodium_mg_per_hour": 242,
+        "stop_rule_outcome": "not_triggered",
+        "stop_rule_outcome_source": "athlete_explicit_report",
+        "next_morning_response": null
+      },
+      "coach_contract_audit": {
+        "action_alignment": "cycle_two_admission_gate_mismatch",
+        "action_alignment_notes": "Modality, bike, session count, two-cycle structure, route family, second-descent intent and maximum-cycle cap aligned. The first dry descent was deliberately downshifted to 65 percent, total duration finished 10.2 minutes below the written 120-minute lower bound, and cycle two was started even though the first climb RPE 5 did not satisfy the written RPE-4-or-lower admission gate.",
+        "load_alignment": "actual Garmin load 242.5 versus expected 123.8 and expected range 86.6-167.1; actual was 45.1 percent above the predicted upper bound",
+        "calibration_disposition": "physiology and technical calibration remain pending the completed technical review fields and next-morning response; action mismatch prevents nominal true digital-twin calibration of the written contract"
+      }
     }
   ]
 }

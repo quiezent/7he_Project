@@ -86,7 +86,12 @@
             "dh_line": {
               "display_name": "DH Line",
               "start": "Twin Peak",
-              "finish": "Car park"
+              "finish": "Car park",
+              "enduro_egress_use": {
+                "after_captain_haddock_stage": "The lower approximately half of DH Line can be used as the required car-park egress after climbing out from a stage that finishes at Captain Haddock; this partial descent is egress and does not count as another Twin Peak stage.",
+                "three_cycle_final_stage_option": "On the Enduro, a three-cycle route can use the full DH Line as the third and final Twin Peak stage because it finishes at the car park and removes the separate partial-DH egress.",
+                "comparison_guardrail": "A full DH Line finale is a distinct, higher-consequence stage and is not interchangeable with a third Pure Quill repeat in a matched repeatability test; validate it separately before using it as a fatigued final stage."
+              }
             }
           },
           "comparison_rule": "Classify the stage before comparing time, Flow, Grit, physiological cost, or technical quality; Pure Quill, TnT, Flintstone, and DH Line are not interchangeable descents."
