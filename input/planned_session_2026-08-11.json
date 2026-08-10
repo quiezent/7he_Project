@@ -1,0 +1,83 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-08-11",
+  "generated_at": "2026-08-10T22:43:57+08:00",
+  "status": "active_conditional_next_day_coach_override",
+  "decision_basis": {
+    "schedule": "Morning meeting and return drive from Bentong, with expected arrival in Kuala Lumpur around 15:00.",
+    "monday_dose": "Monday already delivered 95 minutes at 125 W, IF 0.592, TSS 55.2, Garmin load 75.9 and aerobic TE 3.0 with no meaningful steady-state HR drift.",
+    "garmin_diagnosis": "Low-aerobic load is now 298.4 and inside target; ACWR is 0.9 OPTIMAL. High aerobic is already above target, so Tuesday has no load-repair mandate.",
+    "density": "Use Tuesday only as low-cost bike continuity and post-drive circulation. Protect Thursday and Saturday as the two key MTB windows."
+  },
+  "session": {
+    "title": "Bentong travel-day optional circulation spin",
+    "type": "indoor_low_aerobic_travel_day",
+    "modality": "bike_indoor",
+    "duration_min": 40,
+    "duration_range_min": [
+      30,
+      45
+    ],
+    "intensity": "easy",
+    "optional": true,
+    "bike_touch_status": "conditional",
+    "bike_touch_counting": {
+      "mode": "mutually_exclusive",
+      "group": "bentong-week-low-aerobic-touch"
+    },
+    "density_cost": "low",
+    "mtb_exposure": false,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Use a short post-drive spin only to restore circulation and bike-frequency continuity without adding aerobic-volume debt or reducing Thursday trail quality.",
+    "dose": {
+      "fresh_gate": "Before riding, run the live Garmin decision sync and require no illness, mental clarity at least 8/10, normal coordination, and legs/back that feel normal or improve with easy movement after the drive.",
+      "warmup": "10 minutes progressive from 95 to 110 W.",
+      "main_set": "20-30 minutes seated at 115-125 W, RPE 2-3. Use 125 W as an absolute ceiling rather than a target to force.",
+      "cooldown": "5 minutes at 90-105 W if useful.",
+      "hard_cap": "45 minutes total. Do not repeat Monday's 60-95 minute dose.",
+      "skip_branch": "Skip the session if the drive creates cognitive fatigue, stiffness, abnormal leg heaviness, illness symptoms or disproportionate HR/RPE. No replacement workout is owed."
+    },
+    "adaptation_hypothesis": "A short easy spin after prolonged driving may improve circulation and reinforce bike-specific frequency while its small cost preserves the higher-value MTB repeatability work later in the week.",
+    "execution_rules": [
+      "Remain seated at a naturally comfortable cadence; no low-cadence torque, standing, tempo, intervals or sprints.",
+      "Let the first 15 minutes prove that the spin is improving the legs rather than merely accumulating time.",
+      "Use normal pre-session food and water to thirst. Carbohydrate during this short easy dose is unnecessary when normally fed.",
+      "This session is optional continuity, not a Garmin load target."
+    ],
+    "expected_result": {
+      "physiology": "RPE remains 2-3 with stable breathing and no meaningful same-power HR rise after warm-up.",
+      "subjective": "Legs and back feel equal or better at the finish than after the drive.",
+      "next_day": "If this session is completed, Wednesday becomes rest/absorption rather than another full Zone 2 day."
+    },
+    "stop_rules": [
+      "Stop by 15 minutes if the legs, back or mental clarity are not improving.",
+      "Reduce power or stop if fixed-power HR rises more than approximately 5 bpm above the settled reference with unchanged fan, cadence and RPE context.",
+      "Stop if RPE exceeds 3, breathing becomes disproportionate, cadence/form deteriorates, or illness, pain, dizziness or chest symptoms appear.",
+      "Do not extend beyond 45 minutes even if the session feels excellent."
+    ],
+    "post_session_review_fields": [
+      "actual_duration_min",
+      "average_power_w",
+      "normalized_power_w",
+      "average_hr",
+      "heart_rate_drift",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "post_drive_clarity",
+      "leg_and_back_feel_start_vs_finish",
+      "fluid_consumed",
+      "stop_rule_outcome",
+      "next_morning_response"
+    ]
+  }
+}

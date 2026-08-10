@@ -574,32 +574,62 @@ def _summarize_session_plan(
         "optional_mtb_exposures": sum(1 for item in sessions if item.get("mtb_exposure") and item.get("optional")),
         "rule": "Protect 2 MTB exposures; allow up to 3 when readiness, logistics, and density support it. More than 3 is a race/event block, not a default build week.",
     }
-    normal_bike_days = sorted(
-        {
-            item["date"]
-            for item in sessions
-            if item.get("bike_touch_status") in {"normal", "conditional"}
-        }
-    )
-    optional_bike_days = sorted(
-        {
-            item["date"]
-            for item in sessions
-            if item.get("bike_touch_status") == "optional"
-        }
-    )
+    normal_bike_sessions = [
+        item
+        for item in sessions
+        if item.get("bike_touch_status") in {"normal", "conditional"}
+    ]
+    optional_bike_sessions = [
+        item for item in sessions if item.get("bike_touch_status") == "optional"
+    ]
+    normal_bike_days = sorted({item["date"] for item in normal_bike_sessions})
+    optional_bike_days = sorted({item["date"] for item in optional_bike_sessions})
+
+    def touch_identity(item: dict[str, Any]) -> tuple[str, str]:
+        counting = item.get("bike_touch_counting")
+        if isinstance(counting, dict) and counting.get("mode") == "mutually_exclusive":
+            group = counting.get("group")
+            if isinstance(group, str) and group.strip():
+                return ("mutually_exclusive", group.strip())
+        return ("date", str(item["date"]))
+
+    normal_touch_identities = {touch_identity(item) for item in normal_bike_sessions}
+    optional_touch_identities = {touch_identity(item) for item in optional_bike_sessions}
+    exclusive_groups: dict[str, dict[str, set[str]]] = {}
+    for item in normal_bike_sessions + optional_bike_sessions:
+        identity_type, identity_value = touch_identity(item)
+        if identity_type != "mutually_exclusive":
+            continue
+        group = exclusive_groups.setdefault(
+            identity_value,
+            {"candidate_dates": set(), "bike_touch_statuses": set()},
+        )
+        group["candidate_dates"].add(str(item["date"]))
+        group["bike_touch_statuses"].add(str(item.get("bike_touch_status")))
+
     exposure_summary["bike_touch_plan"] = {
         "planned_normal_unique_bike_days": normal_bike_days,
-        "planned_normal_count": len(normal_bike_days),
+        "planned_normal_count": len(normal_touch_identities),
         "optional_additional_unique_bike_days": optional_bike_days,
-        "planned_max_count": len(set(normal_bike_days + optional_bike_days)),
+        "planned_max_count": len(normal_touch_identities | optional_touch_identities),
+        "mutually_exclusive_groups": [
+            {
+                "group": group_name,
+                "candidate_dates": sorted(group["candidate_dates"]),
+                "bike_touch_statuses": sorted(group["bike_touch_statuses"]),
+                "counts_as_at_most": 1,
+            }
+            for group_name, group in sorted(exclusive_groups.items())
+        ],
         "planned_meaningful_cost_sessions": sum(
             1 for item in sessions if item.get("density_cost") == "meaningful"
         ),
         "counting_rule": (
             "Count unique bike days, not split activity files. Five is the normal build shape; "
             "six requires the optional Monday microtouch and clean recovery. A hard run counts "
-            "toward the meaningful-cost cap."
+            "toward the meaningful-cost cap. Sessions with bike_touch_counting.mode set to "
+            "mutually_exclusive and the same non-empty group remain visible as candidate days "
+            "but count as at most one touch."
         ),
     }
     return exposure_summary

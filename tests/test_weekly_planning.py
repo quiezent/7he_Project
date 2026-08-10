@@ -229,3 +229,54 @@ def test_weekly_plan_applies_explicit_church_rest_and_recomputes_touch_counts(tm
     assert plan["targets"]["mtb_exposures"]["optional_mtb_exposures"] == 0
     assert plan["targets"]["bike_touches"]["planned_normal_count"] == 4
     assert plan["targets"]["bike_touches"]["planned_max_count"] == 5
+
+
+def test_weekly_plan_counts_mutually_exclusive_fallback_days_as_one_touch(tmp_path):
+    load_context(tmp_path)
+    exclusive_counting = {
+        "mode": "mutually_exclusive",
+        "group": "midweek-low-aerobic-touch",
+    }
+    for day, title in (
+        ("2026-06-23", "Primary travel-day spin"),
+        ("2026-06-24", "Fallback spin if primary was skipped"),
+    ):
+        write_json(
+            tmp_path / "input" / f"planned_session_{day}.json",
+            {
+                "date": day,
+                "status": "active_conditional_override",
+                "session": {
+                    "title": title,
+                    "type": "conditional_low_aerobic",
+                    "modality": "bike_indoor",
+                    "duration_min": 40,
+                    "intensity": "easy",
+                    "optional": True,
+                    "bike_touch_status": "conditional",
+                    "density_cost": "low",
+                    "bike_touch_counting": exclusive_counting,
+                },
+            },
+        )
+
+    plan = build_weekly_plan(tmp_path, "2026-06-22", state=_state())
+
+    touches = plan["targets"]["bike_touches"]
+    assert touches["planned_normal_unique_bike_days"] == [
+        "2026-06-23",
+        "2026-06-24",
+        "2026-06-25",
+        "2026-06-26",
+        "2026-06-27",
+    ]
+    assert touches["planned_normal_count"] == 4
+    assert touches["planned_max_count"] == 5
+    assert touches["mutually_exclusive_groups"] == [
+        {
+            "group": "midweek-low-aerobic-touch",
+            "candidate_dates": ["2026-06-23", "2026-06-24"],
+            "bike_touch_statuses": ["conditional"],
+            "counts_as_at_most": 1,
+        }
+    ]

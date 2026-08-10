@@ -40,6 +40,7 @@
 - Same-day decision sync:
   `python tools/sync_connect.py --wellness-days 3 --activity-limit 5 --decision-only`
 - Sync creates a current-week plan when one is missing; daily planning then uses that matching weekly intent unless `input/planned_session_YYYY-MM-DD.json` provides an explicit coach adjustment.
+- When dated coach adjustments are mutually exclusive fallback dates, give each session the same `bike_touch_counting: {"mode": "mutually_exclusive", "group": "<stable-group>"}` block so the weekly plan shows both candidates but counts at most one bike touch.
 - Wellness + rebuild only:
   `python tools/sync_connect.py --wellness-days 30 --activity-limit 0`
 - Rebuild only:

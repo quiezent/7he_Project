@@ -1,0 +1,72 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-08-12",
+  "generated_at": "2026-08-10T22:43:57+08:00",
+  "status": "active_conditional_weekly_density_override",
+  "decision_basis": {
+    "density_rule": "Do not stack Monday, Tuesday and Wednesday low-aerobic volume merely to manufacture bike touches.",
+    "protected_session": "Thursday is the first protected MTB window and has priority over a third consecutive trainer day."
+  },
+  "session": {
+    "title": "Absorb Tuesday, or replace it if skipped",
+    "type": "conditional_low_aerobic_or_rest",
+    "modality": "bike_indoor",
+    "duration_min": 50,
+    "duration_range_min": [
+      0,
+      60
+    ],
+    "intensity": "easy",
+    "optional": true,
+    "bike_touch_status": "conditional",
+    "bike_touch_counting": {
+      "mode": "mutually_exclusive",
+      "group": "bentong-week-low-aerobic-touch"
+    },
+    "density_cost": "low",
+    "mtb_exposure": false,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Preserve Thursday MTB quality by absorbing a completed Tuesday spin, while retaining one low-aerobic replacement option if Tuesday was skipped.",
+    "dose": {
+      "if_tuesday_completed": "Rest from planned training. Normal walking and mobility are enough; no bike touch is owed.",
+      "if_tuesday_skipped_and_fresh": "Complete 45-60 minutes seated at 115-125 W, RPE 2-3, with 125 W as the ceiling.",
+      "if_yellow_or_heavy": "Rest or complete at most 20-30 minutes at 95-110 W only if it improves the legs.",
+      "hard_cap": "One branch only. Never add Wednesday volume on top of a completed Tuesday continuity session."
+    },
+    "adaptation_hypothesis": "Choosing either absorption or one replacement aerobic touch maintains bike continuity without carrying avoidable trainer fatigue into the protected technical session.",
+    "execution_rules": [
+      "Use Tuesday completion status before choosing a branch.",
+      "If riding, remain seated and conversational with no torque, tempo, intervals or sprints.",
+      "Do not use a short Tuesday ride as permission to add a full Wednesday ride."
+    ],
+    "expected_result": {
+      "physiology": "Thursday begins with normal legs and no accumulated trainer heaviness.",
+      "weekly_density": "Continuity is maintained without sacrificing either protected MTB window."
+    },
+    "stop_rules": [
+      "Do not ride Wednesday if Tuesday's trainer session was completed.",
+      "If Tuesday was skipped, stop the replacement spin if RPE exceeds 3, HR is disproportionate, or legs fail to improve by 15 minutes.",
+      "Stop for illness symptoms, pain, dizziness, chest symptoms or unusual breathlessness."
+    ],
+    "post_session_review_fields": [
+      "tuesday_session_completed",
+      "selected_branch",
+      "actual_duration_min",
+      "average_power_w",
+      "average_hr",
+      "actual_rpe",
+      "leg_feel_start_vs_finish",
+      "stop_rule_outcome",
+      "thursday_readiness"
+    ]
+  }
+}
