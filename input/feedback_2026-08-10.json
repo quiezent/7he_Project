@@ -37,10 +37,12 @@
           "component": "saddle",
           "direction": "aft",
           "adjustments": 2,
-          "total_change_mm": null,
-          "absolute_before_and_after_position": "not_measured_or_not_reported",
+          "total_change_mm": 12,
+          "height": "Seatpost height setting was unchanged, but BB-to-saddle height was not measured.",
+          "tilt": "horizontal relative to the floor",
+          "absolute_before_and_after_position": "Total rail displacement is known; absolute setback from the bottom bracket was not measured.",
           "athlete_rationale": "Reduce weight through the hands and restore a position that previously felt effective.",
-          "immediate_response": "Leg feel improved toward the finish and felt better after moving the saddle aft. Hand-pressure response was reported qualitatively as the reason for the change but not scored before versus after."
+          "immediate_response": "Hand pressure was relieved after moving the saddle aft. Leg feel improved toward the finish and felt better after the adjustment. Before the 60-minute mark, the athlete had already been sitting farther back on the saddle."
         },
         "leg_heaviness_start_vs_finish": "Better toward the finish and after the saddle was moved aft.",
         "fuel_and_fluid": {
@@ -52,9 +54,9 @@
           "sodium_context": "Plain water was consumed; banana sodium was not quantified."
         },
         "cooling": "Ceiling fan on high.",
-        "stop_rule_outcome": null,
-        "stop_rule_outcome_reported_verbatim": "None",
-        "stop_rule_outcome_status": "explicit_valid_code_required"
+        "stop_rule_outcome": "not_triggered",
+        "stop_rule_outcome_source": "athlete_explicit_follow_up",
+        "stop_rule_outcome_reported_verbatim": "not triggered"
       },
       "coach_interpretation": {
         "verdict": "The intended low-aerobic objective was achieved today. A second full 60-95 minute Zone 2 dose on Tuesday is unnecessary for Load Focus and would be load-chasing rather than a missing-stimulus correction.",
@@ -67,17 +69,18 @@
       "activity_id": "23917978587",
       "reported_context": {
         "pause_reason": "The pauses around 60 and 72 minutes were used to move the saddle aft.",
-        "fit_hypothesis": "The saddle had begun to feel too far forward and placed too much weight on the hands. The athlete also associates a more rearward body contribution during standing trail climbing with improved rear-tyre traction.",
+        "fit_hypothesis": "The saddle had begun to feel too far forward and placed too much weight on the hands. Before the first adjustment, the athlete was already sitting farther back on the saddle and may also have changed foot position on the flat pedals. The athlete also associates a more rearward body contribution during standing trail climbing with improved rear-tyre traction.",
+        "bike_and_trainer": "Marin San Quentin 3 hardtail mounted on an Elite Suito direct-drive trainer.",
+        "pedal_system": "flat pedals",
         "leg_response": "Legs felt better toward the end and after the saddle was moved aft.",
         "fuel": "One banana.",
         "fluid": "1.8 litres of plain water.",
         "cooling": "Ceiling fan on high.",
-        "stop_rule_outcome_verbatim": "None"
+        "stop_rule_outcome_verbatim": "not triggered"
       },
       "session_contract_review": {
-        "stop_rule_outcome": null,
-        "athlete_reported_stop_rule_outcome": "None",
-        "stop_rule_outcome_status": "explicit_valid_code_required",
+        "stop_rule_outcome": "not_triggered",
+        "stop_rule_outcome_source": "athlete_explicit_follow_up",
         "fluid_ml_per_hour": 1137,
         "fueling_carbs_g_per_hour": null,
         "fueling_carbs_g_per_hour_estimated_range": [
@@ -87,20 +90,42 @@
         "fueling_estimate_basis": "One banana of unreported size; preserve the range rather than asserting a precise carbohydrate total.",
         "sodium_mg_per_hour": null,
         "leg_feel_start_vs_finish": "improved",
-        "fit_change_response": "Legs improved toward the finish after two aft saddle adjustments; hand-pressure improvement was the adjustment objective but was not numerically rated."
+        "fit_change_response": "Hand pressure was relieved and legs improved toward the finish after two aft saddle adjustments totaling 12 mm. Before the first change, the athlete was already scooting rearward; flat-pedal foot position may also have changed."
       },
       "data_quality_and_interpretation_limits": {
-        "saddle_change": "Direction and two adjustment times are known, but total millimetres, saddle height, tilt and absolute setback before and after are unknown. Warm-up and time effects are therefore confounded with the fit change.",
+        "saddle_change": "The saddle moved aft 12 mm in two adjustments. Seatpost height setting stayed unchanged and saddle tilt was reported horizontal, but absolute bottom-bracket-to-saddle height and setback were not measured. Warm-up and time effects remain confounded with the fit change.",
+        "flat_pedal_position": "Foot placement was not fixed and may have changed while the athlete was scooting rearward, so effective foot-to-pedal-spindle position is an unmeasured action variable.",
+        "trainer_pitch": "Front- and rear-axle heights relative to the floor were not measured. A nose-down hardtail position on the direct-drive trainer could independently increase hand pressure and should be checked before treating setback as the only cause.",
         "standing_traction": "Standing MTB traction is a rider-position observation and does not by itself prove the seated indoor saddle setback is correct.",
-        "stop_rule_outcome": "The athlete supplied 'None' in the explicit stop-outcome field, but this is not one of the canonical enum values. Preserve the verbatim answer and request either not_triggered, triggered_and_stopped, triggered_and_downshifted or triggered_but_continued rather than silently normalizing it."
+        "stop_rule_outcome": "Resolved by athlete explicit follow-up as not_triggered."
       },
       "coach_interpretation": {
         "fit_verdict": "The aft move is a plausible indoor-fit improvement and may be retained provisionally, but one confounded within-session response does not yet establish the final position.",
         "primary_rider_effect": "The useful signal is improved pelvic support and reduced need to brace through the hands, with a possible return of a more natural hip-extensor contribution.",
         "secondary_setup_effect": "Moving the saddle aft redistributes seated load rearward and increases effective leg reach and cockpit reach. It may improve leverage, but excessive setback can produce pelvic rocking, posterior-knee or hamstring/calf tension, low-back or neck strain, or renewed hand pressure from overreaching.",
         "mtb_traction_distinction": "Standing trail-climb traction does not prove seated indoor setback because the saddle is no longer load-bearing. The expert climbing pattern is dynamically centred: hips only far enough aft to preserve rear contact pressure, torso low and forward enough to retain front-wheel authority, and torque applied smoothly rather than as upright peak-force stomps.",
-        "validation": "Measure the total rail displacement in millimetres plus saddle height and tilt, freeze all settings, and compare two matched easy rides at 120-125 W with the same cadence, fan and hand position. Retain only if hand pressure remains lower, the pelvis stays quiet, and there is no knee, hamstring, calf, back, neck or perineal response during or the next morning.",
+        "validation": "Freeze the 12 mm aft setting, measure front- and rear-axle heights plus absolute saddle height/setback, standardize flat-pedal foot position, and compare two matched easy rides at 120-125 W with the same cadence, fan and hand position. A level non-drive-side video is acceptable. Retain only if hand pressure remains lower, the pelvis stays quiet, and there is no knee, hamstring, calf, back, neck or perineal response during or the next morning.",
         "nutrition": "One banana likely supplied about 13-19 g carbohydrate per hour, below the canonical 30-60 g/h range for a 60-120 minute session but sufficient for this execution because power, RPE and leg response remained stable. Water intake was 1137 ml/h versus Garmin's modeled sweat rate of about 604 ml/h; without pre/post body mass the true hydration need is unresolved, so do not treat the modeled surplus as measured overhydration."
+      }
+    },
+    {
+      "timestamp_local": "2026-08-10T23:40:47+08:00",
+      "source": "athlete_fit_measurement_and_stop_outcome_confirmation",
+      "activity_id": "23917978587",
+      "bike_fit_confirmation": {
+        "bike": "Marin San Quentin 3 hardtail",
+        "trainer": "Elite Suito direct drive",
+        "pedal_system": "flat pedals",
+        "saddle_aft_change_mm": 12,
+        "saddle_height_setting": "unchanged but not measured",
+        "saddle_tilt": "horizontal",
+        "pre_change_behavior": "Athlete was sitting farther rearward on the saddle before the 60-minute mark and believes flat-pedal foot placement may also have changed.",
+        "post_change_response": "Hand pressure was relieved.",
+        "video_constraint": "Drive side is too close to the wall; a perpendicular non-drive-side video is feasible."
+      },
+      "session_contract_review": {
+        "stop_rule_outcome": "not_triggered",
+        "stop_rule_outcome_source": "athlete_explicit_report"
       }
     }
   ]
