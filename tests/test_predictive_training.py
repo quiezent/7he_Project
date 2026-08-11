@@ -453,6 +453,191 @@ def test_predictive_training_uses_dated_planned_session_input(tmp_path):
         assert expected.get(field), field
 
 
+def test_optional_session_skip_is_allowed_and_not_calibratable(tmp_path):
+    latest = _seed_history(tmp_path)
+    review_day = latest + timedelta(days=1)
+    _write_wellness(tmp_path, review_day, good=True)
+    _write_wellness(tmp_path, review_day + timedelta(days=1), good=True)
+    prescription = _contract_prescription(
+        review_day,
+        session_type="indoor_low_aerobic_travel_day",
+        modality="bike_indoor",
+        categories={"bike_indoor": 1},
+        review_fields=["stop_rule_outcome", "next_morning_response"],
+    )
+    expected = prescription["prediction"]["expected_session"]
+    expected["optional"] = True
+    expected["dose"]["skip_branch"] = (
+        "Skip after travel if the circulation spin is not useful; no replacement is owed."
+    )
+    prescription["prediction"]["execution_risk"] = {
+        "stress_test_coaching_adjusted_next_day_response": {"score": 55}
+    }
+
+    review = build_predictive_review(
+        tmp_path,
+        review_day,
+        prescription=prescription,
+    )
+    comparison = review["comparison"]
+
+    assert review["actual_activity"]["sessions"] == 0
+    assert review["actual_next_day_response"]["status"] == "available"
+    assert comparison["adherence_status"] == "allowed_optional_skip"
+    assert comparison["response_status"] == "not_applicable_optional_skip"
+    assert comparison["response_delta"] is None
+    assert comparison["execution_risk_stress_test"] == {
+        "available": False,
+        "expected_response_source": "coaching_adjusted_stress_test",
+        "score": 55,
+        "response_delta": None,
+        "response_status": "not_applicable_optional_skip",
+    }
+    assert comparison["physiology_calibration_status"] == "not_calibratable_optional_skip"
+    assert comparison["physiology_calibration_eligible"] is False
+    assert comparison["physiology_calibration_weight"] == 0.0
+    assert comparison["calibration_status"] == "not_calibratable_optional_skip"
+    assert comparison["calibration_eligible"] is False
+    assert comparison["calibration_weight"] == 0.0
+    assert comparison["contract_quality"]["status"] == "optional_skip"
+    assert comparison["contract_quality"]["action_alignment"]["status"] == (
+        "allowed_optional_skip"
+    )
+    assert comparison["execution_drift"] == {
+        "training_load_ratio": 0.0,
+        "duration_ratio": 0.0,
+        "actual_changed_model_input": True,
+        "adherence_drift": False,
+        "within_written_optionality": True,
+    }
+    assert "not adherence drift" in comparison["interpretation"]
+
+
+def _legacy_optional_prescription_and_source(day: date) -> tuple[dict, dict]:
+    prescription = _contract_prescription(
+        day,
+        session_type="indoor_low_aerobic_travel_day",
+        modality="bike_indoor",
+        categories={"bike_indoor": 1},
+        review_fields=["stop_rule_outcome", "next_morning_response"],
+    )
+    expected = prescription["prediction"]["expected_session"]
+    expected["dose"]["skip_branch"] = (
+        "Skip after travel if rest better serves recovery; no replacement is owed."
+    )
+    prescription["plan_source"] = {
+        "type": "input_planned_session",
+        "path": f"input/planned_session_{day.isoformat()}.json",
+    }
+    source_fields = (
+        "title",
+        "type",
+        "modality",
+        "duration_min",
+        "intensity",
+        "schema_version",
+        "contract_fields",
+        *SESSION_CONTRACT_FIELDS,
+    )
+    source_session = {field: expected[field] for field in source_fields}
+    source_session["optional"] = True
+    source = {
+        "date": day.isoformat(),
+        "session": source_session,
+    }
+    return prescription, source
+
+
+def test_review_recovers_legacy_optionality_from_exact_recorded_input_plan(tmp_path):
+    latest = _seed_history(tmp_path)
+    review_day = latest + timedelta(days=1)
+    _write_wellness(tmp_path, review_day, good=True)
+    _write_wellness(tmp_path, review_day + timedelta(days=1), good=True)
+    prescription, source = _legacy_optional_prescription_and_source(review_day)
+    dated_path = (
+        tmp_path
+        / "snapshots"
+        / f"predictive_session_{review_day.isoformat()}.json"
+    )
+    write_json(dated_path, prescription)
+    write_json(
+        tmp_path / "input" / f"planned_session_{review_day.isoformat()}.json",
+        source,
+    )
+
+    review = build_predictive_review(tmp_path, review_day)
+    persisted_prescription = read_json(dated_path, {})
+    resolution = review["optionality_resolution"]
+
+    assert "optional" not in prescription["prediction"]["expected_session"]
+    assert "optional" not in persisted_prescription["prediction"]["expected_session"]
+    assert review["expected"]["expected_session"]["optional"] is True
+    assert resolution["applied"] is True
+    assert resolution["status"] == "recovered_from_exact_dated_input_plan"
+    assert resolution["source"] == {
+        "type": "input_planned_session",
+        "path": f"input/planned_session_{review_day.isoformat()}.json",
+        "date": review_day.isoformat(),
+    }
+    assert resolution["mismatched_fields"] == []
+    assert resolution["stored_prediction_mutated"] is False
+    assert review["comparison"]["adherence_status"] == "allowed_optional_skip"
+    assert review["comparison"]["calibration_eligible"] is False
+
+
+def test_review_rejects_legacy_optionality_when_recorded_plan_changed(tmp_path):
+    latest = _seed_history(tmp_path)
+    review_day = latest + timedelta(days=1)
+    _write_wellness(tmp_path, review_day, good=True)
+    _write_wellness(tmp_path, review_day + timedelta(days=1), good=True)
+    prescription, source = _legacy_optional_prescription_and_source(review_day)
+    source["session"]["dose"] = {
+        **source["session"]["dose"],
+        "skip_branch": "This source was changed after the immutable prediction was stored.",
+    }
+    write_json(
+        tmp_path / "input" / f"planned_session_{review_day.isoformat()}.json",
+        source,
+    )
+
+    review = build_predictive_review(
+        tmp_path,
+        review_day,
+        prescription=prescription,
+    )
+    resolution = review["optionality_resolution"]
+
+    assert resolution["applied"] is False
+    assert resolution["status"] == "rejected_stored_action_mismatch"
+    assert resolution["mismatched_fields"] == ["dose"]
+    assert "optional" not in review["expected"]["expected_session"]
+    assert review["comparison"]["adherence_status"] == "missed_prescribed_session"
+    assert review["comparison"]["execution_drift"]["adherence_drift"] is True
+
+
+def test_session_expectation_preserves_explicit_optionality_and_skip_branch():
+    expected = _session_expectation(
+        {
+            "session": {
+                "title": "Optional travel-day spin",
+                "type": "indoor_low_aerobic_travel_day",
+                "modality": "bike_indoor",
+                "duration_min": 40,
+                "intensity": "easy",
+                "optional": True,
+                "dose": {
+                    "skip_branch": "Skip after travel if recovery is better served by rest."
+                },
+            }
+        }
+    )
+
+    assert expected["optional"] is True
+    assert expected["dose"]["skip_branch"] == (
+        "Skip after travel if recovery is better served by rest."
+    )
+
+
 def test_weekly_session_types_are_classified_as_mtb_or_indoor_bike_actions():
     mtb = _session_expectation(
         {

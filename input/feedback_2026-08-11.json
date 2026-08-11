@@ -1,0 +1,45 @@
+{
+  "date": "2026-08-11",
+  "entries": [
+    {
+      "timestamp_local": "2026-08-11T19:36:59+08:00",
+      "source": "athlete_evening_travel_and_next_day_training_intent",
+      "reported_context": {
+        "travel": "Completed the morning meeting and return drive to Bentong and was back home before the evening report.",
+        "training_today": "No training session reported on 2026-08-11.",
+        "evening_status": "Dinner completed.",
+        "garmin_sync": "Athlete reported Garmin synced; live coaching refresh completed at 19:34 local.",
+        "next_day_intent": "Probably complete an indoor Zone 2 session on 2026-08-12 afternoon."
+      },
+      "fresh_garmin_evidence": {
+        "primary_sleep_hours": 5.47,
+        "sleep_score": 70,
+        "wake_body_battery": 74,
+        "current_body_battery_evening": 33,
+        "overnight_hrv_ms": 44,
+        "hrv_status": "BALANCED",
+        "resting_hr_bpm": 48,
+        "resting_hr_7d_bpm": 47,
+        "average_stress_partial_day": 26,
+        "readiness": "yellow 53",
+        "cns_readiness": "watch 66 with controlled_skill_only ceiling",
+        "garmin_acwr": "OPTIMAL 0.8; acute load 323 versus chronic load 378",
+        "load_focus": {
+          "low_aerobic": "298.4 within target 261-662",
+          "high_aerobic": "837.6 within but near target maximum 873",
+          "anaerobic": "279.5 within target 133-400"
+        }
+      },
+      "data_quality_caveats": {
+        "stress_coverage": "Forty-five minutes of material internal stress unavailability prevents positive credit from the otherwise low partial-day average.",
+        "garmin_training_readiness": "Successful empty endpoints and registered-device capability response indicate this Garmin surface is unsupported; it is not treated as a zero score.",
+        "subjective_post_drive_status": "Mental clarity, leg heaviness and back stiffness after the drive were not reported and cannot be inferred."
+      },
+      "coach_interpretation": {
+        "today_verdict": "Treat 2026-08-11 as the no-training member of the mutually exclusive Tuesday-or-Wednesday aerobic branch.",
+        "mechanism": "The drive added no recorded exercise load, but 5.47 hours of primary sleep independently constrained readiness and CNS consequence today.",
+        "next_constraint": "A 2026-08-12 afternoon replacement spin requires fresh sleep, physical, CNS and subjective evidence; it is not owed if sleep opportunity or post-drive recovery remains poor."
+      }
+    }
+  ]
+}

@@ -1,20 +1,22 @@
 {
   "artifact_type": "coach_authored_planned_session",
   "date": "2026-08-12",
-  "generated_at": "2026-08-10T22:43:57+08:00",
-  "status": "active_conditional_weekly_density_override",
+  "generated_at": "2026-08-11T19:36:59+08:00",
+  "status": "active_conditional_pre_session_coach_update",
   "decision_basis": {
-    "density_rule": "Do not stack Monday, Tuesday and Wednesday low-aerobic volume merely to manufacture bike touches.",
-    "protected_session": "Thursday is the first protected MTB window and has priority over a third consecutive trainer day."
+    "tuesday_outcome": "The Bentong meeting and return drive were completed and no Tuesday training session was reported, so Wednesday is the only remaining low-aerobic candidate in the mutually exclusive branch.",
+    "current_recovery": "Tuesday primary sleep was 5.47 hours, readiness 53 yellow and CNS 66 watch. These values do not clear Wednesday in advance; fresh Wednesday evidence is required.",
+    "garmin_diagnosis": "ACWR is 0.8 OPTIMAL and low-aerobic load 298.4 is already inside target. Wednesday supports continuity rather than repairing a Garmin deficit.",
+    "protected_session": "Thursday MTB quality has higher value than extending Wednesday trainer volume."
   },
   "session": {
-    "title": "Absorb Tuesday, or replace it if skipped",
-    "type": "conditional_low_aerobic_or_rest",
+    "title": "Low-aerobic replacement and fixed-position saddle validation",
+    "type": "easy_bike_continuity",
     "modality": "bike_indoor",
-    "duration_min": 50,
+    "duration_min": 45,
     "duration_range_min": [
       0,
-      60
+      45
     ],
     "intensity": "easy",
     "optional": true,
@@ -35,37 +37,58 @@
       "stop_rules",
       "post_session_review_fields"
     ],
-    "purpose": "Preserve Thursday MTB quality by absorbing a completed Tuesday spin, while retaining one low-aerobic replacement option if Tuesday was skipped.",
+    "purpose": "Replace the skipped Tuesday bike touch with a bounded low-aerobic stimulus while observing whether the Marin's fixed 12 mm-aft saddle position reduces hand pressure without creating a new fit symptom or compromising Thursday MTB.",
     "dose": {
-      "if_tuesday_completed": "Rest from planned training. Normal walking and mobility are enough; no bike touch is owed.",
-      "if_tuesday_skipped_and_fresh": "Complete 45-60 minutes seated at 115-125 W, RPE 2-3, with 125 W as the ceiling.",
-      "if_yellow_or_heavy": "Rest or complete at most 20-30 minutes at 95-110 W only if it improves the legs.",
-      "hard_cap": "One branch only. Never add Wednesday volume on top of a completed Tuesday continuity session."
+      "fresh_gate": "Run the live Garmin decision path Wednesday afternoon. Full dose requires physical readiness not red, CNS neither impaired nor compromised, no illness, mental clarity at least 8/10, and legs/back that feel normal or improve during the warm-up.",
+      "full_branch": "If the fresh gate is clean: 10 minutes at 95-110 W, 25-30 minutes seated at 115-125 W, then 5 minutes at 90-105 W. RPE 2-3.",
+      "short_sleep_or_yellow_branch": "If sleep remains short or readiness is yellow but clarity, health and movement are otherwise normal: either rest or complete only 20-30 minutes at 95-110 W if it improves the legs.",
+      "red_or_cns_limited_branch": "If physical readiness is red, CNS is impaired/compromised, clarity is below 8/10, or illness/pain is present: no planned training.",
+      "hard_cap": "45 minutes and 125 W. No extension, standing torque, tempo, intervals or sprints."
     },
-    "adaptation_hypothesis": "Choosing either absorption or one replacement aerobic touch maintains bike continuity without carrying avoidable trainer fatigue into the protected technical session.",
+    "adaptation_hypothesis": "A 40-45 minute easy power-controlled touch should reinforce cycling continuity and provide enough seated time to test whether the new support point remains stable, while its low cost preserves Thursday trail processing and legs.",
     "execution_rules": [
-      "Use Tuesday completion status before choosing a branch.",
-      "If riding, remain seated and conversational with no torque, tempo, intervals or sprints.",
-      "Do not use a short Tuesday ride as permission to add a full Wednesday ride."
+      "Keep the Marin saddle fixed 12 mm aft at the reported unchanged height setting and horizontal tilt; check rail limits and clamp security before riding, and make no mid-session fit change.",
+      "Use the same shoes and mark or photograph the natural flat-pedal spindle position so foot migration is observable rather than confused with the saddle response.",
+      "Measure floor-to-centre height of the front axle and Suito rear axle before riding, but do not change trainer pitch during this session. If the front is more than approximately 10 mm lower, classify the fit result as pitch-confounded.",
+      "Remain seated at a natural cadence with the normal hand position and cooling. Record non-drive-side video for 30-45 seconds near minutes 15 and 35-40 at the same 120-125 W if the full branch is used.",
+      "Use a level, perpendicular, non-ultra-wide camera near bottom-bracket height with the whole rider and both axle centres visible; ride naturally rather than posing.",
+      "When normally fed after lunch, no during-session carbohydrate is required for this 45-minute ceiling. Drink to thirst rather than reproducing Monday's 1.8 L intake as a target."
     ],
     "expected_result": {
-      "physiology": "Thursday begins with normal legs and no accumulated trainer heaviness.",
-      "weekly_density": "Continuity is maintained without sacrificing either protected MTB window."
+      "physiology": "Power remains 115-125 W at RPE 2-3 with stable breathing, and the legs finish equal or better.",
+      "fit": "Reduced hand pressure persists through the later observation, pelvis and feet remain quiet without conscious repositioning, and no knee, hamstring, calf, back, neck, hand or perineal symptom appears during the ride or afterward.",
+      "next_day": "Thursday begins with normal legs and full subjective processing; the MTB dose is still decided from fresh Thursday evidence."
     },
     "stop_rules": [
-      "Do not ride Wednesday if Tuesday's trainer session was completed.",
-      "If Tuesday was skipped, stop the replacement spin if RPE exceeds 3, HR is disproportionate, or legs fail to improve by 15 minutes.",
-      "Stop for illness symptoms, pain, dizziness, chest symptoms or unusual breathlessness."
+      "Stop rather than readjust the bike if pain exceeds 2/10, numbness appears, pelvic rocking increases, feet repeatedly migrate, hand pressure progressively returns, or reach strain develops.",
+      "Stop by 15 minutes if legs/back are not improving, or if 125 W would require RPE above 3.",
+      "Reduce power or stop for a disproportionate same-power HR rise with unchanged cadence and cooling.",
+      "Stop for declining clarity, illness symptoms, dizziness, chest symptoms or unusual breathlessness.",
+      "Do not exceed 45 minutes even if the ride feels excellent."
     ],
     "post_session_review_fields": [
-      "tuesday_session_completed",
+      "fresh_gate_result",
       "selected_branch",
+      "primary_sleep_hours",
+      "pre_session_mental_clarity",
       "actual_duration_min",
       "average_power_w",
+      "normalized_power_w",
       "average_hr",
+      "heart_rate_drift",
+      "actual_training_load",
       "actual_rpe",
+      "workout_feel",
       "leg_feel_start_vs_finish",
+      "front_and_rear_axle_height_mm",
+      "flat_pedal_foot_position_stability",
+      "hand_pressure_left_right_at_15_and_40_min",
+      "pelvic_rocking_or_scooting",
+      "fit_symptoms_during_and_two_hours_after",
+      "video_recorded",
+      "fluid_consumed",
       "stop_rule_outcome",
+      "next_morning_response",
       "thursday_readiness"
     ]
   }

@@ -880,6 +880,8 @@ def _session_expectation(plan: dict) -> dict:
     for field in SESSION_CONTRACT_FIELDS:
         if field in session:
             expected[field] = session[field]
+    if "optional" in session:
+        expected["optional"] = session.get("optional")
     if session.get("schema_version"):
         expected["schema_version"] = session.get("schema_version")
     if session.get("contract_fields"):
@@ -904,6 +906,141 @@ def _session_expectation(plan: dict) -> dict:
         ]
         expected["contract_rpe_expectation"] = contract_rpe
     return expected
+
+
+def _review_time_optionality_resolution(
+    root: str | Path | None,
+    target: date,
+    prescription: dict,
+    expected: dict,
+) -> tuple[dict, dict]:
+    """Recover omitted legacy optionality only from an exact dated-plan match."""
+    match_fields = (
+        "title",
+        "type",
+        "modality",
+        "duration_min",
+        "intensity",
+        "schema_version",
+        "contract_fields",
+        *SESSION_CONTRACT_FIELDS,
+    )
+    plan_source = prescription.get("plan_source") or {}
+    source_path = str(plan_source.get("path") or "").replace("\\", "/")
+    expected_path = _planned_session_path(target)
+    base = {
+        "applied": False,
+        "status": "not_applicable",
+        "source": {
+            "type": plan_source.get("type"),
+            "path": source_path or None,
+            "date": target.isoformat(),
+        },
+        "stored_optional_present": "optional" in expected,
+        "stored_optional_value": expected.get("optional"),
+        "resolved_optional_value": expected.get("optional"),
+        "required_match_fields": list(match_fields),
+        "matched_fields": [],
+        "mismatched_fields": [],
+        "contract_validation": None,
+        "stored_prediction_mutated": False,
+        "reason": None,
+    }
+    if "optional" in expected:
+        return expected, {
+            **base,
+            "status": "stored_explicit_optionality",
+            "reason": "The immutable stored prediction already contains explicit optionality.",
+        }
+    if plan_source.get("type") != "input_planned_session":
+        return expected, {
+            **base,
+            "status": "not_applicable_plan_source",
+            "reason": "Legacy recovery is limited to an explicitly recorded input_planned_session source.",
+        }
+    try:
+        prescription_date = parse_date(prescription.get("date"))
+    except (TypeError, ValueError):
+        prescription_date = None
+    if source_path != expected_path or prescription_date != target:
+        return expected, {
+            **base,
+            "status": "rejected_invalid_source_identity",
+            "reason": "The prescription date or canonical dated input path does not match the review date.",
+        }
+    source_payload = read_json(
+        input_dir(root) / f"planned_session_{target.isoformat()}.json",
+        {},
+    )
+    if not isinstance(source_payload, dict) or not isinstance(
+        source_payload.get("session"), dict
+    ):
+        return expected, {
+            **base,
+            "status": "rejected_source_missing",
+            "reason": "The recorded dated input plan is missing or does not contain a session object.",
+        }
+    try:
+        source_date = parse_date(source_payload.get("date"))
+    except (TypeError, ValueError):
+        source_date = None
+    if source_date != target:
+        return expected, {
+            **base,
+            "status": "rejected_invalid_source_date",
+            "reason": "The dated input plan payload does not explicitly match the review date.",
+        }
+    source_session = source_payload["session"]
+    if source_session.get("optional") is not True:
+        return expected, {
+            **base,
+            "status": "rejected_source_not_optional",
+            "reason": "The dated input plan does not explicitly set session.optional to true.",
+        }
+    source_expected = _session_expectation({"session": source_session})
+    contract_validation = {
+        "stored": _expected_contract_status(expected),
+        "source": _expected_contract_status(source_expected),
+    }
+    if not all(item.get("valid") for item in contract_validation.values()):
+        return expected, {
+            **base,
+            "status": "rejected_incomplete_schema_v3_contract",
+            "contract_validation": contract_validation,
+            "reason": (
+                "Legacy optionality recovery requires complete schema-v3 contracts in both the "
+                "immutable prediction and its recorded dated input plan."
+            ),
+        }
+    matched_fields = [
+        field for field in match_fields if expected.get(field) == source_expected.get(field)
+    ]
+    mismatched_fields = [field for field in match_fields if field not in matched_fields]
+    if mismatched_fields:
+        return expected, {
+            **base,
+            "status": "rejected_stored_action_mismatch",
+            "matched_fields": matched_fields,
+            "mismatched_fields": mismatched_fields,
+            "contract_validation": contract_validation,
+            "reason": (
+                "The current dated input plan does not exactly reproduce the immutable stored "
+                "action and schema-v3 contract."
+            ),
+        }
+    resolved = {**expected, "optional": True}
+    return resolved, {
+        **base,
+        "applied": True,
+        "status": "recovered_from_exact_dated_input_plan",
+        "resolved_optional_value": True,
+        "matched_fields": matched_fields,
+        "contract_validation": contract_validation,
+        "reason": (
+            "The legacy prediction omitted optionality, but its recorded same-date input plan still "
+            "exactly matches the stored action and schema-v3 contract and explicitly marks it optional."
+        ),
+    }
 
 
 def _simulate_activity_day(activity_by_day: dict[str, dict], target: date, expected: dict) -> dict[str, dict]:
@@ -1687,6 +1824,11 @@ def _expected_categories_for_action_alignment(expected: dict) -> tuple[list[str]
 def _action_alignment(expected: dict, actual: dict, blocks: list[dict] | None = None) -> dict:
     expected_sessions = int(_number(expected.get("sessions")))
     actual_sessions = int(_number(actual.get("sessions")))
+    allowed_optional_skip = (
+        expected.get("optional") is True
+        and expected_sessions > 0
+        and actual_sessions == 0
+    )
     expected_categories, expected_category_normalization = (
         _expected_categories_for_action_alignment(expected)
     )
@@ -1695,7 +1837,10 @@ def _action_alignment(expected: dict, actual: dict, blocks: list[dict] | None = 
         for category, count in (actual.get("categories") or {}).items()
         if _number(count) > 0
     )
-    if expected_sessions == 0:
+    if allowed_optional_skip:
+        modality_status = "not_applicable_optional_skip"
+        session_count_status = "allowed_optional_skip"
+    elif expected_sessions == 0:
         modality_status = "not_applicable" if actual_sessions == 0 else "mismatched"
         session_count_status = "not_applicable" if actual_sessions == 0 else "mismatched"
     elif actual_sessions == 0:
@@ -1708,7 +1853,9 @@ def _action_alignment(expected: dict, actual: dict, blocks: list[dict] | None = 
     expected_duration = _number(expected.get("duration_min"))
     actual_duration = _number(actual.get("duration_min"))
     duration_ratio = actual_duration / expected_duration if expected_duration else None
-    if expected_duration <= 0:
+    if allowed_optional_skip:
+        duration_status = "not_applicable_optional_skip"
+    elif expected_duration <= 0:
         duration_status = "not_applicable" if actual_sessions == 0 else "mismatched"
     elif actual_sessions == 0:
         duration_status = "missing"
@@ -1720,7 +1867,9 @@ def _action_alignment(expected: dict, actual: dict, blocks: list[dict] | None = 
         duration_status = "drifted"
     structured_feedback = _structured_feedback_action_alignment(blocks or [])
     component_statuses = (modality_status, session_count_status, duration_status)
-    if expected_sessions == 0:
+    if allowed_optional_skip:
+        overall = "allowed_optional_skip"
+    elif expected_sessions == 0:
         overall = "not_applicable" if actual_sessions == 0 else "mismatched"
     elif structured_feedback.get("status") == "mismatched":
         overall = "mismatched"
@@ -1747,6 +1896,7 @@ def _action_alignment(expected: dict, actual: dict, blocks: list[dict] | None = 
         "duration_ratio": _round(duration_ratio, 2),
         "duration_status": duration_status,
         "structured_feedback_alignment": structured_feedback,
+        "within_written_optionality": allowed_optional_skip,
     }
 
 
@@ -1774,6 +1924,12 @@ def _contract_quality_review(
     if not expected.get("sessions"):
         status = "not_applicable"
         reasons.append("No trainable session was prescribed.")
+    elif action.get("status") == "allowed_optional_skip":
+        status = "optional_skip"
+        reasons.append(
+            "The explicitly optional session was not performed; this is allowed by the written plan "
+            "but provides no delivered session for calibration."
+        )
     elif not contract.get("valid"):
         status = "contract_missing"
         reasons.append("The stored prediction does not contain a complete schema v3 session contract.")
@@ -2287,7 +2443,14 @@ def _compare_prediction(
     load_delta = actual_load - expected_load if actual_load is not None and expected_load is not None else None
     load_delta_pct = (load_delta / expected_load * 100) if load_delta is not None and expected_load else None
     lower, upper = expected_range if len(expected_range) == 2 else (None, None)
-    if actual.get("sessions", 0) == 0 and expected.get("sessions", 0) > 0:
+    allowed_optional_skip = (
+        expected.get("optional") is True
+        and actual.get("sessions", 0) == 0
+        and expected.get("sessions", 0) > 0
+    )
+    if allowed_optional_skip:
+        adherence = "allowed_optional_skip"
+    elif actual.get("sessions", 0) == 0 and expected.get("sessions", 0) > 0:
         adherence = "missed_prescribed_session"
     elif actual.get("sessions", 0) > 0 and expected.get("sessions", 0) == 0:
         adherence = "trained_on_planned_rest"
@@ -2310,15 +2473,23 @@ def _compare_prediction(
     actual_response = response.get("score") if response.get("status") == "available" else None
     response_delta = (
         actual_response - expected_response
-        if actual_response is not None and expected_response is not None
+        if not allowed_optional_skip
+        and actual_response is not None
+        and expected_response is not None
         else None
     )
-    if actual_response is None:
+    if allowed_optional_skip:
+        response_status = "not_applicable_optional_skip"
+    elif actual_response is None:
         response_status = "pending_next_day"
     else:
         response_status = _response_status_from_delta(response_delta)
 
-    if response_status == "pending_next_day":
+    if allowed_optional_skip:
+        physiology_calibration_status = "not_calibratable_optional_skip"
+        physiology_calibration_weight = 0.0
+        physiology_calibration_eligible = False
+    elif response_status == "pending_next_day":
         physiology_calibration_status = "pending_next_day"
         physiology_calibration_weight = 0.0
         physiology_calibration_eligible = False
@@ -2364,7 +2535,12 @@ def _compare_prediction(
         calibration_weight = 0.0
         calibration_eligible = False
 
-    if response_status == "pending_next_day":
+    if allowed_optional_skip:
+        interpretation = (
+            "The optional session was not performed; this was allowed by the written plan and is not "
+            "adherence drift. No delivered session-response pair exists for calibration."
+        )
+    elif response_status == "pending_next_day":
         interpretation = "Await next-day Garmin wellness before judging model calibration."
     elif response_status == "no_expected_response":
         interpretation = "Actual next-day response exists, but the model did not produce a comparable expectation."
@@ -2383,6 +2559,15 @@ def _compare_prediction(
     else:
         interpretation = "The model was conservative or adaptation/recovery was better than expected."
 
+    execution_risk_stress_test = _stress_test_comparison(
+        prediction,
+        None if allowed_optional_skip else actual_response,
+    )
+    if allowed_optional_skip:
+        execution_risk_stress_test["response_status"] = (
+            "not_applicable_optional_skip"
+        )
+
     return {
         "adherence_status": adherence,
         "training_load_expectation": load_expectation,
@@ -2393,6 +2578,11 @@ def _compare_prediction(
             "training_load_ratio": _round(load_ratio, 2),
             "duration_ratio": _round(duration_ratio, 2),
             "actual_changed_model_input": adherence != "matched_expected_load",
+            "adherence_drift": adherence not in {
+                "matched_expected_load",
+                "allowed_optional_skip",
+            },
+            "within_written_optionality": allowed_optional_skip,
         },
         "self_evaluation": self_eval,
         "expected_response_source": "coaching_adjusted"
@@ -2400,7 +2590,7 @@ def _compare_prediction(
         else "raw_model",
         "response_status": response_status,
         "response_delta": _round(response_delta),
-        "execution_risk_stress_test": _stress_test_comparison(prediction, actual_response),
+        "execution_risk_stress_test": execution_risk_stress_test,
         "physiology_calibration_status": physiology_calibration_status,
         "physiology_calibration_eligible": physiology_calibration_eligible,
         "physiology_calibration_weight": physiology_calibration_weight,
@@ -2448,11 +2638,13 @@ def _review_text(review: dict) -> str:
     fueling = audit.get("fueling_adequacy") or {}
     cns = audit.get("cns_outcome") or {}
     next_day_cns = cns.get("next_day") or {}
+    optionality = review.get("optionality_resolution") or {}
     return "\n".join(
         [
             f"Predictive Session Review - {review['date']}",
             "",
             f"Adherence: {comparison.get('adherence_status')}",
+            f"Optionality resolution: {optionality.get('status')} (applied: {optionality.get('applied')})",
             f"Load delta: {comparison.get('training_load_delta')} ({comparison.get('training_load_delta_pct')}%)",
             f"Next-day response: {response.get('score')} / {response.get('readiness_level')} / {comparison.get('response_status')}",
             f"Physiology calibration: {comparison.get('physiology_calibration_status')} (eligible: {comparison.get('physiology_calibration_eligible')})",
@@ -2561,7 +2753,18 @@ def build_predictive_review(
     actual = _actual_activity_summary(root, target)
     self_eval = _self_evaluation_for_date(root, target)
     response = _actual_next_day_response(root, target)
-    expected = prediction.get("expected_session") or {}
+    stored_expected = prediction.get("expected_session") or {}
+    expected, optionality_resolution = _review_time_optionality_resolution(
+        root,
+        target,
+        prescription or {},
+        stored_expected,
+    )
+    review_prediction = (
+        {**prediction, "expected_session": expected}
+        if expected is not stored_expected
+        else prediction
+    )
     contract_quality = (
         _contract_quality_review(root, target, expected, actual, self_eval, response)
         if prediction
@@ -2572,7 +2775,7 @@ def build_predictive_review(
         }
     )
     comparison = (
-        _compare_prediction(prediction, actual, self_eval, response, contract_quality)
+        _compare_prediction(review_prediction, actual, self_eval, response, contract_quality)
         if prediction
         else {
             "adherence_status": "no_stored_prescription",
@@ -2600,7 +2803,7 @@ def build_predictive_review(
         "calibration_eligibility_effect": "none",
     }
     privacy_safe_expected, redacted_identifier_paths = _privacy_safe_prediction(
-        prediction
+        review_prediction
     )
     review = {
         "date": target.isoformat(),
@@ -2609,6 +2812,7 @@ def build_predictive_review(
         "prescription_available": bool(prescription),
         "prescription_source_date": (prescription or {}).get("date"),
         "expected": privacy_safe_expected,
+        "optionality_resolution": optionality_resolution,
         "actual_activity": actual,
         "actual_next_day_response": response,
         "comparison": comparison,

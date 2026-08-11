@@ -126,6 +126,7 @@ After editable install, the same stack is available through:
 - After the session and next-day Garmin sync, run:
   `python tools/predictive_review.py --date <YYYY-MM-DD>`
 - A full calibration requires more than a matched Garmin load: modality, session count, and duration must match; the schema v3 review fields must be complete; stop-rule outcome must be explicit; and MTB sessions must document technical quality and late-session skill fade. The review keeps a physiology-only match separate from a full calibration sample.
+- If a stored session explicitly has `optional: true`, performing no session is `allowed_optional_skip`, not adherence drift; because no action-response pair exists, it remains non-calibratable. Legacy reviews may recover an omitted optional flag only from an exact same-date match to the recorded `input_planned_session` source, without mutating the stored prediction.
 - Record the manual evidence either at the top level of `input/feedback_YYYY-MM-DD.json` or in a matching `entries[]` item. A minimal MTB example is:
 
 ```json
