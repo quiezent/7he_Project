@@ -1,0 +1,92 @@
+{
+  "date": "2026-08-12",
+  "entries": [
+    {
+      "timestamp_local": "2026-08-12T09:48:00+08:00",
+      "source": "athlete_post_session_report_with_fresh_garmin_trace_audit",
+      "activity_id": "23943682279",
+      "reported_context": {
+        "timing": "Completed the planned indoor session in the morning before a 10:30 meeting rather than in the afternoon.",
+        "pre_session_food": {
+          "description": "One slice of bread with peanut butter and honey plus whey protein isolate providing 24 g protein.",
+          "athlete_description": "a little fasted",
+          "coach_classification": "lightly fed, not physiologically fasted",
+          "estimated_carbohydrate_g_range": [
+            20,
+            40
+          ],
+          "estimate_guardrail": "Bread size and peanut-butter and honey quantities were not reported, so no single carbohydrate total is asserted."
+        },
+        "garmin_sync": "Athlete reported Garmin synced; live decision refresh completed at 09:41 local."
+      },
+      "fresh_gate_evidence": {
+        "primary_sleep_hours": 6.7,
+        "sleep_score": 78,
+        "wake_body_battery": 78,
+        "body_battery_after_session": 66,
+        "overnight_hrv_ms": 48,
+        "hrv_status": "BALANCED",
+        "resting_hr_bpm": 47,
+        "resting_hr_7d_bpm": 47,
+        "physical_readiness": "green 73",
+        "cns_readiness": "ready 87",
+        "subjective_pre_session_clarity_and_health": "not_reported"
+      },
+      "session_contract_review": {
+        "selected_branch": "full_branch",
+        "primary_sleep_hours": 6.7,
+        "actual_duration_min": 45.0,
+        "elapsed_duration_min": 45.0,
+        "average_power_w": 122,
+        "normalized_power_w": 123,
+        "intensity_factor": 0.583,
+        "training_stress_score": 25.2,
+        "average_hr": 129,
+        "max_hr": 143,
+        "average_cadence_rpm": 76,
+        "actual_training_load": 41.3,
+        "aerobic_training_effect": 2.4,
+        "anaerobic_training_effect": 0.0,
+        "actual_rpe": 2,
+        "workout_feel": "normal",
+        "heart_rate_drift": "No meaningful stable-state drift: minutes 10-25 averaged 122.5 W and 132.5 bpm; minutes 25-40 averaged 122.3 W and 132.7 bpm, for approximately 0.36 percent efficiency-factor loss.",
+        "power_execution": {
+          "minutes_0_to_10": "124.2 W average, above the written 95-110 W warm-up range",
+          "minutes_10_to_40": "approximately 122.4 W average, inside the 115-125 W full-branch range",
+          "minutes_40_to_45": "99.1 W average, inside the 90-105 W cooldown range"
+        },
+        "action_alignment": "mismatched",
+        "action_alignment_notes": "Modality, one-session count, total duration, main-set power, cooldown, RPE and hard cap matched. The first 10 minutes averaged 124.2 W rather than the written progressive 95-110 W warm-up, so the delivered phase structure was not the nominal schema-v3 action.",
+        "load_alignment": "Garmin load 41.3 versus predicted 26.2 and range 18.4-35.4; actual was 16.7 percent above the upper bound and 57.6 percent above the point estimate.",
+        "fit_validation": {
+          "known_pre_session_saddle_position": "12 mm aft relative to the pre-2026-08-10 setting.",
+          "saddle_remained_fixed_during_session": null,
+          "front_axle_height_mm": 350,
+          "rear_axle_height_mm": 338,
+          "front_minus_rear_mm": 12,
+          "trainer_pitch_interpretation": "The front axle is higher, so the trainer setup is mildly nose-up rather than nose-down. A nose-down trainer bias does not explain the prior hand pressure.",
+          "knee_pedal_screen": "Athlete reports an approximately vertical plumb line from the knee to the pedal axle with the non-drive-side crank at 9 o'clock.",
+          "knee_pedal_guardrail": "This is a two-dimensional fit screen, not an independent prescription or proof of optimal setback.",
+          "hand_pressure_left_right_at_15_and_40_min": null,
+          "flat_pedal_foot_position_stability": null,
+          "pelvic_rocking_or_scooting": null,
+          "fit_symptoms_during_and_two_hours_after": null,
+          "video_recorded": null
+        },
+        "front_and_rear_axle_height_mm": {
+          "front": 350,
+          "rear": 338,
+          "front_minus_rear": 12
+        },
+        "fluid_consumed": null,
+        "stop_rule_outcome": null,
+        "next_morning_response": null
+      },
+      "coach_interpretation": {
+        "verdict": "The aerobic execution was controlled and stable, and the light pre-session meal was adequate. The higher-than-predicted Garmin load requires next-day review but is not evidence of physiological strain by itself because RPE was 2, power was steady and stable-state HR did not drift.",
+        "nutrition": "The pre-session intake likely supplied approximately 20-40 g carbohydrate and at least 24 g protein. No during-session carbohydrate was required for this 45-minute easy dose.",
+        "thursday_constraint": "Thursday MTB is neither cleared nor cancelled by this result. Fresh Thursday sleep/readiness/CNS evidence plus leg and fit response remain required."
+      }
+    }
+  ]
+}
