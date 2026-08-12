@@ -30,10 +30,14 @@
         "resting_hr_7d_bpm": 47,
         "physical_readiness": "green 73",
         "cns_readiness": "ready 87",
-        "subjective_pre_session_clarity_and_health": "not_reported"
+        "subjective_pre_session_clarity_and_health": "Fresh gate good and not tired; mental clarity 9/10; no illness or pain."
       },
       "session_contract_review": {
         "selected_branch": "full_branch",
+        "fresh_gate_result": "good_not_tired",
+        "pre_session_mental_clarity": 9,
+        "pre_session_mental_clarity_0_to_10": 9,
+        "illness_or_pain": "none",
         "primary_sleep_hours": 6.7,
         "actual_duration_min": 45.0,
         "elapsed_duration_min": 45.0,
@@ -50,6 +54,7 @@
         "actual_rpe": 2,
         "workout_feel": "normal",
         "heart_rate_drift": "No meaningful stable-state drift: minutes 10-25 averaged 122.5 W and 132.5 bpm; minutes 25-40 averaged 122.3 W and 132.7 bpm, for approximately 0.36 percent efficiency-factor loss.",
+        "heart_rate_trace_quality": "The trace rose from 117.8 bpm in minutes 0-5 to 136.1 bpm in minutes 15-20, then oscillated around a stable 132-134 bpm central level through minute 40. Short smooth excursions reached 139-143 bpm at nearly unchanged power; there were no abrupt adjacent changes of 8 bpm or more. Session began approximately 29 minutes after Garmin's recorded sleep end. HR-source metadata does not identify an external heart-rate sensor, so physiology and sensor behavior cannot be cleanly separated.",
         "power_execution": {
           "minutes_0_to_10": "124.2 W average, above the written 95-110 W warm-up range",
           "minutes_10_to_40": "approximately 122.4 W average, inside the 115-125 W full-branch range",
@@ -57,35 +62,49 @@
         },
         "action_alignment": "mismatched",
         "action_alignment_notes": "Modality, one-session count, total duration, main-set power, cooldown, RPE and hard cap matched. The first 10 minutes averaged 124.2 W rather than the written progressive 95-110 W warm-up, so the delivered phase structure was not the nominal schema-v3 action.",
+        "first_10_minutes_at_approximately_124_w_intentional": true,
+        "first_10_minutes_intent": "125 W felt easy, so the athlete deliberately began there rather than using the written progressive warm-up.",
+        "posture_and_torque_execution": "Seated throughout; no standing or torque work.",
+        "leg_feel_start_vs_finish": "Started fresh; legs began fading at approximately minute 40, unlike the 95-minute 2026-08-10 session.",
+        "leg_feel_start_to_finish": "Started fresh; legs began fading at approximately minute 40, unlike the 95-minute 2026-08-10 session.",
         "load_alignment": "Garmin load 41.3 versus predicted 26.2 and range 18.4-35.4; actual was 16.7 percent above the upper bound and 57.6 percent above the point estimate.",
         "fit_validation": {
           "known_pre_session_saddle_position": "12 mm aft relative to the pre-2026-08-10 setting.",
-          "saddle_remained_fixed_during_session": null,
+          "saddle_remained_fixed_during_session": true,
           "front_axle_height_mm": 350,
           "rear_axle_height_mm": 338,
           "front_minus_rear_mm": 12,
           "trainer_pitch_interpretation": "The front axle is higher, so the trainer setup is mildly nose-up rather than nose-down. A nose-down trainer bias does not explain the prior hand pressure.",
           "knee_pedal_screen": "Athlete reports an approximately vertical plumb line from the knee to the pedal axle with the non-drive-side crank at 9 o'clock.",
           "knee_pedal_guardrail": "This is a two-dimensional fit screen, not an independent prescription or proof of optimal setback.",
-          "hand_pressure_left_right_at_15_and_40_min": null,
-          "flat_pedal_foot_position_stability": null,
-          "pelvic_rocking_or_scooting": null,
-          "fit_symptoms_during_and_two_hours_after": null,
-          "video_recorded": null
+          "hand_pressure_left_right_at_15_and_40_min": "3/10 overall; left/right and minute-specific values were not separately reported.",
+          "flat_pedal_foot_position_stability": "stable",
+          "pelvic_rocking_or_scooting": "none",
+          "fit_symptoms_during_and_two_hours_after": "none in knee, hamstring, calf, back, neck, hand or perineum",
+          "video_recorded": false
         },
         "front_and_rear_axle_height_mm": {
           "front": 350,
           "rear": 338,
           "front_minus_rear": 12
         },
-        "fluid_consumed": null,
-        "stop_rule_outcome": null,
-        "next_morning_response": null
+        "flat_pedal_foot_position_stability": "stable",
+        "hand_pressure_left_right_at_15_and_40_min": "3/10 overall; left/right and minute-specific values were not separately reported.",
+        "pelvic_rocking_or_scooting": "none",
+        "fit_symptoms_during_and_two_hours_after": "none in knee, hamstring, calf, back, neck, hand or perineum",
+        "video_recorded": false,
+        "fluid_consumed": "800 mL water",
+        "fluid_ml_per_hour": 1067,
+        "cooling": "not_reported",
+        "stop_rule_outcome": "not_triggered",
+        "next_morning_response": null,
+        "thursday_readiness": null
       },
       "coach_interpretation": {
-        "verdict": "The aerobic execution was controlled and stable, and the light pre-session meal was adequate. The higher-than-predicted Garmin load requires next-day review but is not evidence of physiological strain by itself because RPE was 2, power was steady and stable-state HR did not drift.",
+        "verdict": "The aerobic execution was controlled, and the light pre-session meal was adequate. HR had short smooth excursions but no meaningful settled drift; the higher-than-predicted Garmin load requires next-day review rather than being interpreted as strain by itself. Contact-point fit passed provisionally, while the minute-40 leg fade means duration tolerance at the final 12 mm-aft saddle position is not yet proven.",
         "nutrition": "The pre-session intake likely supplied approximately 20-40 g carbohydrate and at least 24 g protein. No during-session carbohydrate was required for this 45-minute easy dose.",
-        "thursday_constraint": "Thursday MTB is neither cleared nor cancelled by this result. Fresh Thursday sleep/readiness/CNS evidence plus leg and fit response remain required."
+        "fit_interpretation": "The saddle stayed fixed, foot position was stable, hand pressure was 3/10 overall, and there was no rocking, scooting or symptom response. Retain the 12 mm-aft position provisionally without further adjustment. The late leg fade may reflect first sustained exposure to the new effective reach or other recovery context; it is not explained by cardiovascular drift.",
+        "thursday_constraint": "Thursday MTB is neither cleared nor cancelled by this result, but the late leg fade earns no upgrade. Fresh Thursday sleep/readiness/CNS evidence plus normal legs and no fit symptoms remain required."
       }
     }
   ]
