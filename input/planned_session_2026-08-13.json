@@ -1,0 +1,111 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-08-13",
+  "generated_at": "2026-08-13T09:53:17+08:00",
+  "status": "active_conditional_same_day_coach_override",
+  "decision_basis": {
+    "freshness": "Live Garmin decision sync completed at 2026-08-13T09:45+08:00 with target-date wellness, training status, current_state and coach_packet regenerated.",
+    "physical_readiness": "Custom readiness is 63 yellow. Its material caution is a 2.49x rolling seven-day load comparison against the preceding travel-light week; there is no red physical gate and the 6.45-hour primary-sleep gate has no hard-session effect.",
+    "cns": "CNS readiness is 82 ready with a normal ceiling if physical and subjective gates agree. HRV is 46 BALANCED, resting HR is 48 versus a seven-day average of 47, sleep stress is 20, and the verified morning Body Battery anchor is 70.",
+    "garmin_diagnosis": "Garmin reports Maintaining, ACWR LOW at 0.7 and balanced load focus. This permits bounded familiar trail skill but does not justify an open-ended load chase.",
+    "recent_response": "The 2026-08-12 trainer session was objectively low-cost with stable settled HR, but Clayton reported local leg fade beginning near minute 40. Today's leg and movement gate must therefore be passed on the bike before repeat three is available.",
+    "block_role": "Today replaces the missed early-week Stumpjumper processing exposure. Saturday remains the protected Enduro repeat-count session, so today earns technical-processing evidence but no Enduro progression credit.",
+    "weather": "Kuala Lumpur is forecast cloudy with thunderstorms possible in parts of the area. Stable showers alone lower trail-speed intent; thunder, lightning or rapidly worsening convection blocks or ends the forest ride."
+  },
+  "session": {
+    "title": "Stumpjumper matched 2K processing — two plus one earned",
+    "type": "mtb_skill_familiar_capped",
+    "garmin_ceiling_class": "controlled_familiar_skill",
+    "modality": "mtb",
+    "venue": "Bukit Kiara",
+    "bike": "Specialized Stumpjumper with established clipless system and HSC +1 working baseline",
+    "duration_min": 90,
+    "duration_range_min": [
+      65,
+      90
+    ],
+    "intensity": "skill",
+    "novelty_allowed": false,
+    "open_ended": false,
+    "race_simulation": false,
+    "setup_changes_allowed": false,
+    "setup_test": false,
+    "density_cost": "moderate",
+    "mtb_exposure": true,
+    "optional": true,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Restore Stumpjumper trail-speed processing, braking release and dynamically centred front-wheel authority with repeatable familiar execution, while preserving Saturday's Enduro durability exposure.",
+    "dose": {
+      "subjective_gate": "Before rollout require mental clarity at least 8/10, no illness or pain, and legs, knees, hamstrings, calves and back feeling normal rather than carrying the prior trainer fade.",
+      "opening_gate": "Ride 10-15 minutes easily and complete symmetric figure-eights, deliberate front/rear loading and recentring, two to three progressive firm stops and intended steering. Legs must feel normal or improve; vision, decisions and braking timing must feel immediate.",
+      "climbs": "Use transport climbs at RPE 3-4 for the first two loops and no higher than RPE 5 before an earned third. Stay mostly seated; brief natural standing on steep pitches is allowed, but there is no standing-torque target.",
+      "descent_one": "Ride the familiar full 2K at approximately 75 percent intent. Complete braking before turn-in, keep visual attention through the exit, and recenter before steering or impact.",
+      "descent_two_gate": "Run two is earned only if climb one is RPE 4 or lower and run one has normal visual width, early line choice, deliberate brake release, clean front tracking, no compensatory focus, no unintended deflection and no local leg fade.",
+      "descent_two": "Repeat the same full 2K at approximately 80 percent intent with the same lines and technical cue. Do not turn the comparison into a speed chase.",
+      "descent_three_gate": "Run three is optional and earned only if run two matches or improves run one for vision, decision speed, brake release, front tracking, dynamic centre and exit recognition; braking and upper-body fatigue are each 3/10 or lower; legs remain symmetric; climb two is RPE 5 or lower; and weather and grip remain stable.",
+      "descent_three_if_earned": "Repeat the same full 2K at 80-85 percent intent. Match the first run technically; do not seek a segment result or a more aggressive line.",
+      "wet_adjustment": "On stable damp soil or light showers without thunder, cap all descents at 65-75 percent, use familiar conservative lines and treat the ride as surface-reading practice rather than a matched dry progression sample.",
+      "failed_gate_branch": "If the subjective or opening gate is abnormal, use only 30-45 minutes of easy low-consequence flat riding if it improves the legs, otherwise rest. A failed between-run gate ends technical repeats and leaves only the safest familiar egress.",
+      "hard_cap": "Three full matched 2K descents, required familiar egress and 90 minutes elapsed. No 2K+, Pure Quill, Twin Peaks stage, fourth or bonus descent."
+    },
+    "adaptation_hypothesis": "Two clean same-route repetitions plus one earned repetition will rebuild perception-action timing and precise front-wheel control at useful trail speed without combining Enduro repeat progression, maximal climbing and technical consequence in one session. Holding setup, route and cue constant makes late-session technical equality observable.",
+    "execution_rules": [
+      "Keep Stumpjumper HSC +1, rebound, tyre pressures, cockpit and cleats unchanged; this is not a suspension or tyre test.",
+      "Use full 2K for every quality descent. Do not switch to 2K+, Pure Quill or another route because one run feels good.",
+      "Primary cue: finish braking before turn-in, stay dynamically centred with front-tyre authority, then recognize and commit to the exit early.",
+      "Climbs are transport. Use smooth seated work and natural brief standing only; no sprints, VO2 work, maximal torque or climb-power target.",
+      "Start normally fed. For this 65-90 minute Kuala Lumpur session target about 45-60 g carbohydrate, 650-850 ml fluid and 600-900 mg sodium per elapsed hour, selecting upward in hotter or sweat-heavier conditions.",
+      "Check live radar and the sky immediately before rollout and before any earned third run. Stable showers are acceptable only while grip, runoff, visibility and egress remain predictable."
+    ],
+    "expected_result": {
+      "technical": "The final completed run matches the first within one subjective point out of ten for visual width, decision timing, brake release, front tracking, dynamic centre and exit recognition, with no reactive rescue.",
+      "physiology": "Climbs remain controlled, legs do not reproduce the prior local fade, and braking and upper-body fatigue remain no higher than 3/10.",
+      "density": "The session supplies the week's first protected MTB exposure while leaving Friday available for absorption and Saturday available for the Enduro durability target.",
+      "progression": "A clean result confirms Stumpjumper processing continuity only. Saturday remains two Pure Quill Twin Peaks cycles on the Enduro; three Enduro cycles are earned only after a clean contract-aligned two-cycle proof and normal next-morning response."
+    },
+    "stop_rules": [
+      "Do not begin technical MTB for physical readiness red, CNS impaired or compromised, mental clarity below 8/10, illness, pain, abnormal coordination or persistent local leg heaviness during the opening gate.",
+      "Thunder, visible lightning, a rapidly building dark cell, gust front, heavy runoff, branch fall, non-repeatable grip or unsafe visibility blocks rollout or requires the shortest safe familiar egress; do not wait under the canopy.",
+      "Any renewed leg fade or asymmetry, delayed or missed line, reactive mid-turn braking, narrowed vision, declining focus, compensatory concentration, unintended deflection, near miss, hip retreat, tall posture or loss of intended steering removes the next descent.",
+      "Braking or upper-body fatigue above 3/10, climb RPE above 5 before a repeat, heat symptoms, fork pack-down, rear kick, wallow or chassis pitch ends technical work.",
+      "Feeling excellent does not purchase a fourth descent, route change, setup test or speed hunt. After any trigger, complete only the safest familiar egress and record the exact stop-rule outcome."
+    ],
+    "post_session_review_fields": [
+      "subjective_gate_result",
+      "opening_gate_result",
+      "actual_duration_min",
+      "actual_distance_km",
+      "actual_ascent_m",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "bike_and_setup",
+      "trail_condition_and_weather",
+      "completed_2k_descent_count",
+      "descent_intent_by_run",
+      "climb_rpe_by_loop",
+      "leg_feel_and_any_late_fade",
+      "vision_and_decision_speed_first_vs_final",
+      "brake_release_and_exit_commitment_first_vs_final",
+      "front_tracking_and_dynamic_centre",
+      "missed_line_reactive_braking_deflection_rescue_or_near_miss",
+      "fork_pack_down_rear_kick_wallow_or_pitch",
+      "braking_fatigue",
+      "upper_body_fatigue",
+      "fueling_carbs_g_per_hour",
+      "fluid_ml_per_hour",
+      "sodium_mg_per_hour",
+      "stop_rule_outcome",
+      "next_morning_response"
+    ]
+  }
+}
