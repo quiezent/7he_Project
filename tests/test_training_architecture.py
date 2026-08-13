@@ -99,6 +99,12 @@ def test_training_architecture_builds_config_and_snapshot(tmp_path):
     assert "not attentional engagement" in cns_field_gate["chill_rule"]
     assert "does not prove normal CNS reserve" in cns_field_gate["interpretation_rule"]
     assert "daily_work_sleep_timing" in artifact["logging_contract"]
+    action_prior = artifact["predictive_training_loop"][
+        "matched_route_repeat_load_prior"
+    ]
+    assert action_prior["identity_schema_v1"]["schema_version"] == 1
+    assert "never infer a named route" in action_prior["activation"]
+    assert any("Fewer than two" in rule for rule in action_prior["sample_rules"])
     assert "schedule_translation" in artifact["weekly_architecture"]
     assert "bukit_dinding_dh_setup" in artifact["session_library"]
     assert (tmp_path / "config" / "coaching_architecture.json").exists()

@@ -50,7 +50,7 @@
     "Modern HRV/wake Body Battery is strongest from March 2026 onward.",
     "Subjective trail notes are required for expert-skill decisions."
   ],
-  "date": "2026-07-31",
+  "date": "2026-08-13",
   "decision_hierarchy": [
     "Sabbath hard rest and current readiness.",
     "CNS readiness: cap technical consequence, novelty, speed, jumps, enduro simulation, and setup testing when nervous-system processing is not restored.",
@@ -79,6 +79,14 @@
         "outdoor_role": "Can be taken outdoors when needed."
       },
       "specialized_enduro": {
+        "clipless_adaptation": {
+          "athlete_response": "Clipless felt natural on the Enduro and possibly slightly more comfortable than flat pedals.",
+          "coaching_interpretation": "The primary adaptation is transfer of clipless automaticity and dynamically centred rider behavior from the Stumpjumper to the Enduro. Foot security is a secondary enabler of front-tyre authority and bike-body separation, not evidence that the pedals alone created the technical improvement.",
+          "comparison_context": "The prior 2026-06-12 Enduro exposure used flat pedals; the 2026-08-08 re-entry followed a 57-day Enduro-specific gap while clipless skill had been developed on the Stumpjumper.",
+          "latest_observed_date": "2026-08-08",
+          "latest_observed_system": "clipless",
+          "validation_constraint": "Keep the pedal system fixed during the next matched Enduro repeat. Retain clipless as successful Enduro transfer only while release remains automatic, knee and hip response stay clean, centred posture and front tracking persist, and the rider does not rely on pulling against the pedals to correct the bike."
+        },
         "current_fork": {
           "installed_date": "2026-06-01",
           "model": "RockShox Zeb Ultimate",
@@ -282,7 +290,7 @@
       },
       "latest_garmin_detected_ftp": {
         "activity_id": "23723839107",
-        "age_days": 6,
+        "age_days": 19,
         "category": "mtb",
         "date": "2026-07-25",
         "ftp_w": 211.0,
@@ -309,7 +317,7 @@
       "recent_60d_garmin_detected_ftp": [
         {
           "activity_id": "23301777471",
-          "age_days": 42,
+          "age_days": 55,
           "category": "mtb",
           "date": "2026-06-19",
           "ftp_w": 214.0,
@@ -318,7 +326,7 @@
         },
         {
           "activity_id": "23590320093",
-          "age_days": 17,
+          "age_days": 30,
           "category": "mtb",
           "date": "2026-07-14",
           "ftp_w": 209.0,
@@ -327,7 +335,7 @@
         },
         {
           "activity_id": "23614632613",
-          "age_days": 15,
+          "age_days": 28,
           "category": "mtb",
           "date": "2026-07-16",
           "ftp_w": 214.0,
@@ -336,7 +344,7 @@
         },
         {
           "activity_id": "23723839107",
-          "age_days": 6,
+          "age_days": 19,
           "category": "mtb",
           "date": "2026-07-25",
           "ftp_w": 211.0,
@@ -346,29 +354,29 @@
       ]
     },
     "full_range": {
-      "activity_end": "2026-07-31",
+      "activity_end": "2026-08-13",
       "activity_start": "2021-06-18",
-      "counted_sessions": 1381,
-      "duration_min": 105349.5,
+      "counted_sessions": 1386,
+      "duration_min": 105854.9,
       "elliptical_load": 7241.4,
       "elliptical_sessions": 71,
-      "indoor_bike_load": 38270.4,
-      "indoor_bike_sessions": 599,
-      "mtb_load": 98623.0,
-      "mtb_sessions": 486,
-      "training_load": 159788.2
+      "indoor_bike_load": 38387.6,
+      "indoor_bike_sessions": 601,
+      "mtb_load": 99065.6,
+      "mtb_sessions": 488,
+      "training_load": 160399.2
     },
     "hypothesis_support": {
       "bike_specificity": "weak",
       "consistency_detraining": "strong",
       "nonbike_substitution": "moderate",
-      "recent_365_bike_specific_corr_to_p20": 0.165,
+      "recent_365_bike_specific_corr_to_p20": 0.119,
       "recent_365_elliptical_corr_to_p20": null,
-      "recent_365_indoor_bike_corr_to_p20": 0.526
+      "recent_365_indoor_bike_corr_to_p20": 0.509
     },
     "nutrition_targets": {
-      "latest_weight_date": "2026-07-25",
-      "latest_weight_kg": 78.84,
+      "latest_weight_date": "2026-08-08",
+      "latest_weight_kg": 77.28,
       "mtb_90_to_150_min": {
         "carbs_g_per_hour": [
           45,
@@ -400,19 +408,19 @@
       "note": "Use the upper end in Kuala Lumpur heat or when skill quality drops late; gut-train before race day."
     },
     "recent_28d": {
-      "bike_specific_load": 1725.4,
-      "bike_specific_ratio": 0.906,
+      "bike_specific_load": 1265.9,
+      "bike_specific_ratio": 0.87,
       "elliptical_ratio": 0.0,
-      "indoor_bike_sessions": 5,
-      "mtb_sessions": 8,
-      "training_load": 1903.8
+      "indoor_bike_sessions": 3,
+      "mtb_sessions": 6,
+      "training_load": 1454.5
     },
     "recent_7d": {
-      "bike_specific_load": 706.1,
-      "bike_specific_ratio": 0.942,
-      "indoor_bike_sessions": 1,
-      "mtb_sessions": 4,
-      "training_load": 749.8
+      "bike_specific_load": 559.8,
+      "bike_specific_ratio": 1.0,
+      "indoor_bike_sessions": 2,
+      "mtb_sessions": 2,
+      "training_load": 559.8
     },
     "weekly_continuity_blocks": {
       "current_rebuild_apr_to_may_2026": {
@@ -495,7 +503,7 @@
     "heat_rule": "In Kuala Lumpur, treat fuel/hydration as skill protection: sloppy braking, weak pumping, timid jumps, or poor line choice late can be carb/sodium/heat failure.",
     "range_selection_rule": "Choose within the canonical band from same-day heat/humidity, actual sweat response, session consequence, and gut tolerance. Previous-session weather is not a forecast, and Garmin heat acclimation never reduces the target by itself."
   },
-  "generated_at": "2026-07-31T16:34:11+08:00",
+  "generated_at": "2026-08-13T15:53:10+08:00",
   "integrated_coaching_model": {
     "cns_readiness_model": {
       "decision_role": "Use CNS readiness as a technical-consequence ceiling after Sabbath and physical readiness, not as a replacement for Garmin readiness.",
@@ -910,6 +918,24 @@
       "snapshots/predictive_training.json",
       "snapshots/predictive_backtest_10_dates.json"
     ],
+    "matched_route_repeat_load_prior": {
+      "activation": "Opt in only through an explicit versioned session.action_identity; never infer a named route from prose or GPS shape.",
+      "identity_schema_v1": {
+        "access_key": "self_pedaled, uplift, or mixed",
+        "bike_key": "canonical bike key",
+        "quality_descent_count": "positive integer",
+        "route_key": "canonical named-route key",
+        "schema_version": 1,
+        "venue_key": "canonical venue key"
+      },
+      "role": "Load-expectation prior only; it is separate from physiology and full digital-twin calibration eligibility.",
+      "sample_rules": [
+        "Use only activity-scoped structured feedback recorded before the prediction date.",
+        "Require corroborating Garmin Gear, external-HR provenance, dated loop structure, official-load agreement, comparable duration, and independent activity dates.",
+        "Fewer than two comparable samples fails closed; retain the generic estimate for audit but do not simulate it as the matched action.",
+        "Keep the immutable dated prediction unchanged; a later route-repeat prior updates future prescriptions only."
+      ]
+    },
     "post_session": [
       "After Garmin sync, compare actual load, self-evaluation, and next-day response with the stored expectation.",
       "If actual load differs materially, classify execution/adherence before judging adaptation.",

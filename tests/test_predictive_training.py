@@ -5,6 +5,9 @@ from coach_sync.io import read_json, write_json
 from coach_sync.planning import SESSION_CONTRACT_FIELDS
 from coach_sync.predictive_training import (
     _action_alignment,
+    _apply_matched_2k_load_baseline,
+    _risk_adjusted_expected_session,
+    _selected_training_load_expectation,
     _session_expectation,
     _simulate_activity_day,
     _training_load_range,
@@ -12,6 +15,143 @@ from coach_sync.predictive_training import (
     build_predictive_review,
     build_predictive_training,
 )
+
+
+MATCHED_2K_IDENTITY = {
+    "schema_version": 1,
+    "venue_key": "bukit_kiara",
+    "route_key": "full_2k",
+    "bike_key": "stumpjumper_expert_my25",
+    "access_key": "self_pedaled",
+    "quality_descent_count": 3,
+}
+
+
+def _matched_2k_plan(*, session_type: str = "mtb_skill_familiar_capped", identity=True) -> dict:
+    session = {
+        "title": "Exact three-run Stumpjumper full-2K session",
+        "type": session_type,
+        "modality": "mtb",
+        "duration_min": 90,
+        "intensity": "skill",
+        "schema_version": 3,
+        "contract_fields": SESSION_CONTRACT_FIELDS,
+        "purpose": "Rebuild exact familiar-route processing under a bounded dose.",
+        "dose": {"hard_cap": "Three quality descents."},
+        "adaptation_hypothesis": "Matched actions make load comparison interpretable.",
+        "execution_rules": ["Keep route, bike and access mode fixed."],
+        "expected_result": {"technical": "Final execution matches the first."},
+        "stop_rules": ["Stop for technical fade."],
+        "post_session_review_fields": ["stop_rule_outcome"],
+    }
+    if identity:
+        session["action_identity"] = dict(MATCHED_2K_IDENTITY)
+    return {"session": session}
+
+
+def _append_index_row(root, filename: str, row: dict) -> None:
+    path = root / "snapshots" / filename
+    payload = read_json(path, {"activities": []})
+    payload.setdefault("activities", []).append(row)
+    write_json(path, payload)
+
+
+def _write_exact_2k_sample(
+    root,
+    day: date,
+    activity_id: int,
+    training_load: float,
+    *,
+    external_hr: bool = True,
+    loop_structure: str = "paired",
+    duration_min: float = 82.5,
+) -> None:
+    write_json(
+        root / "activities" / f"activity_{activity_id}.json",
+        {
+            "activityId": activity_id,
+            "activityName": "Kiara exact full 2K repeats",
+            "activityType": {"typeKey": "mountain_biking"},
+            "startTimeLocal": f"{day.isoformat()} 09:00:00",
+            "duration": duration_min * 60,
+            "activityTrainingLoad": training_load,
+            "averageHR": 146,
+            "maxHeartRate": 184,
+        },
+    )
+    _append_index_row(
+        root,
+        "activity_gear_index.json",
+        {
+            "activity_id": str(activity_id),
+            "date": day.isoformat(),
+            "category": "mtb",
+            "gear_fetch_ok": True,
+            "gear": [{"label": "Stumpjumper Expert MY25"}],
+        },
+    )
+    _append_index_row(
+        root,
+        "activity_device_index.json",
+        {
+            "activity_id": str(activity_id),
+            "date": day.isoformat(),
+            "category": "mtb",
+            "device_fetch_ok": True,
+            "external_hr_sensor": external_hr,
+            "hr_source_classification": "external_standard_metadata",
+            "external_hr_battery_statuses": ["GOOD"],
+        },
+    )
+    write_json(
+        root / "input" / f"feedback_{day.isoformat()}.json",
+        {
+            "activity_id": str(activity_id),
+            "action_identity": dict(MATCHED_2K_IDENTITY),
+            "action_identity_recorded_at_local": (
+                f"{day.isoformat()}T12:00:00+08:00"
+            ),
+        },
+    )
+    if loop_structure == "legacy":
+        loops = [
+            {
+                "loop": index + 1,
+                "label": label,
+                "lap_kinds": ["descent" if "2K" in label else "climb"],
+            }
+            for index, label in enumerate(
+                [
+                    "Lap1",
+                    "Lap2_2K",
+                    "Lap3",
+                    "Lap4_2K_hard",
+                    "Lap5",
+                    "Lap6_2K_hard",
+                    "Lap7_2K+",
+                ]
+            )
+        ]
+    else:
+        loops = [
+            {
+                "loop": index,
+                "label": f"Loop {index}",
+                "lap_kinds": ["climb", "descent"],
+            }
+            for index in range(1, 4)
+        ]
+    write_json(
+        root
+        / "snapshots"
+        / f"activity_loop_load_{day.isoformat()}_{activity_id}.json",
+        {
+            "date": day.isoformat(),
+            "activity_id": str(activity_id),
+            "official_activity_training_load": round(training_load, 1),
+            "loops": loops,
+        },
+    )
 
 
 def _write_wellness(root, day: date, good: bool) -> None:
@@ -1486,3 +1626,520 @@ def test_live_prescription_preserves_existing_dated_file_after_activity(tmp_path
     assert read_json(tmp_path / "snapshots" / "predictive_session_plan.json", {})["prediction"][
         "expected_session"
     ]["title"] == "Post-sync rebuilt plan"
+
+
+def test_exact_2k_baseline_is_strictly_prior_and_matches_future_three_run_action(tmp_path):
+    load_context(tmp_path)
+    _write_exact_2k_sample(
+        tmp_path,
+        date(2026, 7, 9),
+        7001,
+        191.0406,
+        loop_structure="legacy",
+    )
+    _write_exact_2k_sample(tmp_path, date(2026, 8, 13), 7002, 200.0730)
+    _write_exact_2k_sample(tmp_path, date(2026, 8, 14), 7003, 999.0)
+    plan = _matched_2k_plan()
+
+    same_day_expected = _apply_matched_2k_load_baseline(
+        tmp_path,
+        date(2026, 8, 13),
+        plan,
+        _session_expectation(plan),
+    )
+    same_day = same_day_expected["action_matched_training_load_expectation"]
+    assert same_day["status"] == "insufficient_matched_route_repeat_samples"
+    assert same_day["sample_dates"] == ["2026-07-09"]
+    assert same_day_expected["expected_training_load"] is None
+
+    future_expected = _apply_matched_2k_load_baseline(
+        tmp_path,
+        date(2026, 8, 14),
+        plan,
+        _session_expectation(plan),
+    )
+    future = future_expected["action_matched_training_load_expectation"]
+    assert future["status"] == "matched_route_repeat_baseline"
+    assert future["sample_count"] == 2
+    assert future["sample_dates"] == ["2026-07-09", "2026-08-13"]
+    assert all(date.fromisoformat(day) < date(2026, 8, 14) for day in future["sample_dates"])
+    assert future["expected_value"] == 195.6
+    assert future["expected_range"] == [160.0, 220.0]
+    assert [
+        row["loop_artifact"]["repeat_structure_mode"]
+        for row in future["samples"]
+    ] == ["legacy_full_2k_descent_labels", "paired_climb_descent_loops"]
+    assert all(
+        row["loop_artifact"]["corroborated_quality_descent_count"] == 3
+        for row in future["samples"]
+    )
+    assert all(
+        row["loop_artifact"]["official_load_absolute_delta"] <= 0.1
+        for row in future["samples"]
+    )
+    assert future_expected["generic_training_load_expectation"] == {
+        "expected_value": 82.5,
+        "expected_range": [57.7, 111.4],
+        "source": "generic_deterministic_duration_intensity_audit_only",
+    }
+    assert future["calibration_role"] == "load_expectation_only_not_digital_twin_calibration"
+
+
+def test_matched_route_repeat_prior_rejects_noncomparable_duration(tmp_path):
+    load_context(tmp_path)
+    _write_exact_2k_sample(
+        tmp_path, date(2026, 7, 9), 7051, 191.0, duration_min=91.2
+    )
+    _write_exact_2k_sample(
+        tmp_path, date(2026, 8, 13), 7052, 200.1, duration_min=82.4
+    )
+    plan = _matched_2k_plan()
+    plan["session"]["duration_min"] = 180
+
+    baseline = _apply_matched_2k_load_baseline(
+        tmp_path,
+        date(2026, 8, 14),
+        plan,
+        _session_expectation(plan),
+    )["action_matched_training_load_expectation"]
+
+    assert baseline["status"] == "insufficient_matched_route_repeat_samples"
+    assert baseline["sample_count"] == 0
+    assert baseline["rejected_reason_counts"]["sample_duration_not_comparable"] == 2
+    assert baseline["sample_duration_ratio_range"] == [0.8, 1.25]
+
+
+def test_matched_route_repeat_prior_rejects_retroactive_action_annotation(tmp_path):
+    load_context(tmp_path)
+    sample_day = date(2026, 7, 9)
+    _write_exact_2k_sample(tmp_path, sample_day, 7071, 191.0)
+    feedback_path = tmp_path / "input" / f"feedback_{sample_day.isoformat()}.json"
+    feedback = read_json(feedback_path, {})
+    feedback["action_identity_recorded_at_local"] = "2026-08-13T15:37:04+08:00"
+    write_json(feedback_path, feedback)
+    plan = _matched_2k_plan()
+
+    baseline = _apply_matched_2k_load_baseline(
+        tmp_path,
+        date(2026, 7, 10),
+        plan,
+        _session_expectation(plan),
+    )["action_matched_training_load_expectation"]
+
+    assert baseline["status"] == "insufficient_matched_route_repeat_samples"
+    assert baseline["sample_count"] == 0
+    assert baseline["rejected_reason_counts"] == {
+        "action_identity_not_available_before_prediction_date": 1
+    }
+
+
+def test_matched_route_repeat_prior_rejects_invalid_annotation_timestamp(tmp_path):
+    load_context(tmp_path)
+    sample_day = date(2026, 7, 9)
+    _write_exact_2k_sample(tmp_path, sample_day, 7081, 191.0)
+    feedback_path = tmp_path / "input" / f"feedback_{sample_day.isoformat()}.json"
+    feedback = read_json(feedback_path, {})
+    feedback["action_identity_recorded_at_local"] = "not-a-timestamp"
+    write_json(feedback_path, feedback)
+    plan = _matched_2k_plan()
+
+    baseline = _apply_matched_2k_load_baseline(
+        tmp_path,
+        date(2026, 7, 10),
+        plan,
+        _session_expectation(plan),
+    )["action_matched_training_load_expectation"]
+
+    assert baseline["status"] == "insufficient_matched_route_repeat_samples"
+    assert baseline["sample_count"] == 0
+    assert baseline["rejected_reason_counts"] == {
+        "action_identity_recorded_at_invalid": 1
+    }
+
+
+def test_exact_2k_baseline_is_opt_in_and_fails_closed_for_bad_sensor_quality(tmp_path):
+    load_context(tmp_path)
+    _write_exact_2k_sample(tmp_path, date(2026, 7, 9), 7101, 191.0406)
+    _write_exact_2k_sample(
+        tmp_path,
+        date(2026, 8, 13),
+        7102,
+        200.0730,
+        external_hr=False,
+    )
+    target = date(2026, 8, 14)
+
+    missing_plan = _matched_2k_plan(identity=False)
+    missing = _apply_matched_2k_load_baseline(
+        tmp_path, target, missing_plan, _session_expectation(missing_plan)
+    )
+    assert "action_matched_training_load_expectation" not in missing
+    assert missing["expected_training_load"] == 82.5
+
+    malformed_plan = _matched_2k_plan()
+    malformed_plan["session"]["action_identity"]["route_key"] = "pure_quill"
+    malformed = _apply_matched_2k_load_baseline(
+        tmp_path, target, malformed_plan, _session_expectation(malformed_plan)
+    )
+    assert malformed["action_matched_training_load_expectation"]["status"] == (
+        "missing_action_identity"
+    )
+    assert malformed["expected_training_load"] is None
+
+    complete_plan = _matched_2k_plan()
+    insufficient = _apply_matched_2k_load_baseline(
+        tmp_path, target, complete_plan, _session_expectation(complete_plan)
+    )
+    baseline = insufficient["action_matched_training_load_expectation"]
+    assert baseline["status"] == "insufficient_matched_route_repeat_samples"
+    assert baseline["sample_count"] == 1
+    assert baseline["sample_dates"] == ["2026-07-09"]
+    assert any(
+        "external_hr_provenance_not_confirmed" in row["reasons"]
+        for row in baseline["rejected_candidates"]
+        if row["date"] == "2026-08-13"
+    )
+    assert insufficient["expected_training_load"] is None
+
+
+def test_exact_2k_baseline_rejects_missing_or_conflicting_loop_corroboration(tmp_path):
+    load_context(tmp_path)
+    _write_exact_2k_sample(tmp_path, date(2026, 7, 9), 7151, 191.0406)
+    _write_exact_2k_sample(tmp_path, date(2026, 8, 13), 7152, 200.0730)
+    target = date(2026, 8, 14)
+    plan = _matched_2k_plan()
+    loop_path = (
+        tmp_path
+        / "snapshots"
+        / "activity_loop_load_2026-08-13_7152.json"
+    )
+    loop_path.unlink()
+
+    missing = _apply_matched_2k_load_baseline(
+        tmp_path, target, plan, _session_expectation(plan)
+    )["action_matched_training_load_expectation"]
+    missing_row = next(
+        row for row in missing["rejected_candidates"] if row["date"] == "2026-08-13"
+    )
+    assert "dated_loop_artifact_missing" in missing_row["reasons"]
+    assert missing_row["evidence"]["loop_artifact"]["source"] == (
+        "dated_activity_loop_load_artifact"
+    )
+    assert missing["sample_count"] == 1
+
+    write_json(
+        loop_path,
+        {
+            "date": "2026-08-12",
+            "activity_id": "wrong-activity",
+            "official_activity_training_load": 205.0,
+            "loops": [
+                {
+                    "loop": index,
+                    "label": f"Loop {index}",
+                    "lap_kinds": ["climb", "descent"],
+                }
+                for index in range(1, 3)
+            ],
+        },
+    )
+    conflicting = _apply_matched_2k_load_baseline(
+        tmp_path, target, plan, _session_expectation(plan)
+    )["action_matched_training_load_expectation"]
+    conflict_row = next(
+        row
+        for row in conflicting["rejected_candidates"]
+        if row["date"] == "2026-08-13"
+    )
+    assert {
+        "loop_artifact_activity_id_mismatch",
+        "loop_artifact_date_mismatch",
+        "loop_artifact_official_load_mismatch",
+        "loop_artifact_quality_descent_count_mismatch",
+    }.issubset(conflict_row["reasons"])
+    assert conflict_row["evidence"]["loop_artifact"]["official_load_tolerance"] == 0.1
+    assert conflict_row["evidence"]["loop_artifact"]["route_authority"] == (
+        "none_structure_corroboration_only"
+    )
+    assert conflicting["sample_count"] == 1
+    assert conflicting["expected_value"] is None
+
+
+def test_matched_route_repeat_prior_requires_independent_activity_dates(tmp_path):
+    load_context(tmp_path)
+    first_day = date(2026, 7, 9)
+    second_day = date(2026, 7, 10)
+    _write_exact_2k_sample(tmp_path, first_day, 7171, 191.0)
+    _write_exact_2k_sample(tmp_path, second_day, 7172, 195.0)
+
+    duplicate_activity_path = tmp_path / "activities" / "activity_7171_duplicate.json"
+    duplicate_activity_path.write_bytes(
+        (tmp_path / "activities" / "activity_7171.json").read_bytes()
+    )
+    same_day_activity_path = tmp_path / "activities" / "activity_7173.json"
+    same_day_payload = read_json(
+        tmp_path / "activities" / "activity_7172.json", {}
+    )
+    same_day_payload["activityId"] = 7173
+    write_json(same_day_activity_path, same_day_payload)
+    _append_index_row(
+        tmp_path,
+        "activity_gear_index.json",
+        {
+            "activity_id": "7173",
+            "date": second_day.isoformat(),
+            "category": "mtb",
+            "gear_fetch_ok": True,
+            "gear": [{"label": "Stumpjumper Expert MY25"}],
+        },
+    )
+    _append_index_row(
+        tmp_path,
+        "activity_device_index.json",
+        {
+            "activity_id": "7173",
+            "date": second_day.isoformat(),
+            "category": "mtb",
+            "device_fetch_ok": True,
+            "external_hr_sensor": True,
+            "hr_source_classification": "external_standard_metadata",
+            "external_hr_battery_statuses": ["GOOD"],
+        },
+    )
+    write_json(
+        tmp_path / "snapshots" / "activity_loop_load_2026-07-10_7173.json",
+        {
+            "date": second_day.isoformat(),
+            "activity_id": "7173",
+            "official_activity_training_load": 195.0,
+            "loops": [
+                {
+                    "loop": index,
+                    "label": f"Loop {index}",
+                    "lap_kinds": ["climb", "descent"],
+                }
+                for index in range(1, 4)
+            ],
+        },
+    )
+    feedback_path = tmp_path / "input" / "feedback_2026-07-10.json"
+    feedback = read_json(feedback_path, {})
+    feedback["entries"] = [
+        {
+            "activity_id": "7172",
+            "action_identity": dict(MATCHED_2K_IDENTITY),
+            "action_identity_recorded_at_local": "2026-07-10T12:00:00+08:00",
+        },
+        {
+            "activity_id": "7173",
+            "action_identity": dict(MATCHED_2K_IDENTITY),
+            "action_identity_recorded_at_local": "2026-07-10T12:05:00+08:00",
+        },
+    ]
+    feedback.pop("activity_id", None)
+    feedback.pop("action_identity", None)
+    feedback.pop("action_identity_recorded_at_local", None)
+    write_json(feedback_path, feedback)
+
+    plan = _matched_2k_plan()
+    baseline = _apply_matched_2k_load_baseline(
+        tmp_path,
+        date(2026, 7, 11),
+        plan,
+        _session_expectation(plan),
+    )["action_matched_training_load_expectation"]
+
+    assert baseline["status"] == "matched_route_repeat_baseline"
+    assert baseline["sample_count"] == 2
+    assert baseline["sample_dates"] == ["2026-07-09", "2026-07-10"]
+    assert baseline["rejected_reason_counts"]["duplicate_activity_ref"] == 1
+    assert baseline["rejected_reason_counts"]["non_independent_sample_date"] == 2
+
+
+def test_exact_2k_rejection_audit_ignores_unannotated_rows_and_bounds_details(tmp_path):
+    load_context(tmp_path)
+    start = date(2026, 6, 1)
+    for offset in range(30):
+        day = start + timedelta(days=offset)
+        activity_id = 8000 + offset
+        _write_exact_2k_sample(tmp_path, day, activity_id, 180.0 + offset)
+        feedback_path = tmp_path / "input" / f"feedback_{day.isoformat()}.json"
+        feedback = read_json(feedback_path, {})
+        feedback["action_identity"]["route_key"] = "not_full_2k"
+        write_json(feedback_path, feedback)
+    for offset in range(30, 34):
+        day = start + timedelta(days=offset)
+        activity_id = 8000 + offset
+        _write_exact_2k_sample(tmp_path, day, activity_id, 180.0 + offset)
+        write_json(
+            tmp_path / "input" / f"feedback_{day.isoformat()}.json",
+            {"activity_id": str(activity_id)},
+        )
+
+    plan = _matched_2k_plan()
+    baseline = _apply_matched_2k_load_baseline(
+        tmp_path,
+        date(2026, 7, 10),
+        plan,
+        _session_expectation(plan),
+    )["action_matched_training_load_expectation"]
+
+    assert baseline["status"] == "insufficient_matched_route_repeat_samples"
+    assert baseline["sample_count"] == 0
+    assert baseline["unannotated_mtb_rows_ignored"] == 4
+    assert baseline["rejected_candidate_count"] == 30
+    assert baseline["rejected_reason_counts"]["route_key_mismatch"] == 30
+    assert baseline["rejected_candidates_limit"] == 25
+    assert baseline["rejected_candidates_truncated"] == 5
+    assert len(baseline["rejected_candidates"]) == 25
+    assert baseline["rejected_candidates"][0]["date"] == "2026-06-06"
+    assert baseline["rejected_candidates"][-1]["date"] == "2026-06-30"
+
+
+def test_action_baseline_does_not_change_unrelated_mtb_session_type(tmp_path):
+    load_context(tmp_path)
+    _write_exact_2k_sample(tmp_path, date(2026, 7, 9), 7201, 191.0406)
+    _write_exact_2k_sample(tmp_path, date(2026, 8, 13), 7202, 200.0730)
+    plan = _matched_2k_plan(session_type="outdoor_mtb")
+
+    generic = _session_expectation(plan)
+    result = _apply_matched_2k_load_baseline(
+        tmp_path, date(2026, 8, 14), plan, generic
+    )
+
+    assert result == generic
+    assert result["expected_training_load"] == 82.5
+    assert result["expected_training_load_range"] == [57.7, 111.4]
+    assert "action_matched_training_load_expectation" not in result
+
+
+def test_execution_risk_stress_load_overrides_nominal_action_prior():
+    plan = _matched_2k_plan()
+    expected = _session_expectation(plan)
+    expected.update(
+        {
+            "expected_training_load": 195.6,
+            "expected_training_load_range": [160.0, 220.0],
+            "action_matched_training_load_expectation": {
+                "status": "matched_route_repeat_baseline",
+                "source": "historical_matched_route_repeat_load_prior",
+                "expected_value": 195.6,
+                "expected_range": [160.0, 220.0],
+            },
+        }
+    )
+    stress = _risk_adjusted_expected_session(
+        expected,
+        {
+            "likely_harder_than_plan": True,
+            "median_actual_training_load": 300.0,
+            "p75_actual_training_load": 330.0,
+            "median_actual_duration_min": 150.0,
+            "median_actual_high_intensity_min": 20.0,
+        },
+    )
+
+    assert stress is not None
+    selected = _selected_training_load_expectation(stress)
+    assert selected["selected_source"] == "execution_risk_stress_test"
+    assert selected["expected_value"] == 300.0
+    simulated = _simulate_activity_day({}, date(2026, 8, 14), stress)
+    assert simulated["2026-08-14"]["training_load"] == 300.0
+
+
+def test_existing_dated_prediction_is_immutable_before_activity_while_current_uses_match(tmp_path):
+    _seed_history(tmp_path)
+    target = date(2026, 5, 27)
+    _write_wellness(tmp_path, target, good=True)
+    _write_exact_2k_sample(tmp_path, date(2026, 5, 10), 7301, 191.0406)
+    _write_exact_2k_sample(tmp_path, date(2026, 5, 15), 7302, 200.0730)
+    dated_path = tmp_path / "snapshots" / f"predictive_session_{target.isoformat()}.json"
+    write_json(
+        dated_path,
+        {
+            "date": target.isoformat(),
+            "generated_at": "2026-05-27T07:00:00+08:00",
+            "prediction": {"expected_session": {"title": "Frozen original"}},
+        },
+    )
+    original_bytes = dated_path.read_bytes()
+
+    artifact = build_predictive_prescription(
+        tmp_path,
+        target,
+        state={"date": target.isoformat()},
+        plan=_matched_2k_plan(),
+    )
+
+    assert dated_path.read_bytes() == original_bytes
+    assert artifact["artifacts"]["dated_write_status"] == "preserved_existing_immutable"
+    current = read_json(tmp_path / "snapshots" / "predictive_session_plan.json", {})
+    matched = current["prediction"]["expected_session"][
+        "action_matched_training_load_expectation"
+    ]
+    assert matched["expected_value"] == 195.6
+    assert matched["expected_range"] == [160.0, 220.0]
+    assert current["prediction"]["simulated_features"]["today_training_load"] == 195.6
+
+
+def test_schema_v3_contract_load_remains_authoritative_over_action_prior(tmp_path):
+    target = _seed_history(tmp_path)
+    _write_wellness(tmp_path, target, good=True)
+    _write_exact_2k_sample(tmp_path, date(2026, 5, 10), 7351, 191.0)
+    _write_exact_2k_sample(tmp_path, date(2026, 5, 15), 7352, 200.1)
+    plan = _matched_2k_plan()
+    plan["session"]["expected_result"] = {
+        "technical": "Final execution matches the first.",
+        "garmin_training_load": {"range": [100, 120]},
+    }
+
+    artifact = build_predictive_prescription(
+        tmp_path, target, state={"date": target.isoformat()}, plan=plan
+    )
+    expected = artifact["prediction"]["expected_session"]
+
+    assert expected["action_matched_training_load_expectation"]["expected_value"] == 195.6
+    assert expected["selected_training_load_expectation"]["selected_source"] == (
+        "schema_v3_contract.expected_result.garmin_training_load"
+    )
+    assert expected["expected_training_load"] == 110.0
+    assert expected["expected_training_load_range"] == [100.0, 120.0]
+    assert artifact["prediction"]["simulated_features"]["today_training_load"] == 110.0
+
+
+def test_existing_empty_or_corrupt_dated_prediction_is_preserved(tmp_path):
+    target = _seed_history(tmp_path)
+    dated_path = tmp_path / "snapshots" / f"predictive_session_{target.isoformat()}.json"
+    plan = {
+        "session": {
+            "title": "Current rolling plan",
+            "type": "outdoor_bike_optional",
+            "modality": "bike_indoor",
+            "duration_min": 45,
+            "intensity": "easy",
+        }
+    }
+
+    write_json(dated_path, {})
+    empty_bytes = dated_path.read_bytes()
+    empty_artifact = build_predictive_prescription(
+        tmp_path, target, state={"date": target.isoformat()}, plan=plan
+    )
+    assert dated_path.read_bytes() == empty_bytes
+    assert empty_artifact["artifacts"]["dated_write_status"] == (
+        "preserved_existing_invalid_or_empty"
+    )
+    assert empty_artifact["artifacts"]["existing_dated_integrity"] == (
+        "invalid_or_empty"
+    )
+
+    corrupt_bytes = b"{not-json"
+    dated_path.write_bytes(corrupt_bytes)
+    corrupt_artifact = build_predictive_prescription(
+        tmp_path, target, state={"date": target.isoformat()}, plan=plan
+    )
+    assert dated_path.read_bytes() == corrupt_bytes
+    assert corrupt_artifact["artifacts"]["dated_write_status"] == (
+        "preserved_existing_corrupt"
+    )
+    assert corrupt_artifact["artifacts"]["existing_dated_integrity"] == "corrupt"

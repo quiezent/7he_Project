@@ -338,6 +338,8 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                 "device_readiness_capability_rule": "Training Readiness capability is false only after a successful non-empty device response explicitly reports false for the registered devices; failed, empty, or capability-absent responses remain unknown.",
                 "readiness_rule": "Reject wrong-date Training Readiness rows, expose source date and age, and keep the feed context-only behind Sabbath, physical readiness, CNS ceiling, and freshness constraints.",
                 "latest_session_rule": "Use the compact latest-session block to interpret what load represented, but respect HR-source confidence, weather-unit gates, Garmin modeled-water limits, loop-estimation limits, and stale-power policy.",
+                "moving_duration_rule": "For steep hiking, preserve Garmin movingDuration as raw and withhold stopped-time subtraction when timer and elapsed duration agree but reported moving time is physiologically or mechanically implausible.",
+                "oxygenation_rule": "Keep daily, sleep, and activity-time Pulse Ox and respiration separate. Negative activity-period sentinels mean unavailable, not normal; absent activity samples cannot be inferred from sleep values, and wrist Pulse Ox cannot promote readiness or establish medical safety.",
             },
             "technical_interpretation_standard": {
                 "clipless_body_position_frame": "Do not reduce clipless gains to 'riding more forward.' The expert interpretation is that clipless can provide enough foot security for Clayton to remain dynamically centred, maintain front-tyre authority, and use a larger range of bike-body separation.",
@@ -417,6 +419,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                 "Do not confuse historical 222 W P20 with the current Garmin operational FTP; use the latest dated Garmin FTP surface with its clean-test-validity caveat.",
                 "Do not count elliptical load as bike-specific maintenance.",
                 "Do not treat Garmin readiness as direct trail-skill readiness without subjective notes.",
+                "Do not infer exercise-time oxygenation or respiration from daily or sleep Garmin summaries.",
                 "Do not treat low training load as permission for high-consequence MTB when CNS readiness is impaired or compromised.",
                 "Do not use historical finger injury as a current training gate.",
                 "Do not copy a full ideal week when life load, sleep, HRV, arm pump, or back-to-back trail plans require density control.",
@@ -461,6 +464,24 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
         },
         "predictive_training_loop": {
             "purpose": "Turn each prescription into a testable expectation for Clayton's digital twin.",
+            "matched_route_repeat_load_prior": {
+                "role": "Load-expectation prior only; it is separate from physiology and full digital-twin calibration eligibility.",
+                "activation": "Opt in only through an explicit versioned session.action_identity; never infer a named route from prose or GPS shape.",
+                "identity_schema_v1": {
+                    "schema_version": 1,
+                    "venue_key": "canonical venue key",
+                    "route_key": "canonical named-route key",
+                    "bike_key": "canonical bike key",
+                    "access_key": "self_pedaled, uplift, or mixed",
+                    "quality_descent_count": "positive integer",
+                },
+                "sample_rules": [
+                    "Use only activity-scoped structured feedback recorded before the prediction date.",
+                    "Require corroborating Garmin Gear, external-HR provenance, dated loop structure, official-load agreement, comparable duration, and independent activity dates.",
+                    "Fewer than two comparable samples fails closed; retain the generic estimate for audit but do not simulate it as the matched action.",
+                    "Keep the immutable dated prediction unchanged; a later route-repeat prior updates future prescriptions only.",
+                ],
+            },
             "pre_session": [
                 "Store expected duration, training load, high-intensity minutes, RPE range, and next-day response before training.",
                 "Store the adaptation hypothesis and the execution stop rules so the review can judge quality, not only load.",
@@ -740,6 +761,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             "garmin_training_readiness": "snapshots/garmin_training_readiness_current.json is a separate context-only Garmin feed with source date, age, endpoint health, and tri-state device-capability provenance; it cannot replace physical readiness or the CNS ceiling.",
             "latest_session_evidence": "snapshots/current_state.json latest_session_evidence is the bounded raw-session interpretation block; every joined field must retain source, unit, and confidence limits.",
             "live_sync_provenance": "snapshots/last_live_sync_status.json and snapshots/sync_run_ledger.json preserve live-contact truth across later rebuild-only runs.",
+            "oxygenation_respiration": "Dedicated Garmin Pulse Ox and respiration endpoints retain attempt state, coverage, valid samples, and negative sentinels. Daily or sleep values are contextual only and never imputed into an activity interval or used as medical diagnosis or training clearance.",
             "raw_key_session_detail": "activities/details and activities/fit preserve bounded rich Garmin API detail and original FIT/ZIP evidence; nested detail is private raw evidence, is excluded from longitudinal activity counts, and is never derived-cache cleanup material.",
             "rest_recharge_window": "snapshots/rest_recharge_window.json joins athlete-confirmed nap/rest timing to the retained Garmin all-day stress and Body Battery series, recharge latency, primary-sleep shortfall, illness, preceding 48-hour load, inertia, and clarity. It is upward-inert intraday context; poor cognition or illness may only lower the CNS ceiling.",
             "wearable_coverage": "snapshots/wearable_coverage.json separates endpoint health, optical-HR measurement availability, physical wear state, and cause attribution; joins only strict target-date athlete confirmation; withholds optimistic low-stress use across material gaps; and never imputes physiology or promotes training.",

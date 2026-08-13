@@ -5,6 +5,15 @@
       "timestamp_local": "2026-07-09T15:04:00+08:00",
       "source": "athlete_report",
       "activity_id": "23531655671",
+      "action_identity": {
+        "schema_version": 1,
+        "venue_key": "bukit_kiara",
+        "route_key": "full_2k",
+        "bike_key": "stumpjumper_expert_my25",
+        "access_key": "self_pedaled",
+        "quality_descent_count": 3
+      },
+      "action_identity_recorded_at_local": "2026-08-13T15:37:04+08:00",
       "subjective_report": "Kiara session completed and synced. Clayton reports 3 x 2K on laps 2, 4, and 6. Laps 4 and 6 included harder pedaling inside the trail. After resting, lap 7 included standing pedaling on the final climb section. Clayton felt this standing/on-trail pedaling is more enduro-specific than seated pedaling. Clipless and suspension settings felt good.",
       "coaching_interpretation": "The enduro-specific insight is useful: short standing torque and on-trail acceleration are likely more transferable to stage riding than only seated road-style climbing. However, this session materially exceeded the recovery/CNS ceiling and should be classified as execution drift until next-day recovery response is known."
     },

@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from datetime import date, timedelta
 import hashlib
+import math
 from pathlib import Path
 import re
 from statistics import median
@@ -99,6 +100,7 @@ MTB_SESSION_TYPES = {
     "mtb_quality_skill",
     "mtb_repeatability_controlled",
     "mtb_skill_transfer_optional",
+    "mtb_skill_familiar_capped",
     "outdoor_bike_optional",
     "outdoor_mtb",
 }
@@ -110,6 +112,18 @@ INDOOR_BIKE_SESSION_TYPES = {
     "garmin_aerobic_continuity",
 }
 MIN_EXECUTION_PROFILE_SAMPLES = 3
+MIN_MATCHED_ROUTE_REPEAT_LOAD_SAMPLES = 2
+MAX_DETAILED_REJECTED_ACTION_CANDIDATES = 25
+LOOP_ARTIFACT_LOAD_TOLERANCE = 0.1
+MATCHED_ACTION_DURATION_RATIO_RANGE = (0.8, 1.25)
+MATCHED_2K_SESSION_TYPE = "mtb_skill_familiar_capped"
+MATCHED_2K_ACTION_IDENTITY = {
+    "schema_version": 1,
+    "venue_key": "bukit_kiara",
+    "route_key": "full_2k",
+    "bike_key": "stumpjumper_expert_my25",
+    "access_key": "self_pedaled",
+}
 
 CONTRACT_REVIEW_KEYS = (
     "session_contract_review",
@@ -308,15 +322,21 @@ def _risk_adjusted_expected_session(expected: dict, profile: dict) -> dict | Non
         elif primary == "mtb":
             categories = {"mtb": 1}
     mtb_sessions = 1 if categories.get("mtb") else expected.get("mtb_sessions") or 0
+    stress_load_range = [
+        expected.get("expected_training_load"),
+        _round(max(stress_load, _number(profile.get("p75_actual_training_load"), stress_load))),
+    ]
     return {
         **expected,
         "title": f"{expected.get('title')} - execution drift stress test",
         "duration_min": int(round(stress_duration)),
         "expected_training_load": _round(stress_load),
-        "expected_training_load_range": [
-            expected.get("expected_training_load"),
-            _round(max(stress_load, _number(profile.get("p75_actual_training_load"), stress_load))),
-        ],
+        "expected_training_load_range": stress_load_range,
+        "execution_risk_training_load_expectation": {
+            "source": "execution_risk_stress_test",
+            "expected_value": _round(stress_load),
+            "expected_range": stress_load_range,
+        },
         "expected_high_intensity_min": _round(stress_high_intensity),
         "mtb_sessions": mtb_sessions,
         "categories": categories,
@@ -638,25 +658,61 @@ def _contract_training_load_expectation(expected: dict) -> dict | None:
 
 
 def _selected_training_load_expectation(expected: dict) -> dict:
-    generic_range = expected.get("expected_training_load_range")
+    generic_audit = expected.get("generic_training_load_expectation")
+    generic_source = (
+        generic_audit if isinstance(generic_audit, dict) else expected
+    )
+    generic_range = generic_source.get("expected_range")
+    if generic_range is None:
+        generic_range = generic_source.get("expected_training_load_range")
     if not isinstance(generic_range, (list, tuple)) or len(generic_range) != 2:
         generic_range = [None, None]
     else:
         generic_range = [as_number(generic_range[0]), as_number(generic_range[1])]
     generic = {
         "source": "generic_deterministic_duration_intensity",
-        "expected_value": as_number(expected.get("expected_training_load")),
+        "expected_value": as_number(
+            generic_source.get("expected_value")
+            if generic_source.get("expected_value") is not None
+            else generic_source.get("expected_training_load")
+        ),
         "expected_range": generic_range,
     }
+    stress_override = expected.get("execution_risk_training_load_expectation")
+    if not isinstance(stress_override, dict):
+        stress_override = None
     contract = _contract_training_load_expectation(expected)
-    selected = contract or generic
-    return {
+    action = expected.get("action_matched_training_load_expectation")
+    if not isinstance(action, dict):
+        action = None
+    if stress_override:
+        selected = stress_override
+    elif contract:
+        selected = contract
+    elif action:
+        selected = {
+            "source": (
+                action.get("source")
+                if action.get("status") == "matched_route_repeat_baseline"
+                else "historical_matched_route_repeat_load_prior_fail_closed"
+            ),
+            "expected_value": as_number(action.get("expected_value")),
+            "expected_range": action.get("expected_range") or [None, None],
+        }
+    else:
+        selected = generic
+    result = {
         "selected_source": selected.get("source"),
         "expected_value": selected.get("expected_value"),
         "expected_range": selected.get("expected_range"),
         "contract": contract,
         "generic_deterministic": generic,
     }
+    if stress_override:
+        result["execution_risk_stress_test"] = stress_override
+    if action:
+        result["action_matched"] = action
+    return result
 
 
 def _rpe_score_range(
@@ -799,6 +855,575 @@ def _contract_rpe_expectation(expected: dict) -> dict | None:
                 "scale": "garmin_rpe_score_0_to_100",
             }
     return None
+
+
+def _gear_bike_key(value: Any) -> str | None:
+    normalized = _normalized_key(value)
+    if "stumpjumper" in normalized and "expert" in normalized and "my25" in normalized:
+        return "stumpjumper_expert_my25"
+    return None
+
+
+def _positive_int(value: Any) -> int | None:
+    parsed = as_number(value)
+    if parsed is None or parsed <= 0 or not float(parsed).is_integer():
+        return None
+    return int(parsed)
+
+
+def _normalized_matched_2k_action_identity(value: Any) -> tuple[dict | None, list[str]]:
+    if not isinstance(value, dict):
+        return None, ["action_identity_missing"]
+    normalized = {
+        "schema_version": _positive_int(value.get("schema_version")),
+        "venue_key": _normalized_key(value.get("venue_key")),
+        "route_key": _normalized_key(value.get("route_key")),
+        "bike_key": _normalized_key(value.get("bike_key")),
+        "access_key": _normalized_key(value.get("access_key")),
+        "quality_descent_count": _positive_int(value.get("quality_descent_count")),
+    }
+    reasons = [
+        f"{key}_mismatch"
+        for key, expected_value in MATCHED_2K_ACTION_IDENTITY.items()
+        if normalized.get(key) != expected_value
+    ]
+    if normalized["quality_descent_count"] not in {2, 3}:
+        reasons.append("quality_descent_count_must_be_2_or_3")
+    if reasons:
+        return None, reasons
+    return normalized, []
+
+
+def _planned_matched_2k_identity(session: dict) -> tuple[dict | None, dict]:
+    """Require an explicit versioned action identity; never infer it from prose."""
+    if str(session.get("type") or "") != MATCHED_2K_SESSION_TYPE:
+        return None, {
+            "status": "not_applicable_session_type",
+            "missing_fields": [],
+        }
+    identity, reasons = _normalized_matched_2k_action_identity(
+        session.get("action_identity")
+    )
+    if identity is None:
+        return None, {
+            "status": "missing_action_identity",
+            "reasons": reasons,
+            "required_path": "session.action_identity",
+            "required_schema": {
+                **MATCHED_2K_ACTION_IDENTITY,
+                "quality_descent_count": "2_or_3",
+            },
+        }
+    return identity, {
+        "status": "complete",
+        "source": "session.action_identity",
+        "sensor_comparability_requirement": "external_hr_confirmed_separately",
+    }
+
+
+def _rows_from_index(root: str | Path | None, name: str) -> list[dict]:
+    payload = read_json(snapshots_dir(root) / name, {})
+    if isinstance(payload, dict):
+        rows = payload.get("activities") or []
+    elif isinstance(payload, list):
+        rows = payload
+    else:
+        rows = []
+    return [row for row in rows if isinstance(row, dict)]
+
+
+def _feedback_containers_for_activity(
+    root: str | Path | None,
+    sample_date: date,
+    activity_id: str,
+) -> list[dict]:
+    payload = read_json(input_dir(root) / f"feedback_{sample_date.isoformat()}.json", {})
+    if not isinstance(payload, dict):
+        return []
+    containers: list[dict] = []
+
+    def add(container: dict) -> None:
+        containers.append(container)
+        for key in CONTRACT_REVIEW_KEYS:
+            nested = container.get(key)
+            if isinstance(nested, dict):
+                containers.append(nested)
+
+    root_id = payload.get("activity_id")
+    if root_id is not None and str(root_id) == activity_id:
+        add(payload)
+    for entry in payload.get("entries") or []:
+        if not isinstance(entry, dict):
+            continue
+        entry_id = entry.get("activity_id")
+        if entry_id is not None and str(entry_id) == activity_id:
+            add(entry)
+    return containers
+
+
+def _structured_feedback_identity(containers: list[dict]) -> dict:
+    for index, container in enumerate(containers):
+        identity, reasons = _normalized_matched_2k_action_identity(
+            container.get("action_identity")
+        )
+        if identity is not None:
+            return {
+                "identity": identity,
+                "source": f"activity_scoped_feedback_container[{index}].action_identity",
+                "recorded_at_local": container.get(
+                    "action_identity_recorded_at_local"
+                ),
+                "reasons": [],
+            }
+        if container.get("action_identity") is not None:
+            return {
+                "identity": None,
+                "source": f"activity_scoped_feedback_container[{index}].action_identity",
+                "recorded_at_local": container.get(
+                    "action_identity_recorded_at_local"
+                ),
+                "reasons": reasons,
+            }
+    return {
+        "identity": None,
+        "source": None,
+        "recorded_at_local": None,
+        "reasons": ["structured_activity_action_identity_missing"],
+    }
+
+
+def _loop_artifact_corroboration(
+    root: str | Path | None,
+    sample_date: date,
+    activity_id: str,
+    raw_training_load: float,
+    expected_quality_descent_count: int,
+) -> tuple[list[str], dict]:
+    path = (
+        snapshots_dir(root)
+        / f"activity_loop_load_{sample_date.isoformat()}_{activity_id}.json"
+    )
+    payload = read_json(path, None)
+    provenance = {
+        "source": "dated_activity_loop_load_artifact",
+        "artifact_ref": _activity_ref_for_feedback_id(activity_id),
+        "official_load_tolerance": LOOP_ARTIFACT_LOAD_TOLERANCE,
+        "route_authority": "none_structure_corroboration_only",
+    }
+    if not isinstance(payload, dict):
+        return ["dated_loop_artifact_missing"], provenance
+
+    reasons = []
+    if str(payload.get("activity_id") or "") != activity_id:
+        reasons.append("loop_artifact_activity_id_mismatch")
+    if parse_date(payload.get("date")) != sample_date:
+        reasons.append("loop_artifact_date_mismatch")
+
+    official_load = as_number(payload.get("official_activity_training_load"))
+    if official_load is None:
+        load_delta = None
+        reasons.append("loop_artifact_official_load_missing")
+    else:
+        load_delta = abs(float(official_load) - float(raw_training_load))
+        if load_delta > LOOP_ARTIFACT_LOAD_TOLERANCE:
+            reasons.append("loop_artifact_official_load_mismatch")
+
+    loops = [row for row in payload.get("loops") or [] if isinstance(row, dict)]
+    paired = [
+        row
+        for row in loops
+        if {"climb", "descent"}.issubset(
+            {_normalized_key(value) for value in row.get("lap_kinds") or []}
+        )
+    ]
+    legacy_full_2k = []
+    for row in loops:
+        raw_label = str(row.get("label") or "")
+        label = _normalized_key(raw_label)
+        tokens = set(label.split("_"))
+        kinds = {_normalized_key(value) for value in row.get("lap_kinds") or []}
+        is_2k_plus = bool(
+            re.search(r"2\s*k\s*\+", raw_label, flags=re.IGNORECASE)
+            or "2k_plus" in label
+            or "2kplus" in label
+        )
+        if "descent" in kinds and "2k" in tokens and not is_2k_plus:
+            legacy_full_2k.append(row)
+
+    if paired:
+        structure_mode = "paired_climb_descent_loops"
+        corroborated_count = len(paired)
+    elif legacy_full_2k:
+        structure_mode = "legacy_full_2k_descent_labels"
+        corroborated_count = len(legacy_full_2k)
+    else:
+        structure_mode = "unrecognized"
+        corroborated_count = None
+        reasons.append("loop_artifact_repeat_structure_unrecognized")
+    if (
+        corroborated_count is not None
+        and corroborated_count != expected_quality_descent_count
+    ):
+        reasons.append("loop_artifact_quality_descent_count_mismatch")
+
+    provenance.update(
+        {
+            "artifact_date": payload.get("date"),
+            "artifact_activity_ref": _activity_ref_for_feedback_id(
+                payload.get("activity_id")
+            ),
+            "raw_activity_training_load": _round(raw_training_load),
+            "official_activity_training_load": _round(official_load),
+            "official_load_absolute_delta": _round(load_delta, 4),
+            "repeat_structure_mode": structure_mode,
+            "corroborated_quality_descent_count": corroborated_count,
+        }
+    )
+    return reasons, provenance
+
+
+def _matched_2k_sample_identity(
+    root: str | Path | None,
+    activity: dict,
+    gear_rows: list[dict],
+    device_rows: list[dict],
+    feedback_containers: list[dict] | None = None,
+) -> tuple[dict | None, list[str], dict]:
+    activity_id = str(activity.get("id") or "")
+    sample_date = parse_date(activity.get("date"))
+    if not activity_id or sample_date is None:
+        return None, ["activity_identity_missing"], {}
+
+    gear = next(
+        (row for row in gear_rows if str(row.get("activity_id") or "") == activity_id),
+        None,
+    )
+    device = next(
+        (row for row in device_rows if str(row.get("activity_id") or "") == activity_id),
+        None,
+    )
+    gear_labels = [
+        item.get("label") or item.get("custom_make_model")
+        for item in (gear or {}).get("gear") or []
+        if isinstance(item, dict)
+    ]
+    gear_bike_key = next(
+        (_gear_bike_key(value) for value in gear_labels if _gear_bike_key(value)),
+        None,
+    )
+    gear_fetch_confirmed = bool(
+        isinstance(gear, dict)
+        and gear.get("gear_fetch_ok") is True
+        and parse_date(gear.get("date")) == sample_date
+        and _normalized_key(gear.get("category")) == "mtb"
+    )
+    external_hr_battery_statuses = {
+        _normalized_key(value)
+        for value in (device or {}).get("external_hr_battery_statuses") or []
+    }
+    external_hr_confirmed = bool(
+        isinstance(device, dict)
+        and device.get("device_fetch_ok") is True
+        and device.get("external_hr_sensor") is True
+        and parse_date(device.get("date")) == sample_date
+        and _normalized_key(device.get("category")) == "mtb"
+        and device.get("hr_source_classification")
+        == "external_standard_metadata"
+        and bool(
+            external_hr_battery_statuses.intersection({"good", "new", "ok"})
+        )
+    )
+
+    containers = (
+        feedback_containers
+        if feedback_containers is not None
+        else _feedback_containers_for_activity(root, sample_date, activity_id)
+    )
+    feedback_identity = _structured_feedback_identity(containers)
+    identity = feedback_identity.get("identity")
+    reasons = list(feedback_identity.get("reasons") or [])
+    if not gear_fetch_confirmed or gear_bike_key is None:
+        reasons.append("stumpjumper_gear_provenance_not_confirmed")
+    if not external_hr_confirmed:
+        reasons.append("external_hr_provenance_not_confirmed")
+    if identity and gear_bike_key != identity.get("bike_key"):
+        reasons.append("feedback_gear_bike_key_conflict")
+    loop_provenance = None
+    if identity:
+        loop_reasons, loop_provenance = _loop_artifact_corroboration(
+            root,
+            sample_date,
+            activity_id,
+            float(as_number(activity.get("training_load")) or 0.0),
+            identity["quality_descent_count"],
+        )
+        reasons.extend(loop_reasons)
+    if reasons:
+        return None, reasons, {
+            "feedback_available": bool(containers),
+            "action_identity_recorded_at_local": feedback_identity.get(
+                "recorded_at_local"
+            ),
+            "loop_artifact": loop_provenance,
+        }
+    return {
+        **identity,
+        "sensor_key": "external_hr_confirmed",
+    }, [], {
+        "identity_sources": {
+            "action_identity": feedback_identity.get("source"),
+            "bike_key_corroboration": "snapshots/activity_gear_index.json",
+            "sensor_key": "snapshots/activity_device_index.json",
+            "loop_structure_and_load": "dated_activity_loop_load_artifact",
+        },
+        "action_identity_recorded_at_local": feedback_identity.get(
+            "recorded_at_local"
+        ),
+        "loop_artifact": loop_provenance,
+    }
+
+
+def _matched_action_load_range(point: float, loads: list[float]) -> list[float]:
+    """Conservative coaching envelope, not a statistical confidence interval."""
+    lower = min(min(loads), point * 0.82)
+    upper = max(max(loads), point * 1.12)
+    return [float(math.floor(lower / 10.0) * 10), float(math.ceil(upper / 10.0) * 10)]
+
+
+def _apply_matched_2k_load_baseline(
+    root: str | Path | None,
+    target: date,
+    plan: dict,
+    expected: dict,
+) -> dict:
+    session = plan.get("session") if isinstance(plan.get("session"), dict) else {}
+    if str(session.get("type") or "") != MATCHED_2K_SESSION_TYPE:
+        return expected
+    # This existing session type covers several familiar-skill prescriptions.
+    # The narrow route-repeat prior is opt-in through an explicit identity so
+    # unrelated sessions retain the generic predictor.
+    if "action_identity" not in session:
+        return expected
+
+    identity, identity_audit = _planned_matched_2k_identity(session)
+    planned_duration_min = as_number(session.get("duration_min"))
+    base = {
+        "source": "historical_matched_route_repeat_load_prior",
+        "target_date": target.isoformat(),
+        "strictly_prior_samples_only": True,
+        "minimum_matched_route_repeat_samples": MIN_MATCHED_ROUTE_REPEAT_LOAD_SAMPLES,
+        "action_identity": identity,
+        "identity_audit": identity_audit,
+        "planned_duration_min": _round(planned_duration_min),
+        "sample_duration_ratio_range": list(MATCHED_ACTION_DURATION_RATIO_RANGE),
+        "calibration_role": "load_expectation_only_not_digital_twin_calibration",
+        "range_interpretation": "conservative_coaching_envelope_not_confidence_interval",
+        "sample_count": 0,
+        "sample_dates": [],
+        "samples": [],
+        "unannotated_mtb_rows_ignored": 0,
+        "rejected_candidate_count": 0,
+        "rejected_reason_counts": {},
+        "rejected_candidates_limit": MAX_DETAILED_REJECTED_ACTION_CANDIDATES,
+        "rejected_candidates_truncated": 0,
+        "rejected_candidates": [],
+        "expected_value": None,
+        "expected_range": [None, None],
+    }
+    generic = {
+        "expected_value": expected.get("expected_training_load"),
+        "expected_range": expected.get("expected_training_load_range"),
+        "source": "generic_deterministic_duration_intensity_audit_only",
+    }
+    if planned_duration_min is None or planned_duration_min <= 0:
+        identity_audit = {
+            **identity_audit,
+            "status": "invalid_planned_duration",
+            "reason": "A positive planned duration is required for route-repeat load matching.",
+        }
+        identity = None
+    if identity is None:
+        baseline = {
+            **base,
+            "action_identity": identity,
+            "identity_audit": identity_audit,
+            "status": identity_audit.get("status"),
+        }
+        return {
+            **expected,
+            "generic_training_load_expectation": generic,
+            "expected_training_load": None,
+            "expected_training_load_range": [None, None],
+            "action_matched_training_load_expectation": baseline,
+        }
+
+    gear_rows = _rows_from_index(root, "activity_gear_index.json")
+    device_rows = _rows_from_index(root, "activity_device_index.json")
+    accepted = []
+    rejected = []
+    accepted_activity_refs: set[str] = set()
+    accepted_dates: set[str] = set()
+    unannotated_mtb_rows_ignored = 0
+    for activity in load_activities(root):
+        sample_date = parse_date(activity.get("date"))
+        if (
+            sample_date is None
+            or sample_date >= target
+            or activity.get("category") != "mtb"
+            or as_number(activity.get("training_load")) is None
+        ):
+            continue
+        activity_id = str(activity.get("id") or "")
+        feedback_containers = _feedback_containers_for_activity(
+            root,
+            sample_date,
+            activity_id,
+        )
+        if not any(
+            "action_identity" in container for container in feedback_containers
+        ):
+            unannotated_mtb_rows_ignored += 1
+            continue
+        sample_identity, reasons, provenance = _matched_2k_sample_identity(
+            root,
+            activity,
+            gear_rows,
+            device_rows,
+            feedback_containers,
+        )
+        try:
+            identity_recorded_date = parse_date(
+                provenance.get("action_identity_recorded_at_local")
+            )
+        except (TypeError, ValueError):
+            identity_recorded_date = None
+            reasons.append("action_identity_recorded_at_invalid")
+        if identity_recorded_date is None and "action_identity_recorded_at_invalid" not in reasons:
+            reasons.append("action_identity_recorded_at_missing")
+        elif identity_recorded_date is not None and identity_recorded_date >= target:
+            reasons.append("action_identity_not_available_before_prediction_date")
+        activity_ref = _activity_ref_for_feedback_id(activity.get("id"))
+        sample_duration_min = as_number(activity.get("duration_min"))
+        duration_ratio = (
+            sample_duration_min / planned_duration_min
+            if sample_duration_min is not None and planned_duration_min
+            else None
+        )
+        provenance["duration_comparability"] = {
+            "planned_duration_min": _round(planned_duration_min),
+            "sample_duration_min": _round(sample_duration_min),
+            "sample_to_planned_ratio": _round(duration_ratio, 3),
+            "accepted_ratio_range": list(MATCHED_ACTION_DURATION_RATIO_RANGE),
+        }
+        if duration_ratio is None:
+            reasons.append("sample_duration_missing")
+        elif not (
+            MATCHED_ACTION_DURATION_RATIO_RANGE[0]
+            <= duration_ratio
+            <= MATCHED_ACTION_DURATION_RATIO_RANGE[1]
+        ):
+            reasons.append("sample_duration_not_comparable")
+        sample_date_key = sample_date.isoformat()
+        if activity_ref in accepted_activity_refs:
+            reasons.append("duplicate_activity_ref")
+        if sample_date_key in accepted_dates:
+            reasons.append("non_independent_sample_date")
+        expected_sample_identity = {
+            **identity,
+            "sensor_key": "external_hr_confirmed",
+        }
+        if reasons or sample_identity != expected_sample_identity:
+            mismatch_reasons = list(reasons)
+            if sample_identity and not mismatch_reasons:
+                mismatch_reasons = [
+                    f"{field}_mismatch"
+                    for field, expected_value in expected_sample_identity.items()
+                    if sample_identity.get(field) != expected_value
+                ]
+            rejected.append(
+                {
+                    "date": sample_date.isoformat(),
+                    "activity_ref": activity_ref,
+                    "reasons": mismatch_reasons or ["action_identity_mismatch"],
+                    "evidence": provenance,
+                }
+            )
+            continue
+        accepted.append(
+            {
+                "date": sample_date.isoformat(),
+                "activity_ref": activity_ref,
+                "training_load": _round(as_number(activity.get("training_load"))),
+                "action_identity": sample_identity,
+                **provenance,
+            }
+        )
+        if activity_ref:
+            accepted_activity_refs.add(activity_ref)
+        accepted_dates.add(sample_date_key)
+    accepted.sort(key=lambda row: (row["date"], row.get("activity_ref") or ""))
+    rejected.sort(key=lambda row: (row["date"], row.get("activity_ref") or ""))
+    rejected_candidate_count = len(rejected)
+    rejected_reason_counts = dict(
+        sorted(
+            Counter(
+                reason
+                for row in rejected
+                for reason in row.get("reasons") or []
+            ).items()
+        )
+    )
+    detailed_rejected = rejected[-MAX_DETAILED_REJECTED_ACTION_CANDIDATES:]
+    rejection_audit = {
+        "unannotated_mtb_rows_ignored": unannotated_mtb_rows_ignored,
+        "rejected_candidate_count": rejected_candidate_count,
+        "rejected_reason_counts": rejected_reason_counts,
+        "rejected_candidates_limit": MAX_DETAILED_REJECTED_ACTION_CANDIDATES,
+        "rejected_candidates_truncated": max(
+            0,
+            rejected_candidate_count - MAX_DETAILED_REJECTED_ACTION_CANDIDATES,
+        ),
+        "rejected_candidates": detailed_rejected,
+    }
+    if len(accepted) < MIN_MATCHED_ROUTE_REPEAT_LOAD_SAMPLES:
+        baseline = {
+            **base,
+            "status": "insufficient_matched_route_repeat_samples",
+            "sample_count": len(accepted),
+            "sample_dates": [row["date"] for row in accepted],
+            "samples": accepted,
+            **rejection_audit,
+        }
+        return {
+            **expected,
+            "generic_training_load_expectation": generic,
+            "expected_training_load": None,
+            "expected_training_load_range": [None, None],
+            "action_matched_training_load_expectation": baseline,
+        }
+
+    loads = [float(row["training_load"]) for row in accepted]
+    point = float(median(loads))
+    expected_range = _matched_action_load_range(point, loads)
+    baseline = {
+        **base,
+        "status": "matched_route_repeat_baseline",
+        "sample_count": len(accepted),
+        "sample_dates": [row["date"] for row in accepted],
+        "samples": accepted,
+        **rejection_audit,
+        "estimate_method": "median_matched_route_repeat_training_load",
+        "range_method": "observed_values_with_18pct_lower_and_12pct_upper_median_envelope_rounded_outward_to_10",
+        "expected_value": _round(point),
+        "expected_range": expected_range,
+    }
+    return {
+        **expected,
+        "generic_training_load_expectation": generic,
+        "expected_training_load": _round(point),
+        "expected_training_load_range": expected_range,
+        "action_matched_training_load_expectation": baseline,
+    }
 
 
 def _session_expectation(plan: dict) -> dict:
@@ -1089,6 +1714,19 @@ def _prediction_from_plan(
     model: dict,
 ) -> dict:
     expected = _session_expectation(plan)
+    expected = _apply_matched_2k_load_baseline(root, target, plan, expected)
+    selected_load = _selected_training_load_expectation(expected)
+    expected = {
+        **expected,
+        "selected_training_load_expectation": selected_load,
+    }
+    if selected_load.get("expected_value") is not None:
+        expected["expected_training_load"] = _round(
+            selected_load.get("expected_value")
+        )
+        expected["expected_training_load_range"] = list(
+            selected_load.get("expected_range") or [None, None]
+        )
     basis_date, wellness_rows, wellness_by_date = _wellness_basis(root, target)
     warnings = []
     if basis_date is None:
@@ -1101,6 +1739,20 @@ def _prediction_from_plan(
         warnings.append(
             f"Prediction uses wellness from {basis_date.isoformat()} as the state basis for action on {target.isoformat()}."
         )
+    if selected_load.get("expected_value") is None:
+        matched = expected.get("action_matched_training_load_expectation") or {}
+        return {
+            "status": "unavailable",
+            "basis_date": basis_date.isoformat(),
+            "action_date": target.isoformat(),
+            "expected_session": expected,
+            "training_load_expectation": selected_load,
+            "warnings": warnings
+            + [
+                "Matched route-repeat MTB load expectation failed closed; generic duration/intensity load was retained for audit only and was not simulated.",
+                f"Matched-baseline status: {matched.get('status') or 'unavailable'}.",
+            ],
+        }
     activity_by_day = _activity_by_date(build_activity_summary_index(root, target))
     feature_wellness_by_date = dict(wellness_by_date)
     feature_wellness_rows = list(wellness_rows)
@@ -2718,18 +3370,41 @@ def build_predictive_prescription(
         },
     }
     dated_path = snapshots_dir(root) / f"predictive_session_{target.isoformat()}.json"
-    existing_dated = read_json(dated_path, {})
+    dated_exists = dated_path.exists()
+    existing_dated: dict = {}
+    dated_integrity = "missing"
+    if dated_exists:
+        try:
+            raw_existing_dated = read_json(dated_path, None)
+        except (OSError, UnicodeError, ValueError):
+            raw_existing_dated = None
+            dated_integrity = "corrupt"
+        else:
+            if (
+                isinstance(raw_existing_dated, dict)
+                and raw_existing_dated.get("date") == target.isoformat()
+                and isinstance(raw_existing_dated.get("prediction"), dict)
+            ):
+                existing_dated = raw_existing_dated
+                dated_integrity = "valid"
+            else:
+                dated_integrity = "invalid_or_empty"
     completed_same_day_activity = (
         target == today_local(DEFAULT_TIMEZONE) and bool(_activity_rows_for_date(root, target))
     )
     dated_write_status = "written"
-    if completed_same_day_activity:
-        if existing_dated:
+    if dated_exists:
+        if completed_same_day_activity:
             dated_write_status = "preserved_existing_after_activity"
+        elif dated_integrity == "valid":
+            dated_write_status = "preserved_existing_immutable"
         else:
-            dated_write_status = "skipped_after_activity"
+            dated_write_status = f"preserved_existing_{dated_integrity}"
+    elif completed_same_day_activity:
+        dated_write_status = "skipped_after_activity"
     artifact["artifacts"]["dated_write_status"] = dated_write_status
-    if existing_dated and dated_write_status == "preserved_existing_after_activity":
+    artifact["artifacts"]["existing_dated_integrity"] = dated_integrity
+    if existing_dated and dated_write_status.startswith("preserved_existing"):
         artifact["artifacts"]["preserved_dated_generated_at"] = existing_dated.get("generated_at")
     write_json(snapshots_dir(root) / "predictive_session_plan.json", artifact)
     if dated_write_status == "written":

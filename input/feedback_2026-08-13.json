@@ -1,0 +1,97 @@
+{
+  "date": "2026-08-13",
+  "entries": [
+    {
+      "timestamp_local": "2026-08-13T14:35:00+08:00",
+      "source": "athlete_post_session_report_with_garmin_and_loop_audit",
+      "activity_id": "23957875993",
+      "action_identity": {
+        "schema_version": 1,
+        "venue_key": "bukit_kiara",
+        "route_key": "full_2k",
+        "bike_key": "stumpjumper_expert_my25",
+        "access_key": "self_pedaled",
+        "quality_descent_count": 3
+      },
+      "action_identity_recorded_at_local": "2026-08-13T15:37:04+08:00",
+      "reported_context": {
+        "global_effort_interpretation": "The athlete did not experience the session as tough overall; aggression was concentrated in quality runs two and three.",
+        "opening_gate": "Green; mind and body clear at 9/10.",
+        "route_and_laps": {
+          "lap_1": "Opening climb, RPE 4.",
+          "lap_2": "Full 2K run one at 75 percent, focusing on corner exit, accurate braking, line choice and body position.",
+          "lap_3": "Second climb, RPE 4.",
+          "lap_4": "Full 2K run two at 80 percent, adding pedaling on corner exit.",
+          "lap_5": "Third climb, RPE 3; athlete reported fatigue 3/10 without assigning it specifically to braking, upper body or legs.",
+          "lap_6": "Full 2K run three at 85 percent, with some corner-exit pedaling but relatively more pedaling on flatter trail sections.",
+          "laps_7_to_9": "Lap 7 was the required climb to lap 8, lap 8 was Half DH Line as the familiar egress, and lap 9 was the car-park warm-down."
+        },
+        "fueling_totals": {
+          "contents": "1 L 100Plus Active, 20 g honey and 3 g table salt",
+          "carbohydrate_g": 63.1,
+          "fluid_ml": 1000,
+          "sodium_mg": 1616,
+          "calculation_basis": "Preserved athlete product values: 48 g carbohydrate and 430 mg sodium per litre of 100Plus Active; a 15 g honey serving supplies 11.3 g carbohydrate and 4.4 mg sodium. Table salt is estimated as 39.34 percent sodium by mass."
+        }
+      },
+      "session_contract_review": {
+        "subjective_gate_result": "green",
+        "opening_gate_result": "passed",
+        "pre_session_mental_clarity_0_to_10": 9,
+        "actual_duration_min": 82.4,
+        "actual_moving_min": 64.4,
+        "actual_distance_km": 10.04,
+        "actual_ascent_m": 356.8,
+        "actual_training_load": 200.1,
+        "actual_rpe": 6,
+        "workout_feel": "strong",
+        "bike_and_setup": "Garmin Gear confirms Stumpjumper Expert MY25; athlete explicitly confirms no setup changes.",
+        "trail_condition_and_weather": "Very dry trail with some sandy sections.",
+        "completed_2k_descent_count": 3,
+        "descent_intent_by_run": [
+          75,
+          80,
+          85
+        ],
+        "climb_rpe_by_loop": [
+          4,
+          4,
+          3
+        ],
+        "fatigue_0_to_10": 3,
+        "fatigue_scope": "Overall fatigue was 3/10 before run three; final braking fatigue was 0/10 and upper-body fatigue was 2/10.",
+        "leg_feel_and_any_late_fade": "Overall fatigue was explicitly 3/10 before run three, climb RPE fell from 4 to 4 to 3, and no late skill fade occurred. Leg symmetry was not separately rated, so this supports adequate whole-session leg function but not a side-to-side symmetry claim.",
+        "vision_and_decision_speed_first_vs_final": "Run one 8/10; run three 9/10 and better organized at the higher intended speed.",
+        "brake_release_and_exit_commitment_first_vs_final": "Run one prioritized accurate entry braking and corner exit. Run three used deliberate feature-entry braking and speed control, power on exit, and cruising between features; execution was more accurate and aggressive without becoming a speed chase.",
+        "front_tracking_and_dynamic_centre": "Front tracking was clean on both runs. The rear was slightly loose on run one, attributed by the athlete probably to body position; it did not recur as an incident on run three.",
+        "missed_line_reactive_braking_deflection_rescue_or_near_miss": "none",
+        "fork_pack_down_rear_kick_wallow_or_pitch": "none",
+        "braking_fatigue": 0,
+        "upper_body_fatigue": 2,
+        "pedaling_progression": "Run one prioritized corner-exit accuracy. Run two used less appropriate sprint-and-rest timing and carried the highest HR intensity. Run three used more selective exit power and flatter-section pedaling, with deliberate recovery between features.",
+        "technical_quality": "clean",
+        "technical_quality_notes": "Opening gate passed with 9/10 clarity. All three full 2K runs matched the written 75/80/85 percent progression. Run three improved vision and decision speed from 8/10 to 9/10, retained clean front tracking, used accurate entry braking and deliberate exit power, and had no missed line, reactive braking, deflection, rescue, near miss or suspension/chassis fault. Braking fatigue was 0/10 and upper-body fatigue 2/10.",
+        "late_session_skill_fade": "none",
+        "fueling_carbs_g_per_hour": 45.9,
+        "fluid_ml_per_hour": 728,
+        "sodium_mg_per_hour": 1176,
+        "stop_rule_outcome": "not_triggered",
+        "stop_rule_outcome_source": "athlete_explicit_report",
+        "next_morning_response": null
+      },
+      "coach_contract_audit": {
+        "action_alignment": "matched",
+        "action_alignment_notes": "One MTB activity, the correct unchanged Stumpjumper setup, 82.4 minutes inside the 65-90 minute window, three full 2K descents at 75/80/85 percent, climb gates of 4/4/3, and only the required Half-DH-Line egress match the written action. Rider-only technical evidence confirms the final run improved vision/decision speed, retained clean tracking and braking, and produced no rescue event or chassis fault.",
+        "load_alignment": "Garmin load 200.1 versus the immutable pre-session generic estimate 82.5 and range 57.7-111.4; actual was 142.5 percent above the point estimate and 79.6 percent above the upper bound.",
+        "physiology_interpretation": "The load is credible rather than a heart-rate artifact: standard Garmin metadata confirms an external ANT+ heart-rate sensor with GOOD battery, ANT+ power was present, average/max HR were 146/184, aerobic/anaerobic Training Effect was 3.7/3.1, TSS was 61.2 and 14.8 minutes accumulated in HR zones 4-5. The session was subjectively manageable and technically bounded while still physiologically meaningful.",
+        "predictive_recalibration": "The generic duration-by-skill MTB estimate is rejected for this action. Future comparable Stumpjumper three-full-2K prescriptions may use a provisional matched-route-repeat expectation of approximately 196 Garmin load with a conservative 160-220 range, supported by the 2026-07-09 load-191.0 and 2026-08-13 load-200.1 same-bike, external-HR, three-2K actions. This is not an exact full-session match and does not rewrite the frozen 2026-08-13 pre-session prediction.",
+        "calibration_disposition": "Technical and action review are now clean and complete enough for coaching interpretation, while next-morning response remains pending. The original nominal prescription can never become a matched-load digital-twin calibration row because the immutable generic load estimate missed materially; the delivered route-repeat load remains valid evidence for the separate provisional matched-action prior."
+      },
+      "nutrition_interpretation": {
+        "carbohydrate": "45.9 g/h, inside the written 45-60 g/h execution target and at the lower edge of the generic 45-75 g/h planned-duration profile; adequate for this elapsed duration.",
+        "fluid": "728 mL/h, inside the canonical 500-900 mL/h target. Garmin estimated 754 mL water loss; this is modeled rather than measured.",
+        "sodium": "1176 mg/h, above both today's 600-900 mg/h working target and the canonical 600-1000 mg/h band. If symptom-free it is tolerated evidence, not proof that 3 g added salt is optimal for an 82-minute ride. A future similar one-litre mix would normally use approximately 1.5-2.0 g added table salt unless measured sweat evidence supports more."
+      }
+    }
+  ]
+}
