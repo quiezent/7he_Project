@@ -1,0 +1,78 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-08-14",
+  "generated_at": "2026-08-14T14:34:08+08:00",
+  "status": "active_conditional_same_day_coach_override",
+  "decision_basis": {
+    "freshness": "Live Garmin decision sync completed at 2026-08-14T14:28+08:00 with current target-date wellness, training status, current_state and coach_packet.",
+    "physical_readiness": "Custom readiness is 58 yellow. Sleep was 6.33 hours with score 75, verified wake Body Battery was 63 and afternoon Body Battery was 45. There is no red gate, but this is not a positive case for additional aerobic volume.",
+    "cns": "CNS readiness is 75.6 ready, while yesterday's 82.4-minute, load-200.1 MTB session still contributes duration, load and high-HR processing cost inside the 48-hour window.",
+    "garmin_diagnosis": "Garmin is Productive with ACWR 1.1 Optimal. Low aerobic is already inside target at 339.8 and high aerobic is near its upper target at 810.2 of 876, so Garmin supports recovery continuity rather than a Zone 2-building session.",
+    "density": "Monday, Wednesday and Thursday total approximately 317.3 Garmin load, already near the weekly 250-330 target ceiling before Saturday's optional Enduro exposure.",
+    "recent_response": "The next-day response to Thursday is steady rather than impaired, but remains yellow. The value of Friday riding is therefore limited to circulation that leaves the rider feeling better and preserves Saturday optionality.",
+    "subjective_limit": "No current athlete leg or clarity check-in was available at prescription time, so the session is explicitly optional and requires a same-moment green self-gate."
+  },
+  "session": {
+    "title": "Optional 25-minute recovery circulation",
+    "type": "easy_bike_continuity",
+    "modality": "bike_indoor",
+    "duration_min": 25,
+    "duration_range_min": [0, 25],
+    "intensity": "recovery",
+    "density_cost": "very_low",
+    "optional": true,
+    "open_ended": false,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Use gentle bike-specific circulation to reduce stiffness and retain pedal rhythm only if it improves recovery, while protecting Saturday's possible Enduro exposure.",
+    "dose": {
+      "self_gate": "Start only with mental clarity at least 8/10, no illness or pain, and legs that feel normal, symmetric or merely mildly stiff rather than deeply heavy.",
+      "phase_1": "8 minutes at 95-100 W.",
+      "phase_2": "12 minutes at 105-110 W only if the legs are the same or better by minute 8.",
+      "phase_3": "5 minutes at 90-100 W.",
+      "cadence": "Comfortable 80-90 rpm, entirely seated.",
+      "effort": "RPE 1-2 with a 25-minute absolute cap; this is recovery circulation, not Zone 2 development.",
+      "skip_branch": "Full rest is an equally successful execution when the self-gate fails or the spin does not improve the legs."
+    },
+    "adaptation_hypothesis": "A very small seated spin may improve subjective leg circulation and preserve bike-touch continuity without adding meaningful aerobic, muscular or CNS cost. If it does not improve leg feel quickly, rest produces the better adaptation by preserving Saturday quality.",
+    "execution_rules": [
+      "Use the Marin/Elite Suito with the saddle fixed at the current 12 mm-aft provisional position; this is not a fit test and no adjustment is allowed.",
+      "Use a strong fan and stay seated. Do not add standing, torque, cadence drills, sprints, tempo, gym work or extra minutes.",
+      "Do not chase heart rate. At these watts it should remain easy; leg feel and RPE are the primary execution controls.",
+      "If normally fed, drink water to thirst. No during-session carbohydrate or added salt is required for 25 recovery minutes."
+    ],
+    "expected_result": {
+      "during": "Legs feel clearly equal or better by minute 10-15, RPE remains 1-2, and power feels mechanically easy.",
+      "after": "Finish feeling fresher than at the start, with no posterior-chain, knee, back, hand or saddle symptoms.",
+      "garmin": "Expected Garmin load no higher than approximately 20; load is a ceiling, not a target.",
+      "next_day": "The session preserves but does not grant Saturday Enduro clearance; Saturday still requires a fresh sync and subjective gate."
+    },
+    "stop_rules": [
+      "Do not start for clarity below 8/10, illness, pain, asymmetric legs, deep heaviness or a desire to turn the session into training.",
+      "Stop by minute 10 if the legs are not clearly the same or better, or stop at any time if RPE exceeds 2.",
+      "Stop if heart rate remains above 130 bpm at 105 W or less after the opening kinetics, or rises more than about 5 bpm at unchanged power after settling.",
+      "Stop for knee, hamstring, calf, back, neck, hand or perineal symptoms, pelvic rocking, foot migration, or unusual cardiovascular sensations.",
+      "Feeling good does not authorize an extension beyond 25 minutes."
+    ],
+    "post_session_review_fields": [
+      "self_gate_result",
+      "actual_duration_min",
+      "actual_training_load",
+      "actual_rpe",
+      "leg_feel_start_to_finish",
+      "heart_rate_response",
+      "fit_symptoms",
+      "fluid_consumed_ml",
+      "stop_rule_outcome",
+      "next_morning_response"
+    ]
+  }
+}
