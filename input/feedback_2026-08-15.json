@@ -1,0 +1,16 @@
+{
+  "date": "2026-08-15",
+  "sleep_work_timing_review": {
+    "nap_status": "completed",
+    "nap_source": "athlete_report",
+    "nap_start_local": "14:30",
+    "nap_end_local": "15:50",
+    "time_in_bed_minutes": 80,
+    "sleep_inertia_minutes": 0,
+    "post_nap_clarity_10": 9,
+    "subjective_response": "Body felt sharper and mental clarity improved after the nap.",
+    "estimated_sleep_minutes_status": "not_separately_reported",
+    "garmin_reported_nap_time_seconds": 0,
+    "garmin_nap_interpretation": "Garmin reported zero nap time; this does not disprove the athlete-confirmed nap."
+  }
+}
