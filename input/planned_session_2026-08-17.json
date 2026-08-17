@@ -1,0 +1,75 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-08-17",
+  "generated_at": "2026-08-17T10:39:30+08:00",
+  "status": "active_same_day_coach_override",
+  "decision_basis": {
+    "athlete_context": "The planned conversational run with Clayton's wife did not occur. Clayton is choosing between an additional Monday outdoor ride and preserving Tuesday for Enduro work, while targeting sleep by 23:00 tonight.",
+    "freshness": "Live Garmin decision sync completed at 2026-08-17T10:32+08:00 with current wellness, activity, training-status, current_state, weekly_plan and coach_packet artifacts.",
+    "physical_readiness": "Readiness is 73 green with hard-session guidance OK. Primary sleep was 6.38 hours with score 75, wake Body Battery 81 and current Body Battery 66 at 10:26.",
+    "cns": "CNS readiness is 87 ready with a normal ceiling when physical readiness and route consequence agree. Overnight HRV is 49 BALANCED and resting HR is 48, equal to the seven-day average.",
+    "load": "The last seven days contain 241.4 Garmin load from two sessions and one MTB exposure. Garmin ACWR is LOW at 0.6 with balanced load focus; this permits a careful build but does not make back-to-back technical days free.",
+    "specificity": "The planned Tuesday two-cycle Enduro Pure Quill session is the higher-value exposure. The comparable 2026-08-08 two-cycle Enduro ride cost 109.8 minutes and Garmin load 242.5, so a Monday trail ride would confound and potentially downshift Tuesday rather than prepare it.",
+    "weather": "METMalaysia's Kuala Lumpur district forecast at decision time shows no rain Monday and Tuesday, while broader forecasting still carries localized-convection uncertainty. Weather therefore does not justify compressing the key session into Monday; Tuesday still requires a fresh warning, sky and trail check."
+  },
+  "session": {
+    "title": "Sleep-first absorption for Tuesday Enduro",
+    "type": "sleep_first_absorption",
+    "modality": "rest",
+    "duration_min": 0,
+    "intensity": "recovery",
+    "density_cost": "none",
+    "optional": false,
+    "open_ended": false,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Bank physical and neural recovery, advance the primary sleep opportunity toward 23:00, and arrive at Tuesday's Enduro session without residual Monday trail cost.",
+    "dose": {
+      "training": "No structured run, MTB, indoor bike, gym or interval session is needed today.",
+      "daylight": "Use 20-30 minutes of outdoor daylight and normal easy walking before late afternoon; this is normal-life movement, not a workout.",
+      "caffeine": "No further caffeinated drink after 11:00. Decaffeinated coffee is acceptable if it does not disrupt the wind-down routine.",
+      "nap": "Do not schedule a nap. If sleepiness becomes unsafe or unmanageable, use only a 15-20-minute rescue nap ending by 13:30 and report it; accept that Tuesday still requires a fresh gate.",
+      "evening": "Finish dinner around 18:30-19:30, pack the Enduro and ride nutrition by 20:15, stop stimulating NYSE/Nasdaq workflow and live-market monitoring by 20:30, dim lights, begin quiet wind-down by 21:15, enter a cool dark bedroom by 22:15, and use lights out around 22:40 to target sleep by 23:00.",
+      "fallback": "If Clayton chooses an outdoor ride today, it replaces Tuesday's key Enduro session. Do not combine Monday MTB with the Tuesday two-cycle proof."
+    },
+    "adaptation_hypothesis": "Removing a low-value Monday trail dose and creating an earlier, protected sleep opportunity should improve Tuesday's perception-action timing, climbing economy and repeatability more than another ride that cannot produce adaptation by the next morning.",
+    "execution_rules": [
+      "Do not use low ACWR as a reason to add a fourth MTB exposure or back-to-back consequence-bearing days.",
+      "Do not add hard training after 20:00; the target adaptation tonight is sleep opportunity, not fatigue.",
+      "Front-load normal hydration through the afternoon, use ordinary salt with meals, and avoid a large fluid bolus close to bed.",
+      "Eat a familiar dinner with approximately 70-100 g carbohydrate and 30-40 g protein; avoid making it unusually late, heavy, fatty, spicy or alcoholic.",
+      "If work must continue after 20:30, record the actual work-end time rather than assuming the 23:00 target was preserved."
+    ],
+    "expected_result": {
+      "sleep": "Lights out by approximately 22:40, sleep near 23:00, and a materially longer primary sleep opportunity than the prior 00:10-to-07:08 window.",
+      "physical": "Normal or fresher legs and upper body Tuesday morning with no Monday training residue.",
+      "technical": "Tuesday visual scanning, braking timing, line choice and coordination begin at normal speed without compensatory concentration.",
+      "next_day": "A fresh Tuesday sync and subjective gate determine whether the written two-cycle Enduro session remains available."
+    },
+    "stop_rules": [
+      "Do not convert normal energy or favorable weather into an unplanned Monday trail session while retaining Tuesday as a key day.",
+      "If unusual sleepiness, illness, pain or cognitive impairment develops, prioritize safety and recovery and report it; Tuesday is then downshifted rather than forced.",
+      "If an outdoor ride is chosen today, cancel the Tuesday quality prescription and move the matched Enduro proof to Thursday after recovery review."
+    ],
+    "post_session_review_fields": [
+      "last_caffeine_time_and_dose",
+      "actual_market_work_end_local",
+      "lights_out_local",
+      "estimated_sleep_onset_local",
+      "wake_time_local",
+      "nap_status_and_timing",
+      "next_morning_mental_clarity_10",
+      "next_morning_leg_and_upper_body_feel",
+      "illness_or_pain",
+      "plan_adherence"
+    ]
+  }
+}

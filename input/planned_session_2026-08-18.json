@@ -1,0 +1,131 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-08-18",
+  "generated_at": "2026-08-17T10:39:30+08:00",
+  "status": "active_conditional_next_day_coach_override",
+  "decision_basis": {
+    "state_basis_date": "2026-08-17",
+    "freshness": "Monday live Garmin sync completed at 2026-08-17T10:32+08:00. Tuesday target-date wellness is not yet available; this is a stored conditional action contract, not same-day clearance.",
+    "recovery": "Monday readiness is 73 green, CNS readiness is 87 ready, wake Body Battery is 81, overnight HRV is 49 BALANCED and resting HR is at baseline. Primary sleep remains the main modifiable constraint at 6.38 hours.",
+    "load": "Garmin acute load is 239 versus chronic 347, ACWR is LOW at 0.6 and load focus is balanced. Low acute load permits the written controlled build but cannot justify a third cycle or stacked climbing intensity.",
+    "recent_enduro": "The 2026-08-08 Enduro re-entry completed two Pure Quill cycles in 109.8 minutes with 500 m ascent and Garmin load 242.5. Technical execution improved, but the first climb was RPE 5 against the cycle-two admission gate and the two descents used unequal intent, so it did not provide a contract-aligned matched proof.",
+    "recent_stumpjumper": "The 2026-08-13 Stumpjumper session completed three clean full-2K runs with final processing improving to 9/10. That answered the current Stumpjumper processing question; the next protected slot should be Enduro-specific.",
+    "weather": "METMalaysia's Monday district forecast shows no rain for Kuala Lumpur on Tuesday. This is planning context only; a fresh warning, radar/sky and trail-surface check is required immediately before rollout."
+  },
+  "session": {
+    "title": "Enduro two-cycle matched Pure Quill proof",
+    "type": "mtb_repeatability_controlled",
+    "garmin_ceiling_class": "controlled_familiar_repeatability",
+    "modality": "mtb",
+    "venue": "Bukit Kiara",
+    "bike": "Specialized Enduro with established clipless system and last-known stable setup",
+    "action_identity": {
+      "schema_version": 1,
+      "venue_key": "bukit_kiara",
+      "route_key": "pure_quill",
+      "bike_key": "specialized_enduro",
+      "access_key": "self_pedaled",
+      "quality_descent_count": 2
+    },
+    "duration_min": 120,
+    "duration_range_min": [
+      105,
+      135
+    ],
+    "intensity": "skill",
+    "density_cost": "meaningful",
+    "mtb_exposure": true,
+    "optional": true,
+    "novelty_allowed": false,
+    "open_ended": false,
+    "race_simulation": false,
+    "setup_changes_allowed": false,
+    "setup_test": false,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Produce the first contract-aligned clipless Enduro proof in the two-to-three-to-four Twin Peaks progression by matching two Pure Quill cycles for route, setup, intent and technical cue.",
+    "dose": {
+      "max_cycles": 2,
+      "live_gate": "Run the Tuesday live Garmin decision sync, current_state and coach_packet. Require physical readiness above red, CNS ready, no illness or pain, mental clarity at least 8/10, normal visual width and coordination, normal symmetric legs and upper body, and no meaningful Monday training residue.",
+      "opening_gate": "Use 10-15 minutes of easy riding, bike and pressure checks, symmetric figure-eights, deliberate front/rear loading and recentring, two to three progressive firm stops and intended steering. Processing and braking timing must feel immediate, with no unexplained pull or asymmetry.",
+      "cycle_one": "Climb Twin Peaks at RPE 3-4 using brief natural standing only. Descend the full familiar Pure Quill stage at 75-80 percent intent with the declared cue: braking complete before turn-in, exit identified before the apex, dynamically centred posture and deliberate front-tyre authority.",
+      "cycle_two_gate": "Cycle two is earned only if climb one is RPE 4 or lower, breathing and legs normalize after a short reset, vision and decision speed are normal, every known exit is recognized in time, braking release and front tracking are clean, no rescue or near miss occurs, braking and upper-body fatigue are each 3/10 or lower, and weather and grip remain stable.",
+      "cycle_two_if_admitted": "Climb at RPE 5 or lower and repeat the same full Pure Quill stage at the same 75-80 percent intent, setup and technical cue. Natural speed from cleaner execution is acceptable; deliberately increasing aggression is not.",
+      "yellow_or_failed_gate": "If Tuesday readiness is yellow but CNS remains ready and the opening gate is clean, complete one controlled Pure Quill cycle at 65-75 percent and use only the required familiar egress. A failed between-cycle gate ends technical repetition.",
+      "red_cns_or_weather_block": "No technical MTB for red physical readiness, impaired or compromised CNS, illness, delayed processing, abnormal coordination, persistent leg or upper-body heaviness, thunder/lightning, unsafe runoff or non-repeatable grip.",
+      "hard_cap": "Two complete Twin Peaks-to-Pure-Quill cycles, required familiar egress only, and 135 minutes elapsed. No third or bonus 2K, TnT, Flintstone, full DH Line, setup test, sprint block, maximal torque work or segment attempt."
+    },
+    "adaptation_hypothesis": "Holding bike, pedal system, route, setup, speed intent and technical cue constant will reveal whether Enduro perception-action timing, braking release and dynamically centred front-wheel authority remain intact after the second Twin Peaks climb. A clean match earns repeat-count progression; a faster second run alone does not.",
+    "execution_rules": [
+      "Use the Enduro, clipless pedals, external HR strap and unchanged stable setup. Do not transfer Stumpjumper HSC clicks to the Enduro or combine repeatability with a setup experiment.",
+      "Climbing is transport. Brief natural standing on steep pitches is allowed, but there is no sprint, maximal torque, VO2 or climb-power target.",
+      "Complete braking before turn-in, recognize the exit before the apex, recenter before steering or impact, and keep front authority through rider position rather than rearward bracing or pulling against the clipless pedals.",
+      "Start normally fed. Two to three hours before rollout use a familiar meal containing approximately 75-115 g carbohydrate and 25-35 g protein; add 20-30 g carbohydrate shortly before riding only if hungry.",
+      "During the ride target approximately 50-65 g carbohydrate, 650-850 ml fluid and 600-900 mg sodium per elapsed hour. A practical 105-135-minute carry is 1 L 100Plus Active plus 500 ml water, approximately 2.5 g table salt distributed across the bottles, and four 15 g honey sachets used from the first 20 minutes through approximately 110 minutes.",
+      "Showers alone lower intent only when grip, runoff, visibility and egress remain predictable. Thunder, lightning, a rapidly building cell, gust front, flowing water, branch fall or unsafe visibility blocks or ends the ride by the shortest safe familiar egress."
+    ],
+    "expected_result": {
+      "garmin_training_load": {
+        "expected": 230,
+        "range": [
+          190,
+          270
+        ],
+        "basis": "Broad coach-selected planning range anchored to the single recent two-cycle Enduro result of 242.5; not a validated matched-action prior."
+      },
+      "rpe_range_out_of_10": [
+        4,
+        6
+      ],
+      "technical": "Cycle two matches cycle one within one subjective point for visual width, decision speed, known-exit recognition, brake release, dynamic centre, front tracking and line accuracy, with no reactive rescue.",
+      "physiology": "Climbs remain RPE 3-4 then 5 or lower, processing reaches at least the previous 9/10 Enduro level, braking and upper-body fatigue remain 3/10 or lower, and there is no late skill fade.",
+      "next_day": "Wednesday cognition, legs, upper body, HRV/RHR context and readiness are steady or normal rather than disproportionately depressed.",
+      "progression": "A complete matched two-cycle result with stop rules not triggered and a normal Wednesday response permits a low-cost Thursday Enduro skill exposure and makes a third Pure Quill cycle conditionally available Saturday. It does not authorize a third cycle Tuesday."
+    },
+    "stop_rules": [
+      "Do not begin technical MTB if the fresh Tuesday physical, CNS, illness, cognition, coordination, leg, upper-body or weather gate fails.",
+      "Do not start cycle two if climb one exceeds RPE 4, recovery does not normalize, or cycle one shows delayed or missed line choice, reactive mid-turn braking, narrowed vision, compensatory concentration, unintended deflection or left pull, rescue correction, near miss, tall or rearward defensive posture, or loss of intended steering.",
+      "Stop speed intent for fork ping or pack-down, rear kick, wallow or chassis pitch that changes steering, or any mechanical, tyre-pressure, cleat or brake concern.",
+      "Stop and take the safest familiar egress for heat symptoms, worsening pain, asymmetric legs, braking or upper-body fatigue above 3/10, climb RPE above 6, declining focus, or any technical stop marker.",
+      "Thunder or lightning is an immediate environmental stop. Feeling excellent does not purchase a third descent, alternate stage or setup change."
+    ],
+    "post_session_review_fields": [
+      "fresh_gate_result_and_pre_ride_clarity_10",
+      "opening_gate_result",
+      "actual_duration_min",
+      "actual_distance_km",
+      "actual_ascent_m",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "bike_pedal_system_and_setup",
+      "trail_condition_and_weather",
+      "completed_pure_quill_cycle_count",
+      "climb_rpe_by_cycle",
+      "descent_intent_by_cycle",
+      "cycle_two_gate_result",
+      "vision_and_decision_speed_first_vs_final",
+      "known_exit_recognition",
+      "brake_release_and_exit_commitment_first_vs_final",
+      "front_tracking_and_dynamic_centre",
+      "missed_line_reactive_braking_deflection_rescue_or_near_miss",
+      "fork_ping_pack_down_rear_kick_wallow_or_pitch",
+      "braking_fatigue",
+      "upper_body_fatigue",
+      "late_session_skill_fade",
+      "fueling_carbs_g_per_hour",
+      "fluid_ml_per_hour",
+      "sodium_mg_per_hour",
+      "stop_rule_outcome",
+      "next_morning_response"
+    ]
+  }
+}
