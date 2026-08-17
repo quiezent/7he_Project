@@ -1,0 +1,75 @@
+{
+  "date": "2026-08-17",
+  "entries": [
+    {
+      "timestamp_local": "2026-08-17T15:13:35+08:00",
+      "source": "athlete_post_session_report_with_garmin_trace_audit",
+      "activity_id": "24005586454",
+      "reported_context": {
+        "session_intent": "Restore easy pedalling rhythm after three bike-free days without creating meaningful recovery cost before Tuesday's Enduro session.",
+        "post_session_nutrition": "Athlete consumed 24 g protein from whey protein isolate, showered, then ate baked salmon and mashed potato for lunch.",
+        "nap_plan_after_report": "No nap planned for the remainder of the day.",
+        "market_work_window": "Athlete needs approximately 21:00-22:30 local for US-market work and intends to enforce a strict 22:30 work cutoff to target sleep by 23:00.",
+        "last_caffeine_time_and_dose": "none"
+      },
+      "session_contract_review": {
+        "self_gate_result": "passed",
+        "self_gate_result_source": "athlete_explicit_report",
+        "actual_start_local": "2026-08-17T12:37:50+08:00",
+        "actual_duration_min": 30.0,
+        "actual_distance_km": 9.4,
+        "average_power_w": 114,
+        "normalized_power_w": 115,
+        "intensity_factor": 0.546,
+        "training_stress_score": 14.7,
+        "phase_power_w": {
+          "first_5_min": 104.2,
+          "main_20_min": 119.0,
+          "final_5_min": 97.3
+        },
+        "average_cadence_rpm": 78,
+        "main_block_cadence_rpm": "approximately 81-82",
+        "average_hr_bpm": 122,
+        "max_hr_bpm": 135,
+        "heart_rate_response": "No positive drift during the main block. First ten minutes averaged approximately 126.1 bpm at 118.8 W and the second ten minutes approximately 123.7 bpm at 119.1 W.",
+        "heart_rate_source_confidence": "moderate; Garmin standard metadata did not resolve the active heart-rate source",
+        "actual_training_load": 27.9,
+        "aerobic_training_effect": 2.1,
+        "anaerobic_training_effect": 0.0,
+        "actual_rpe": 2,
+        "workout_feel": "strong",
+        "leg_feel_start_to_finish": "fresh throughout",
+        "execution_position": "seated throughout with no torque work or fit changes",
+        "fit_or_body_symptoms": "none",
+        "cooling": "ceiling fan on maximum",
+        "fluid_ml": 500,
+        "fluid_ml_per_hour": 1000,
+        "stop_rule_outcome": "not_triggered",
+        "stop_rule_outcome_source": "athlete_explicit_report",
+        "plan_adherence": "matched"
+      },
+      "coach_contract_audit": {
+        "action_alignment": "matched",
+        "action_alignment_notes": "The session matched the 30-minute hard cap and all three power phases, remained seated without torque or fit changes, produced no symptoms, and finished with fresh legs. Main-block cadence was inside the written 80-90 rpm range; lower warm-up and cooldown cadence reduced the whole-session average to 78 rpm without adding meaningful cost.",
+        "load_alignment": "Garmin load was 27.9 versus the coach-authored approximate ceiling of 25, a small 2.9-load or approximately 12 percent miss. Training Effect 2.1/0.0, RPE 2, strong feel and stable heart-rate response keep the delivered session recovery-class.",
+        "predictive_interpretation": "The generic low-intensity Suito expectation materially undercalled this action, while the coach-authored approximately-25 ceiling was close. Treat this as a low-intensity indoor-load calibration issue rather than evidence of excessive physiological strain.",
+        "tuesday_effect": "The primer does not remove or upgrade Tuesday's conditional two-cycle Enduro contract. Cycle two remains earned through the fresh morning and first-cycle admission gates."
+      },
+      "recovery_and_sleep_review": {
+        "post_session_protein": "The 24 g whey protein isolate plus salmon supplied ample immediate post-session protein; no additional recovery shake is required for this primer.",
+        "carbohydrate_context": "Mashed potato began carbohydrate replacement, but portion size was not reported. A familiar carbohydrate-forward dinner remains appropriate before Tuesday's key ride.",
+        "evening_execution": "Complete dinner, bike preparation, bottles, clothing and hygiene before 21:00. Use 21:00-22:20 for predetermined market work, switch to closing checks by 22:20, shut all work down at 22:30, and target lights out around 22:45 with sleep near 23:00.",
+        "deferred_fields": [
+          "actual_market_work_end_local",
+          "lights_out_local",
+          "estimated_sleep_onset_local",
+          "wake_time_local",
+          "next_morning_mental_clarity_10",
+          "next_morning_leg_and_upper_body_feel",
+          "next_morning_illness_or_pain",
+          "fresh_tuesday_physical_and_cns_gate"
+        ]
+      }
+    }
+  ]
+}
