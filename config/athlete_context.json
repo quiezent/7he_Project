@@ -301,11 +301,11 @@
             ]
           },
           "rear_shock_setups": {
-            "working_status": "The Super Deluxe Ultimate Air passed a clean initial functional screen on 2026-08-18 and is provisionally retained for controlled validation. It is not yet race-cleared or proven equivalent to the coil.",
+            "working_status": "Both the Super Deluxe Ultimate Air and Super Deluxe Coil Ultimate are athlete-validated, immediately swappable race options. Prior back-to-back testing established closely matched overall chassis behavior, and the 2026-08-18 ride successfully revalidated the air setup under the current clipless riding context.",
             "air": {
               "model": "RockShox Super Deluxe Ultimate Air",
-              "purpose": "Lighter prospective Enduro race setup.",
-              "custom_tune": "J-Tech JTC02 compression / JTR05 rebound; athlete reports the shim tune was selected to match the coil damper curve.",
+              "purpose": "Lighter Enduro race option with subtly better athlete-perceived pumping support.",
+              "custom_tune": "J-Tech JTC02 compression / JTR05 rebound. Athlete reports one low-speed compression shim in the air shock's damper stack was changed to complement the air spring's initial-stroke support and make the complete chassis response closely match the coil setup.",
               "pressure_psi": 190,
               "sag_pct_estimated": 28,
               "sag_status": "Approximate athlete estimate; repeat measurement with full riding kit is required.",
@@ -326,17 +326,29 @@
               "low_speed_compression_setting_raw": "-4",
               "click_reference": "Unconfirmed; preserve the athlete's raw negative-click notation until its reference direction is explicitly documented."
             },
+            "prior_back_to_back_validation": {
+              "date": "unknown_prior_to_2026-08-18",
+              "method": "Athlete-confirmed direct back-to-back testing of the custom-tuned air and coil shocks on the same Enduro platform.",
+              "result": "Differences were subtle enough that Clayton could swap between the two without a meaningful reacclimation period. The coil produced the preferred response and speed on DH lines; the air shock produced subtly better pumping support.",
+              "confidence": "High for athlete-specific functional interchangeability and race-option status; moderate for generalizing either terrain advantage beyond the tested contexts.",
+              "evidence_scope": "Athlete-confirmed riding validation. The exact comparison date, route, run-level telemetry and any damper dyno sheet are not currently preserved."
+            },
+            "race_selection": {
+              "coil_preference": "Faster, rougher or longer DH-biased stages where repeated impacts, braking bumps and rear tracking are decisive.",
+              "air_preference": "Pumpy, pedally or compression-rich stages where rider-generated speed, platform support and the lower system weight are useful.",
+              "mixed_course_rule": "Choose the shock whose subtle advantage applies to the race's most decisive stages; do not choose from weight alone. Complete a course-specific shakedown after installation while retaining the recorded shock and tyre settings."
+            },
             "latest_validation": {
               "date": "2026-08-18",
               "venue": "Bukit Kiara",
               "bike_and_tyres": "S-Works Enduro MY25, clipless, 23/28 psi",
-              "route_context": "Mixed-intent Pure Quill plus 65-percent Flintstone re-entry after about one year away, with long friend waits; not a matched air-versus-coil test.",
+              "route_context": "Mixed-intent Pure Quill plus 65-percent Flintstone re-entry after about one year away, with long friend waits. This was a current-state air-shock revalidation, not a new matched air-versus-coil comparison.",
               "positive_evidence": "No wallow, low-ride-height control problem, bottom-out, pack-down, rear kick, pitch, missed line, reactive brake, correction, rescue or near miss. Mid-stroke support was good and vision/decision speed was 9/10.",
               "unresolved_evidence": "Unloaded rear grip felt lower and seated ride height felt slightly lower than the coil. Very dry trail, rider loading, unknown token count and unverified sag remain confounders. Exact O-ring travel and pedal-strike outcome were not reported.",
               "rider_constraint": "A little Flintstone arm pump was associated with rough rock gardens and less-relaxed hands; treat rider relaxation as primary until matched evidence implicates the chassis."
             },
-            "comparison_rule": "Matching shim-tune targets does not make the complete air and coil shocks identical. Compare spring behavior, dynamic ride height, grip and repeatability separately. Freeze the selected shock setup during a test and change only one variable after a repeated symptom.",
-            "next_test": "Repeat full-kit sag and note O-ring travel, then complete two uninterrupted same-route runs at matched 70-75 percent intent with fixed pressure, clicks, tyres and pedals. Retain the air shock for race preparation only if technical quality and hand relaxation remain repeatable without skitter, pedal strikes, wallow, bottom-out, pack-down, kick or pitch."
+            "comparison_rule": "The custom damper tuning makes the complete chassis responses closely matched and the athlete has validated immediate interchangeability, while the air and coil springs retain subtle terrain-specific differences. Do not demand a new equivalence proof after every swap; use a course-specific shakedown to confirm installation, pressure or preload, clicks, tyre pressures and current rider response.",
+            "next_test": "For the next race selection, keep the chosen shock fixed and complete a course-representative shakedown. Record full-kit sag or coil preload, O-ring travel where applicable, unloaded-rear tracking, pedal strikes, arm pump and final-stage precision. Change the choice only for a repeated course-relevant symptom, not a single dry-trail sensation."
           },
           "power_meter_preference": "Do not move the power meter here by default; Clayton prefers to ride the Enduro bike on feel.",
           "clipless_adaptation": {

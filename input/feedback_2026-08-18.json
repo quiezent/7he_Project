@@ -81,8 +81,9 @@
         "missed_line_reactive_braking_deflection_rescue_or_near_miss": "none",
         "fork_ping_pack_down_rear_kick_wallow_or_pitch": "No rear pack-down, kick, wallow or pitch was reported. Fork ping was not separately rated.",
         "late_session_skill_fade": "none",
-        "technical_quality": "clean_exploratory_setup_and_route_outcome",
-        "technical_quality_notes": "The air shock passed an initial functional and control screen: clear 9/10 processing, no technical error or rescue, no wallow, bottom-out, pack-down, rear kick or pitching, and no braking or upper-body fatigue. Flintstone arm pump is primarily consistent with rough-stage re-familiarization and excess hand tension; a chassis contribution remains possible but unproven.",
+        "technical_quality": "clean",
+        "technical_quality_scope": "Clean current-session technical outcome; the separate setup, route and intent action mismatch still blocks nominal calibration and progression credit.",
+        "technical_quality_notes": "The current ride confirmed an already athlete-validated air-shock race option: clear 9/10 processing, no technical error or rescue, no wallow, bottom-out, pack-down, rear kick or pitching, and no braking or upper-body fatigue. Flintstone arm pump is primarily consistent with rough-stage re-familiarization and excess hand tension; a chassis contribution remains possible but unproven.",
         "fueling_carbs_g_per_hour": 27.9,
         "fluid_ml_per_hour": 663,
         "sodium_mg_per_hour": 627,
@@ -93,8 +94,8 @@
       "rear_shock_setup": {
         "air": {
           "model": "RockShox Super Deluxe Ultimate Air",
-          "purpose": "Provisional lighter Enduro race setup",
-          "custom_tune": "J-Tech JTC02 compression / JTR05 rebound; athlete reports that the shim tune was selected to match the coil damper curve.",
+          "purpose": "Lighter Enduro race option with subtly better athlete-perceived pumping support",
+          "custom_tune": "J-Tech JTC02 compression / JTR05 rebound. Athlete reports one low-speed compression shim in the air shock's damper stack was changed to complement the air spring's initial-stroke support and closely match the complete coil-shock chassis response.",
           "pressure_psi": 190,
           "sag_pct_estimated": 28,
           "sag_verification_status": "athlete estimate; not yet repeat-measured with full riding kit",
@@ -115,7 +116,13 @@
           "low_speed_compression_setting_raw": "-4",
           "click_reference": "not yet confirmed; raw athlete notation preserved"
         },
-        "comparison_guardrail": "Matching damper shim targets reduces one confound but does not make the complete shocks mechanically identical. Air and coil retain different spring curves, breakaway behavior, progression and dynamic ride-height behavior. External click numbers are preserved but not assumed directly equivalent across the two shocks."
+        "prior_back_to_back_validation": {
+          "date": "unknown_prior_to_2026-08-18",
+          "method": "Athlete-confirmed direct back-to-back testing on the same Enduro platform after custom damper tuning.",
+          "result": "The setups felt subtly different but immediately interchangeable. The coil had the preferred response and speed on DH lines; the air shock had subtly better pumping support.",
+          "race_option_status": "Both are athlete-validated race options."
+        },
+        "comparison_guardrail": "Custom damper tuning and prior athlete back-to-back testing establish closely matched complete chassis behavior and functional interchangeability. The air and coil springs still retain subtle spring-specific behavior, so race selection remains course-specific rather than mechanically identical. External click numbers are preserved but not assumed directly equivalent across the two shocks."
       },
       "coach_contract_audit": {
         "action_alignment": "mismatched",
@@ -123,18 +130,38 @@
         "action_alignment_notes": "The activity retained the Enduro, clipless pedals, two climbs, climb RPE 4/4 and a two-descent ceiling. It did not execute the nominal matched action: the coil was replaced by the air shock, Pure Quill used deliberately mixed intent and waiting, and the second prescribed Pure Quill cycle was replaced by Flintstone novelty. The explicit not-triggered stop outcome is preserved separately and does not restore action alignment.",
         "load_alignment": "Garmin load 169.6 was below the immutable contract expectation of 230 and below its 190-270 range. Because setup, route, speed intent and stop structure changed materially, this is execution-changed input rather than a nominal model miss.",
         "calibration_disposition": "Ineligible for physiology-only nominal matching and ineligible for true digital-twin calibration. It must not enter the matched Pure Quill route-repeat load prior or earn the two-cycle Pure Quill progression gate.",
-        "progression_credit": "Credit one meaningful MTB exposure, two RPE-4 self-pedaled climbs, one mixed-intent Pure Quill descent, one controlled Flintstone re-entry and one successful initial air-shock safety screen. Do not unlock a third Pure Quill cycle from this session."
+        "progression_credit": "Credit one meaningful MTB exposure, two RPE-4 self-pedaled climbs, one mixed-intent Pure Quill descent, one controlled Flintstone re-entry and successful current-session confirmation of an established air-shock race option. Do not unlock a third Pure Quill cycle from this session."
       },
       "suspension_interpretation": {
-        "verdict": "The air shock is provisionally rideable and controlled, but it is not yet proven equivalent to or better than the coil for racing.",
+        "verdict": "Both shocks are validated race options. Today's air-shock ride was a successful current-state revalidation, not the first proof of an untested setup and not a same-day air-versus-coil comparison.",
         "primary_rider_adaptation": "Strong cognition and body state, accurate braking and line choice, and successful Flintstone re-familiarization produced the clean technical result. Less-relaxed hands on rough Flintstone are the clearest current rider constraint.",
         "secondary_setup_effect": "The air shock supplied adequate mid-stroke support and controlled successive impacts without wallow, bottom-out, pack-down, kick or pitch. Lower unloaded traction and a slightly lower seated ride-height feel may reflect the air spring, the dry surface, rider loading, or an imprecise sag estimate; the mixed session cannot separate them.",
-        "validation_constraint": "Freeze pressure, damper settings, tyre pressures and pedal system. Verify full-kit sag and O-ring travel first, then use two uninterrupted same-route runs at matched 70-75 percent intent with identical braking and line objectives. Retain the air race setup only if run two preserves first-run vision, braking, tracking and dynamic centre without increased hand tension, pedal strikes, unloaded-rear skitter, wallow, bottom-out, pack-down, kick or pitch."
+        "validation_constraint": "A new equivalence test is not required before every swap. Choose coil for DH-dominant roughness and rear tracking, or air for pumpy/pedally stages and lower weight, then complete one course-specific shakedown with the selected setup fixed. Reconsider only for repeated skitter, pedal strikes, wallow, bottom-out, pack-down, kick, pitch, excess arm pump or worse final-stage precision."
       },
       "nutrition_interpretation": {
         "carbohydrate": "Approximately 27.9 g/h over 135.8 elapsed minutes, below the written 50-65 g/h target and the canonical 45-75 g/h band. Long friend stops lowered demand, but the intake does not validate race-practice fueling.",
         "fluid": "Approximately 663 mL/h, within the 500-900 mL/h target. Garmin estimated 2021 mL water loss; this is modeled rather than measured, leaving a modeled 521 mL gap.",
         "sodium": "Approximately 627 mg/h, within the canonical 600-1000 mg/h band and near the lower edge of the written 600-900 mg/h target."
+      }
+    },
+    {
+      "timestamp_local": "2026-08-18T14:24:00+08:00",
+      "source": "athlete_rear_shock_validation_history_clarification",
+      "activity_id": "24017676902",
+      "reported_context": {
+        "prior_test": "Clayton previously completed direct back-to-back testing of the custom-tuned Super Deluxe Ultimate Air and Super Deluxe Coil Ultimate on the Enduro.",
+        "damper_change": "One low-speed compression shim in the air shock damper was changed to compensate for the air spring's initial-stroke support and closely match the coil setup's complete chassis response.",
+        "athlete_confidence": "High. Differences are subtle enough that Clayton can swap instantly without meaningful reacclimation.",
+        "terrain_specific_feel": {
+          "coil": "Preferred response and speed on DH lines.",
+          "air": "Subtly better pumping support, plus lower weight."
+        },
+        "race_decision": "Both shocks are valid race options; select from course demands."
+      },
+      "coach_update": {
+        "prior_interpretation_revised": "The air shock is not an unvalidated experiment. The 2026-08-18 result is a successful revalidation under current rider state, while the prior back-to-back work supplies the equivalence and terrain-preference evidence.",
+        "mechanical_precision": "The low-speed shim is recorded in the compression damper stack, where shim tuning occurs; the air spring remains the spring characteristic being complemented.",
+        "confidence": "High for athlete-specific functional interchangeability and race-option status; moderate for generalizing the subtle terrain advantages beyond course-representative testing."
       }
     }
   ]
