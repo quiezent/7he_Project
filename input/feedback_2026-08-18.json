@@ -1,0 +1,141 @@
+{
+  "date": "2026-08-18",
+  "entries": [
+    {
+      "timestamp_local": "2026-08-18T14:05:00+08:00",
+      "source": "athlete_post_session_report_with_garmin_loop_setup_and_contract_audit",
+      "activity_id": "24017676902",
+      "reported_context": {
+        "fresh_gate": {
+          "mental_clarity_0_to_10": 9,
+          "illness_or_pain": "none",
+          "legs_and_upper_body": "strong"
+        },
+        "route_and_laps": {
+          "lap_1": "First Twin Peaks climb, RPE 4. Long stopped time was waiting for friends.",
+          "lap_2": "Pure Quill. Overall intent approximately 70 percent, with corners and trail features ridden at approximately 85 percent and low-consequence sections reduced to approximately 50 percent while waiting for a friend.",
+          "lap_3": "Second Twin Peaks climb, RPE 4. Long stopped time was waiting for friends.",
+          "lap_4": "Flintstone at approximately 65 percent after about one year without riding the stage.",
+          "lap_5": "Short car-park transition at the finish; Flintstone ends at the same car park where the activity began. It was not another quality descent."
+        },
+        "trail_condition": "Very dry, with unloaded rear traction feeling lower than on the coil; dry trail remains a plausible confounder.",
+        "social_context": "The athlete met a cycling friend and changed the written matched-session action. All long stops were friend/waiting time.",
+        "fueling_totals": {
+          "contents": "1 L 100Plus Active, 500 mL water, 2.5 g table salt distributed across the bottles, and 20 g total honey consumed across three feed times.",
+          "carbohydrate_g": 63.1,
+          "fluid_ml": 1500,
+          "sodium_mg": 1419,
+          "honey_timing_min": [
+            20,
+            45,
+            70
+          ],
+          "calculation_basis": "Preserved athlete product values: 48 g carbohydrate and 430 mg sodium per litre of 100Plus Active; a 15 g honey serving supplies 11.3 g carbohydrate and 4.4 mg sodium. Table salt is estimated as 39.34 percent sodium by mass. The 20 g honey report is treated as the total amount, not 20 g at each feed time."
+        }
+      },
+      "session_contract_review": {
+        "fresh_gate_result_and_pre_ride_clarity_10": "passed; mental clarity 9/10, no illness or pain, legs and upper body strong",
+        "fresh_gate_result": "passed",
+        "pre_session_mental_clarity_0_to_10": 9,
+        "opening_gate_result": null,
+        "illness_or_pain": "none",
+        "actual_duration_min": 135.8,
+        "actual_moving_min_raw_garmin": 67.6,
+        "actual_distance_km": 10.22,
+        "actual_ascent_m": 407.9,
+        "actual_training_load": 169.6,
+        "actual_rpe": 5,
+        "workout_feel": "very_strong",
+        "bike_pedal_system_and_setup": "Garmin Gear confirms S-Works Enduro MY25 with clipless pedals. The rear shock was deliberately changed from the previously used Super Deluxe Coil Ultimate to the custom-tuned Super Deluxe Ultimate Air; tyre pressures remained 23/28 psi.",
+        "trail_condition_and_weather": "Very dry trail. Garmin device temperature was 28-34 C; this is device-exposure context rather than verified ambient air temperature. Garmin weather temperature units are unverified and are not interpreted.",
+        "completed_pure_quill_cycle_count": 1,
+        "other_quality_stage": "One Flintstone stage at approximately 65 percent after roughly one year away from that stage.",
+        "climb_rpe_by_cycle": [
+          4,
+          4
+        ],
+        "descent_intent_by_stage": {
+          "pure_quill": "Approximately 70 percent overall, approximately 85 percent at corners and features, and approximately 50 percent while waiting on low-consequence sections.",
+          "flintstone": "Approximately 65 percent re-familiarization intent."
+        },
+        "descent_intent_by_cycle": [
+          "Pure Quill: approximately 70 percent overall, 85 percent at corners and features, and 50 percent while waiting on low-consequence sections.",
+          "The second prescribed Pure Quill cycle was replaced by Flintstone at approximately 65 percent re-familiarization intent."
+        ],
+        "cycle_two_gate_result": "not_applicable_to_nominal_contract; second prescribed Pure Quill cycle was replaced by Flintstone after a shock change and social route decision",
+        "vision_and_decision_speed_first_vs_final": "9/10 on Pure Quill and 9/10 on Flintstone; the different stages and intents prevent a matched first-versus-final comparison.",
+        "vision_and_decision_speed": "9/10 on both Pure Quill and Flintstone.",
+        "known_exit_recognition": "No missed line was reported. Exit recognition was not separately scored.",
+        "brake_release_and_exit_commitment_first_vs_final": "No reactive braking was reported. Entry braking and exit commitment were not separately scored across the two different stages.",
+        "front_tracking_and_dynamic_centre": "No deflection, correction or rescue was reported. Front tracking and dynamic centre were not separately scored.",
+        "rear_traction": "Rear grip felt lower when the rear was not deliberately loaded. The athlete considers the very dry surface a possible cause; no setup-only attribution is made.",
+        "rear_support_and_travel": "No wallow, no low-ride-height control problem, good mid-stroke support and no bottom-out. Exact O-ring travel used was not reported.",
+        "pack_down_rear_kick_or_pitching": "none",
+        "dynamic_ride_height": "The air shock felt slightly lower than the coil while seated and pedaling; standing height felt the same. This is rider feel, not a measured sag comparison.",
+        "rear_step_or_skitter": "No discrete step or skitter incident was reported; unloaded traction felt lower.",
+        "pedal_strikes": null,
+        "braking_fatigue": 0,
+        "upper_body_fatigue": 0,
+        "arm_pump": "A little arm pump on rough Flintstone rock gardens. The athlete also reported being less relaxed through the hands on the stage.",
+        "missed_line_reactive_braking_deflection_correction_rescue_or_near_miss": "none",
+        "missed_line_reactive_braking_deflection_rescue_or_near_miss": "none",
+        "fork_ping_pack_down_rear_kick_wallow_or_pitch": "No rear pack-down, kick, wallow or pitch was reported. Fork ping was not separately rated.",
+        "late_session_skill_fade": "none",
+        "technical_quality": "clean_exploratory_setup_and_route_outcome",
+        "technical_quality_notes": "The air shock passed an initial functional and control screen: clear 9/10 processing, no technical error or rescue, no wallow, bottom-out, pack-down, rear kick or pitching, and no braking or upper-body fatigue. Flintstone arm pump is primarily consistent with rough-stage re-familiarization and excess hand tension; a chassis contribution remains possible but unproven.",
+        "fueling_carbs_g_per_hour": 27.9,
+        "fluid_ml_per_hour": 663,
+        "sodium_mg_per_hour": 627,
+        "stop_rule_outcome": "not_triggered",
+        "stop_rule_outcome_source": "athlete_explicit_report",
+        "next_morning_response": null
+      },
+      "rear_shock_setup": {
+        "air": {
+          "model": "RockShox Super Deluxe Ultimate Air",
+          "purpose": "Provisional lighter Enduro race setup",
+          "custom_tune": "J-Tech JTC02 compression / JTR05 rebound; athlete reports that the shim tune was selected to match the coil damper curve.",
+          "pressure_psi": 190,
+          "sag_pct_estimated": 28,
+          "sag_verification_status": "athlete estimate; not yet repeat-measured with full riding kit",
+          "volume_spacers": "unknown",
+          "shockwiz_compression_ratio": 3.0,
+          "shockwiz_interpretation": "ShockWiz calibration compression ratio, not a physical Bottomless Token count.",
+          "rebound_setting_raw": "-4; athlete notes -5 felt underdamped",
+          "low_speed_compression_setting_raw": "-7; athlete reports that moving toward more LSC made the bike unstable",
+          "click_reference": "not yet confirmed; raw athlete notation preserved"
+        },
+        "coil": {
+          "model": "RockShox Super Deluxe Coil Ultimate RS-SDLC-ULT-A2",
+          "serial_or_tune_reference": "36T00475121",
+          "custom_tune": "J-Tech JTC02 compression / JTR05 rebound",
+          "spring_rate_lb_per_in": 500,
+          "preload_turns": 1,
+          "rebound_setting_raw": "-4 in mullet setup; -5 J-Tech original-equipment reference",
+          "low_speed_compression_setting_raw": "-4",
+          "click_reference": "not yet confirmed; raw athlete notation preserved"
+        },
+        "comparison_guardrail": "Matching damper shim targets reduces one confound but does not make the complete shocks mechanically identical. Air and coil retain different spring curves, breakaway behavior, progression and dynamic ride-height behavior. External click numbers are preserved but not assumed directly equivalent across the two shocks."
+      },
+      "coach_contract_audit": {
+        "action_alignment": "mismatched",
+        "action_alignment_label": "setup_route_and_intent_changed",
+        "action_alignment_notes": "The activity retained the Enduro, clipless pedals, two climbs, climb RPE 4/4 and a two-descent ceiling. It did not execute the nominal matched action: the coil was replaced by the air shock, Pure Quill used deliberately mixed intent and waiting, and the second prescribed Pure Quill cycle was replaced by Flintstone novelty. The explicit not-triggered stop outcome is preserved separately and does not restore action alignment.",
+        "load_alignment": "Garmin load 169.6 was below the immutable contract expectation of 230 and below its 190-270 range. Because setup, route, speed intent and stop structure changed materially, this is execution-changed input rather than a nominal model miss.",
+        "calibration_disposition": "Ineligible for physiology-only nominal matching and ineligible for true digital-twin calibration. It must not enter the matched Pure Quill route-repeat load prior or earn the two-cycle Pure Quill progression gate.",
+        "progression_credit": "Credit one meaningful MTB exposure, two RPE-4 self-pedaled climbs, one mixed-intent Pure Quill descent, one controlled Flintstone re-entry and one successful initial air-shock safety screen. Do not unlock a third Pure Quill cycle from this session."
+      },
+      "suspension_interpretation": {
+        "verdict": "The air shock is provisionally rideable and controlled, but it is not yet proven equivalent to or better than the coil for racing.",
+        "primary_rider_adaptation": "Strong cognition and body state, accurate braking and line choice, and successful Flintstone re-familiarization produced the clean technical result. Less-relaxed hands on rough Flintstone are the clearest current rider constraint.",
+        "secondary_setup_effect": "The air shock supplied adequate mid-stroke support and controlled successive impacts without wallow, bottom-out, pack-down, kick or pitch. Lower unloaded traction and a slightly lower seated ride-height feel may reflect the air spring, the dry surface, rider loading, or an imprecise sag estimate; the mixed session cannot separate them.",
+        "validation_constraint": "Freeze pressure, damper settings, tyre pressures and pedal system. Verify full-kit sag and O-ring travel first, then use two uninterrupted same-route runs at matched 70-75 percent intent with identical braking and line objectives. Retain the air race setup only if run two preserves first-run vision, braking, tracking and dynamic centre without increased hand tension, pedal strikes, unloaded-rear skitter, wallow, bottom-out, pack-down, kick or pitch."
+      },
+      "nutrition_interpretation": {
+        "carbohydrate": "Approximately 27.9 g/h over 135.8 elapsed minutes, below the written 50-65 g/h target and the canonical 45-75 g/h band. Long friend stops lowered demand, but the intake does not validate race-practice fueling.",
+        "fluid": "Approximately 663 mL/h, within the 500-900 mL/h target. Garmin estimated 2021 mL water loss; this is modeled rather than measured, leaving a modeled 521 mL gap.",
+        "sodium": "Approximately 627 mg/h, within the canonical 600-1000 mg/h band and near the lower edge of the written 600-900 mg/h target."
+      }
+    }
+  ]
+}
