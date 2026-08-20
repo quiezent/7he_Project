@@ -13,6 +13,13 @@
           "confirmation": "2026-09-07 to 2026-09-12"
         },
         "capacity_evidence": "The 2026-06-12 S-Works Enduro activity completed four climb-descent cycles; the current task is to reacquire final-run technical equality and next-day absorption, not to establish four-cycle capacity from zero.",
+        "latest_progression_evidence": {
+          "date": "2026-08-20",
+          "verified_level": "Session-level evidence pending next-morning absorption: four clean short Kiara descents on the S-Works Enduro, comprising two full 2K and two full 2K+ runs, with later playful runs technically better than the initial sighting runs, no late fade or rescue event, and zero braking, upper-body and leg fatigue reported at the finish.",
+          "physiological_context": "The session lasted 139.6 minutes, climbed 508 m and carried Garmin load 174.2. Climb RPE rose across the four access climbs to 7/6/7/8, so this is meaningful repeatability evidence rather than a low-cost skills ride.",
+          "scope_guardrail": "This proves four-short-descent Enduro quality density, not four complete Twin Peaks climb-stage cycles. The athlete-reported ability to deliver a fifth race-quality run is reserve evidence, not an executed repeatability proof.",
+          "next_gate": "After a clean next-morning absorption response, test three complete Twin Peaks cycles with the final descent equal to the first, final climb RPE no greater than 6/10, and fueling appropriate to the longer race-specific demand before attempting the four-cycle proof."
+        },
         "success_definition": "Four complete Twin Peaks climb-descent cycles with an explicit not_triggered stop-rule outcome, final-run vision, decision speed, braking precision, front tracking, and corner-exit quality equal to the first run, braking and upper-body fatigue no greater than 3/10, final climb RPE no greater than 6/10, and a clean next-morning response."
       },
       "target_demands": {

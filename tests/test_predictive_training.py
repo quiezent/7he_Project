@@ -1628,6 +1628,38 @@ def test_live_prescription_preserves_existing_dated_file_after_activity(tmp_path
     ]["title"] == "Post-sync rebuilt plan"
 
 
+def test_predictive_review_does_not_use_same_date_rolling_plan_without_dated_prescription(
+    tmp_path,
+):
+    target = _seed_history(tmp_path)
+    write_json(
+        tmp_path / "snapshots" / "predictive_session_plan.json",
+        {
+            "date": target.isoformat(),
+            "generated_at": f"{target.isoformat()}T20:00:00+08:00",
+            "prediction": {
+                "expected_session": {
+                    "title": "Post-session rolling recovery plan",
+                    "type": "recovery_reset",
+                    "modality": "other",
+                    "duration_min": 20,
+                }
+            },
+            "artifacts": {"dated_write_status": "skipped_after_activity"},
+        },
+    )
+
+    review = build_predictive_review(tmp_path, target)
+
+    assert review["prescription_available"] is False
+    assert review["expected"] == {}
+    assert review["comparison"]["adherence_status"] == "no_stored_prescription"
+    assert review["comparison"]["calibration_status"] == "not_calibratable"
+    assert review["comparison"]["contract_quality"]["reasons"] == [
+        "No dated pre-session prescription was stored for this date."
+    ]
+
+
 def test_exact_2k_baseline_is_strictly_prior_and_matches_future_three_run_action(tmp_path):
     load_context(tmp_path)
     _write_exact_2k_sample(

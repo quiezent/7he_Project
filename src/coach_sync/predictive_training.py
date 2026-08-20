@@ -3421,9 +3421,6 @@ def build_predictive_review(
     target = parse_date(for_date) or parse_date((prescription or {}).get("date")) or today_local(DEFAULT_TIMEZONE)
     if prescription is None:
         prescription = read_json(snapshots_dir(root) / f"predictive_session_{target.isoformat()}.json", {})
-        if not prescription:
-            current = read_json(snapshots_dir(root) / "predictive_session_plan.json", {})
-            prescription = current if current.get("date") == target.isoformat() else {}
     prediction = (prescription or {}).get("prediction") or {}
     actual = _actual_activity_summary(root, target)
     self_eval = _self_evaluation_for_date(root, target)

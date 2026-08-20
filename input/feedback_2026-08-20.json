@@ -1,0 +1,147 @@
+{
+  "date": "2026-08-20",
+  "entries": [
+    {
+      "timestamp_local": "2026-08-20T21:17:39+08:00",
+      "source": "athlete_post_session_report_with_garmin_loop_and_technical_audit",
+      "activity_id": "24044291741",
+      "action_identity_status": "mixed_short_route_and_changed_intent_not_eligible_for_exact_action_prior",
+      "reported_context": {
+        "session_intent": "Social Enduro ride with energy reserved on flatter trail sections and selective attacks on corners and higher-value features including jumps, roots, drops and rough sections.",
+        "opening_gate": "Passed with 9/10 clarity and no illness or pain.",
+        "route_and_laps": {
+          "lap_1": "Access climb, RPE 7.",
+          "lap_2": "Complete 2K sighting run.",
+          "lap_3": "Access climb, RPE 6.",
+          "lap_4": "Complete 2K+ sighting run.",
+          "lap_5": "Access climb, RPE 7.",
+          "lap_6": "Complete 2K playful run. Brief near-static periods were caused by a dropped chain, not rider fade.",
+          "lap_7": "Access climb, RPE 8.",
+          "lap_8": "Complete 2K+ playful run.",
+          "laps_9_to_11": "Required familiar egress only: climb, lower DH Line and car-park cooldown. These do not count as a fifth quality descent."
+        },
+        "social_hold_up": "The athlete slowed to wait for a friend during the matched 2K+ pair; the precise interval was not separately assigned, so elapsed-time improvement is not treated as a controlled time trial.",
+        "fueling_totals": {
+          "contents": "1 L 100Plus Active and 20 g honey",
+          "carbohydrate_g": 63.1,
+          "fluid_ml": 1000,
+          "sodium_mg": 435.9,
+          "timing": "not reported",
+          "calculation_basis": "Preserved athlete product values: 48 g carbohydrate and 430 mg sodium per litre of 100Plus Active; a 15 g honey serving supplies 11.3 g carbohydrate and 4.4 mg sodium."
+        }
+      },
+      "session_contract_review": {
+        "opening_gate_result": "passed",
+        "pre_session_mental_clarity_0_to_10": 9,
+        "illness_or_pain": "none",
+        "actual_duration_min": 139.6,
+        "actual_moving_min_raw_garmin": 95.5,
+        "actual_distance_km": 12.97,
+        "actual_ascent_m": 508.4,
+        "actual_training_load": 174.2,
+        "actual_rpe": 6,
+        "workout_feel": "strong",
+        "bike_and_setup": "Garmin Gear confirms S-Works Enduro MY25. The athlete reports no bike or setup change from the established 2026-08-18 Enduro air-shock and clipless configuration.",
+        "trail_condition": "damp",
+        "completed_quality_short_descent_count": 4,
+        "loop_count": 4,
+        "completed_2k_descent_count": 2,
+        "completed_2k_plus_descent_count": 2,
+        "completed_twin_peaks_stage_cycle_count": 0,
+        "descent_intent_by_lap": {
+          "lap_2_2k": "sighting",
+          "lap_4_2k_plus": "sighting",
+          "lap_6_2k": "playful",
+          "lap_8_2k_plus": "playful"
+        },
+        "climb_rpe_by_lap": {
+          "lap_1": 7,
+          "lap_3": 6,
+          "lap_5": 7,
+          "lap_7": 8
+        },
+        "matched_route_comparison": {
+          "two_k_lap_2_to_lap_6": "Later run was technically better by athlete report. Lap 6's dropped chain invalidates elapsed-time comparison; Garmin moving speed was approximately 5.5 percent higher despite similar elapsed speed.",
+          "two_k_plus_lap_4_to_lap_8": "Both were complete versions of the same line and the later run was technically better by athlete report. Garmin elapsed time was 56.1 seconds faster and average speed approximately 16 percent higher with essentially unchanged peak speed. Sighting-versus-playful intent and friend waiting make the timed mechanism non-identifiable and prevent matched-performance attribution."
+        },
+        "vision_and_decision_speed_first_vs_final": "Better on the later matched runs; the final playful run retained immediate processing rather than showing late fade.",
+        "final_descent_quality_vs_first": "better",
+        "brake_release_front_tracking_dynamic_centre_line_accuracy_and_exits_first_vs_final": "All were better on the later matched runs.",
+        "selective_intensity_execution": "Energy was reserved on flatter sections and aggression was concentrated at corners, jumps, roots, drops and rough features.",
+        "braking_fatigue": 0,
+        "upper_body_fatigue": 0,
+        "arm_pump": 0,
+        "leg_fatigue": 0,
+        "late_session_skill_fade": "none",
+        "missed_line_reactive_braking_deflection_rescue_or_near_miss": "none",
+        "fork_pack_down_rear_kick_skitter_wallow_pitch_or_pedal_strike": "none",
+        "fifth_quality_run_reserve": "Athlete reports that a fifth race-quality run remained possible. This is a subjective reserve estimate, not an executed fifth-repeat proof.",
+        "technical_quality": "clean",
+        "technical_quality_notes": "Four short quality descents were completed with later matched-route runs technically better than the initial sighting runs, no late fade or technical error, and zero braking, upper-body, arm-pump and leg fatigue reported. Rising climb RPE to 8 shows meaningful access-climb cost despite preserved descending quality.",
+        "fueling_carbs_g_per_hour": 27.1,
+        "fluid_ml_per_hour": 430,
+        "sodium_mg_per_hour": 187,
+        "stop_rule_outcome": "not_triggered",
+        "stop_rule_outcome_source": "athlete_explicit_report",
+        "next_morning_response": null
+      },
+      "objective_loop_evidence": {
+        "two_k": {
+          "lap_2": {
+            "distance_km": 1.145,
+            "elapsed": "4:55.5",
+            "average_speed_kph": 13.95,
+            "max_speed_kph": 32.99,
+            "average_hr": 136
+          },
+          "lap_6": {
+            "distance_km": 1.181,
+            "elapsed": "5:02.7",
+            "garmin_moving_time": "4:49.0",
+            "average_elapsed_speed_kph": 14.04,
+            "average_moving_speed_kph": 14.71,
+            "max_speed_kph": 31.64,
+            "average_hr": 155,
+            "confounder": "athlete-confirmed chain drop"
+          }
+        },
+        "two_k_plus": {
+          "lap_4": {
+            "distance_km": 1.247,
+            "elapsed": "5:53.5",
+            "average_speed_kph": 12.7,
+            "max_speed_kph": 27.93,
+            "average_hr": 163
+          },
+          "lap_8": {
+            "distance_km": 1.217,
+            "elapsed": "4:57.4",
+            "average_speed_kph": 14.73,
+            "max_speed_kph": 27.65,
+            "average_hr": 167
+          }
+        },
+        "interpretation_guardrail": "Garmin establishes route-scale timing, speed and cardiovascular context. Athlete evidence establishes braking, line choice, visual processing, dynamic centre and the absence of rescue events. Sighting-to-playful intent and friend waiting make the pairs non-matched performance tests."
+      },
+      "coach_contract_audit": {
+        "weekly_intent_alignment": "matched",
+        "weekly_intent_alignment_notes": "The Thursday weekly contract called for one bounded Kiara technical-durability target, unchanged setup and a final descent that remained deliberate. Four short descents delivered that purpose, the final run was better rather than survived, and no fifth quality run was added.",
+        "exact_action_alignment": "not_applicable_no_dated_pre_session_action_contract",
+        "load_alignment": "Garmin load 174.2 is inside the retrospectively computed deterministic 112-216 range around 160 from Monday's weekly session. This is a descriptive, non-calibrating comparison because no dated pre-session prediction was frozen.",
+        "calibration_disposition": "No dated predictive_session_2026-08-20 plan or digital-twin feature vector was stored before the activity, and route intent changed from sighting to playful. Formal physiology-only and true digital-twin calibration are unavailable. The pre-existing Monday weekly contract still supplies a broad 160 load expectation with a 112-216 range for coaching audit only; the next-morning response remains valuable absorption evidence rather than a calibration row.",
+        "progression_credit": "Credit four-short-descent Enduro quality density: two 2K plus two 2K+ runs with improving technical execution under rising climb cost. Do not call this four Twin Peaks or an executed fifth-repeat proof. After clean next-morning absorption, the next race-specific gate is three complete Twin Peaks cycles before a four-cycle proof."
+      },
+      "coaching_interpretation": {
+        "verdict": "Genuine Enduro repeatability progress with clean final-run technical quality.",
+        "primary_rider_adaptation": "Selective effort allocation improved: Clayton conserved on low-value flat sections and used attention, braking release and power where corners and trail features returned speed. Later-run vision, front tracking, dynamic centre, line accuracy and exit execution improved rather than faded.",
+        "secondary_setup_effect": "The unchanged established Enduro air-shock configuration supported the result without pack-down, kick, skitter, wallow or pitch. Because setup did not change, it is an enabling constant rather than the cause of the improvement.",
+        "validation_constraint": "A normal next-morning cognitive, muscular and Garmin response is required before this becomes absorbed durability evidence. Three complete Twin Peaks cycles must then preserve first-to-final technical equality with final climb RPE no greater than 6 before progression to four."
+      },
+      "nutrition_interpretation": {
+        "carbohydrate": "Approximately 27.1 g/h over 139.6 elapsed minutes, below the canonical 45-75 g/h range. It was tolerated for this social ride but does not validate race-quality fueling or the claimed fifth-run reserve under race demand.",
+        "fluid": "Approximately 430 mL/h, below the canonical 500-900 mL/h range. Garmin modeled 2323 mL water loss, leaving a modeled 1323 mL gap; the Garmin value is an estimate, not a measured sweat test.",
+        "sodium": "Approximately 187 mg/h, well below the canonical 600-1000 mg/h range. This should be corrected before longer Twin Peaks or race-specific repeatability work."
+      }
+    }
+  ]
+}
