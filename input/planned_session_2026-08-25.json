@@ -1,7 +1,7 @@
 {
   "artifact_type": "coach_authored_planned_session",
   "date": "2026-08-25",
-  "generated_at": "2026-08-24T11:18:00+08:00",
+  "generated_at": "2026-08-24T12:53:34+08:00",
   "status": "provisional_weekly_intent_pending_same_day_gate",
   "session": {
     "title": "Easy Suito recovery continuity",
@@ -16,12 +16,12 @@
     "bike_touch_status": "normal",
     "optional": false,
     "schema_version": 3,
-    "purpose": "Absorb Monday's key Stumpjumper session while preserving a low-cost bike-specific touch before Wednesday's conditional engine session.",
-    "dose": "With a clean post-Monday recovery gate, ride 30-45 minutes seated at 110-125 W and RPE 2 with normal cadence; no torque, tempo or intervals. A failed recovery gate converts the day to complete rest.",
+    "purpose": "Absorb Monday's haze-day Suito 3x8 session while preserving a low-cost bike-specific touch before Wednesday's provisional displaced Stumpjumper session.",
+    "dose": "With a clean post-Monday recovery gate, ride 30-40 minutes seated at 110-120 W and RPE 2 with normal cadence; no torque, tempo or intervals. A failed recovery gate converts the day to complete rest.",
     "adaptation_hypothesis": "Very low-cost circulation can support recovery and bike continuity without adding meaningful density before Friday's Enduro exposure.",
     "execution_rules": ["Fresh same-day evidence governs whether the optional spin occurs.", "Keep power smooth and finish fresher than the start."],
-    "expected_result": {"session": "No accumulating leg heaviness or sympathetic activation.", "next_day": "Normal or improved freshness for Wednesday low-aerobic work."},
-    "stop_rules": ["Convert to complete rest for poor sleep, gastrointestinal symptoms, illness, pain, abnormal fatigue, impaired CNS readiness or a triggered-but-continued Monday session.", "Stop if RPE rises above 3 or legs worsen."],
+    "expected_result": {"session": "No accumulating leg heaviness or sympathetic activation.", "next_day": "Normal or improved freshness for Wednesday's conditional MTB work."},
+    "stop_rules": ["Convert to complete rest for poor sleep, gastrointestinal or respiratory symptoms, illness, pain, abnormal fatigue, impaired CNS readiness or a triggered-but-continued Monday session.", "Stop if RPE rises above 3 or legs worsen."],
     "post_session_review_fields": ["session_or_rest_selected", "legs_start_to_finish", "actual_power_and_duration", "stop_rule_outcome"]
   }
 }

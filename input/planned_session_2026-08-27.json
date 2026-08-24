@@ -1,7 +1,7 @@
 {
   "artifact_type": "coach_authored_planned_session",
   "date": "2026-08-27",
-  "generated_at": "2026-08-24T11:18:00+08:00",
+  "generated_at": "2026-08-24T12:53:34+08:00",
   "status": "provisional_weekly_intent_pending_same_day_gate",
   "session": {
     "title": "Short Enduro-eve recovery primer",
@@ -16,8 +16,8 @@
     "bike_touch_status": "normal",
     "optional": false,
     "schema_version": 3,
-    "purpose": "Preserve a fifth consecutive low-cost bike touch while actively checking whether Wednesday's development dose has been absorbed before Friday's Enduro exposure.",
-    "dose": "Ride 20-30 minutes at 105-120 W and RPE 1-2 only with normal cognition and fresh legs. A failed absorption gate converts the day to complete rest and may cap Friday to one cycle.",
+    "purpose": "Preserve a fifth low-cost bike touch while actively checking whether Wednesday's displaced Stumpjumper dose has been absorbed before Friday's Enduro exposure.",
+    "dose": "Ride 20-30 minutes at 105-120 W and RPE 1-2 only with normal cognition, no respiratory irritation and fresh legs. A failed absorption gate converts the day to complete rest and may cap Friday to one cycle.",
     "adaptation_hypothesis": "Removing Thursday load preserves race-bike perception-action quality better than adding fitness work this close to Friday.",
     "execution_rules": ["No torque, cadence drill, tempo, strength or mobility loading that can create fatigue."],
     "expected_result": {"next_day": "Friday starts with clear cognition and fresh upper and lower body."},
