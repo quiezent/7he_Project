@@ -689,6 +689,11 @@
       "note": "Clayton explicitly authorized the PDR26 Sunday race on 2026-09-20 and moved that event weekend's Sabbath to Monday 2026-09-21. The exception is race-specific; the recurring Sunday hard-rest rule remains unchanged.",
       "timestamp": "2026-08-24T11:15:00+08:00",
       "type": "event_specific_sabbath_shift_authorized"
+    },
+    {
+      "note": "Direct Garmin comparison confirmed cycling VO2max 51.1 with chronic load 561 on 2025-07-15 versus 47.6 with chronic load 377 on 2026-08-24. The rebuild target remains 5-6 bike days with one weekly structured aerobic-development stimulus; the conference week was corrected so Wednesday is conditional 3x8 tempo/torque rather than recovery-only.",
+      "timestamp": "2026-08-24T11:45:00+08:00",
+      "type": "cycling_vo2_rebuild_strategy_updated"
     }
   ],
   "medical": {
@@ -934,6 +939,32 @@
       "enduro_training_max_exposures_per_week": 1,
       "enduro_recce_consumes_training_cap": true
     },
+    "cycling_vo2_rebuild": {
+      "current_anchor": {
+        "date": "2026-08-24",
+        "garmin_cycling_vo2max_precise": 47.6,
+        "garmin_chronic_load": 377,
+        "weight_kg": 77.64
+      },
+      "pre_injury_reference": {
+        "date": "2025-07-15",
+        "garmin_cycling_vo2max_precise": 51.1,
+        "garmin_chronic_load": 561,
+        "representative_weight_kg": 75.7
+      },
+      "interpretation": "The gap is partly genuine deconditioning and partly relative-mass and Garmin-observability effects. At current mass, unchanged historical absolute oxygen-use proxy would read about 49.8; the remaining gap is consistent with lower chronic bike load and reduced sustained aerobic continuity. MTB stochastic power, powerless Enduro rides and heat can reduce clean Garmin cycling-VO2 observation.",
+      "recurring_build_rule": "Use 5-6 unique bike days when recovery and calendar allow: 2-3 meaningful sessions including one structured aerobic-development stimulus, 2 protected MTB exposures and 2-3 low-cost continuity or primer touches. Do not make two key rides plus three recovery-only rides the recurring VO2 rebuild template.",
+      "conference_week_2026_W35": "If Monday is absorbed cleanly, Wednesday becomes 3x8 minutes of controlled tempo/torque at 165-170 W rather than another recovery-only session; Tuesday and Thursday remain low-cost touches and Friday remains the sole Enduro training exposure.",
+      "post_conference_progression": "Introduce one true VO2 session per week starting with 4x3 minutes at 225-235 W with 3 minutes easy, then progress to 5x3 before increasing interval duration. Keep only three weekly meaningful costs and protect Enduro or Denai course quality.",
+      "validation": [
+        "Standardized power-to-HR response and decoupling under comparable Suito cooling and fueling.",
+        "VO2-rep power spread, cadence preservation and final RPE.",
+        "Comparable Twin Peaks climbing power and RPE drift.",
+        "Final-descent vision, braking precision, front tracking and arm-pump equality versus the first descent.",
+        "Garmin cycling VO2 trend over 4-6 weeks as a secondary outcome, not the sole target."
+      ],
+      "weight_rule": "Do not aggressively cut body mass before PDR26; fuel training and use post-race body-composition work only if it preserves power, recovery and technical quality."
+    },
     "elliptical_use": {
       "allowed": "Recovery/support aerobic work, usually HR-capped around 120 bpm.",
       "not_allowed": "Backbone modality during a bike-performance block unless trail access or logistics require it."
@@ -990,5 +1021,5 @@
       }
     ]
   },
-  "updated_at": "2026-08-24T11:15:00+08:00"
+  "updated_at": "2026-08-24T11:45:00+08:00"
 }

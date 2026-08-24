@@ -4,24 +4,30 @@
   "generated_at": "2026-08-24T11:18:00+08:00",
   "status": "provisional_weekly_intent_pending_same_day_gate",
   "session": {
-    "title": "Suito low-aerobic continuity",
-    "type": "indoor_low_aerobic",
+    "title": "Suito 3x8 tempo/torque development",
+    "type": "indoor_tempo_torque",
     "modality": "indoor_cycling",
     "equipment_key": "marin_san_quentin_3",
-    "duration_min": 60,
-    "duration_range_min": [50, 65],
-    "intensity": "easy",
-    "density_cost": "low",
+    "duration_min": 65,
+    "duration_range_min": [60, 70],
+    "intensity": "moderate",
+    "density_cost": "meaningful",
     "mtb_exposure": false,
     "bike_touch_status": "normal",
     "optional": false,
     "schema_version": 3,
-    "purpose": "Add recoverable aerobic volume between the week's two protected MTB exposures.",
-    "dose": "Ride 50-65 minutes seated at 116-130 W and RPE 2-3 with steady cadence. No standing torque, tempo blocks or sprints.",
-    "adaptation_hypothesis": "A low-aerobic touch maintains bike-specific oxidative work without consuming Friday's technical or race-bike capacity.",
-    "execution_rules": ["Use strong fan cooling and drink to thirst.", "Keep power steady; do not turn good legs into an interval session."],
-    "expected_result": {"session": "Stable breathing and legs with no meaningful late drift.", "next_day": "Thursday feels suitable for rest or a very short primer."},
-    "stop_rules": ["Downshift or stop for abnormal HR response, worsening leg heaviness, pain, illness or CNS compromise."],
-    "post_session_review_fields": ["fresh_gate_result", "power_hr_and_duration", "legs_start_to_finish", "fluid_and_cooling", "stop_rule_outcome"]
+    "purpose": "Provide the conference week's explicit aerobic-development stimulus so five bike touches do not become two training days surrounded by recovery-only riding.",
+    "dose": {
+      "admission_gate": "Execute only if Monday stayed within two cycles and 130 minutes with no late technical fade or triggered-but-continued outcome, Tuesday's easy touch improved or preserved leg feel, Wednesday physical readiness is green, CNS is ready or normal, clarity is at least 8/10 and there is no illness, pain or gastrointestinal disturbance.",
+      "warm_up": "12-15 minutes progressive seated riding from 105 W toward 140 W.",
+      "main_set": "3x8 minutes seated at 165-170 W, cadence 70-75 rpm and RPE 5-6, with 4 minutes at 100-115 W between reps. Rep three may rise toward 175 W only if rep two finishes at RPE 5 or lower with stable HR, cadence and posture.",
+      "cool_down": "10 minutes easy at 100-115 W.",
+      "fallback": "If the admission gate is not clean, replace the main set with 50-60 minutes at 116-130 W and RPE 2-3; do not relocate the structured work later in the conference week."
+    },
+    "adaptation_hypothesis": "A controlled 24-minute tempo/torque dose at 78-81 percent of the current 211 W Garmin operational FTP will rebuild sustained bike-specific aerobic and muscular durability without the recovery cost of VO2 intervals before Friday's Enduro transfer.",
+    "execution_rules": ["Use strong fan cooling, remain seated and keep the 12 mm aft saddle position unchanged.", "Take a normal carbohydrate-containing meal beforehand and drink approximately 500-750 ml per hour.", "Do not add standing torque, cadence drills, a fourth rep or extra watts because the first two feel easy."],
+    "expected_result": {"session": "All three reps stay within roughly 3 percent power spread, cadence and posture remain stable, and final RPE is no higher than 6.", "next_day": "No residual CNS, sleep, knee, back, hand or leg cost that threatens Friday's controlled Enduro session."},
+    "stop_rules": ["Use the fallback when the admission gate fails.", "End the structured set for pain, abnormal HR response, posture or cadence collapse, power loss above 5 percent, or if rep two already exceeds RPE 6.", "Any residual Thursday fatigue removes the Thursday primer and may reduce Friday to one controlled cycle."],
+    "post_session_review_fields": ["fresh_gate_result", "repetition_power_hr_cadence_and_rpe", "power_spread_and_form", "legs_start_to_finish", "body_or_fit_symptoms", "fluid_fuel_and_cooling", "stop_rule_outcome", "next_morning_response"]
   }
 }

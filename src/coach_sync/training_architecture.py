@@ -501,6 +501,9 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
         "equipment_model": (context.get("athlete") or {}).get("equipment", {}),
         "event_model": _event_model(context),
         "bike_allocation_policy": _bike_allocation_policy(context),
+        "cycling_vo2_rebuild": (context.get("training_rules") or {}).get(
+            "cycling_vo2_rebuild", {}
+        ),
         "evidence_basis": evidence,
         "decision_hierarchy": [
             "Sabbath hard rest and current readiness.",

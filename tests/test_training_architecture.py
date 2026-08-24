@@ -92,6 +92,11 @@ def _context():
                 "enduro_training_max_exposures_per_week": 1,
                 "enduro_recce_consumes_training_cap": True,
             },
+            "cycling_vo2_rebuild": {
+                "current_anchor": {"garmin_cycling_vo2max_precise": 47.6},
+                "pre_injury_reference": {"garmin_cycling_vo2max_precise": 51.1},
+                "recurring_build_rule": "Use five bike days with structured development.",
+            },
             "weekly_rest_days": [
                 {"weekday": 6, "label": "Sabbath", "status": "hard_rest"}
             ]
@@ -147,6 +152,12 @@ def test_training_architecture_builds_config_and_snapshot(tmp_path):
     assert enduro["declared_event_exposures"]["classification"] == (
         "separately_explicit_event_exposure"
     )
+    assert artifact["cycling_vo2_rebuild"]["current_anchor"][
+        "garmin_cycling_vo2max_precise"
+    ] == 47.6
+    assert artifact["cycling_vo2_rebuild"]["pre_injury_reference"][
+        "garmin_cycling_vo2max_precise"
+    ] == 51.1
     assert artifact["macrocycle"][0]["phase"] == "base_rebuild"
     assert "density_governor" in artifact["weekly_architecture"]
     assert "weekly_plan" in artifact["artifact_contract"]
