@@ -1,0 +1,27 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-08-25",
+  "generated_at": "2026-08-24T11:18:00+08:00",
+  "status": "provisional_weekly_intent_pending_same_day_gate",
+  "session": {
+    "title": "Recovery absorption or optional easy Suito",
+    "type": "recovery_or_low_cost_bike_continuity",
+    "modality": "indoor_cycling",
+    "equipment_key": "marin_san_quentin_3",
+    "duration_min": 35,
+    "duration_range_min": [0, 40],
+    "intensity": "recovery",
+    "density_cost": "low",
+    "mtb_exposure": false,
+    "bike_touch_status": "conditional",
+    "optional": true,
+    "schema_version": 3,
+    "purpose": "Absorb Monday's key Stumpjumper session while optionally preserving low-cost bike rhythm.",
+    "dose": "Complete rest is fully acceptable. If legs and cognition are normal, ride 30-40 minutes seated at 105-120 W and RPE 2 with normal cadence; no torque, tempo or intervals.",
+    "adaptation_hypothesis": "Very low-cost circulation can support recovery and bike continuity without adding meaningful density before Friday's Enduro exposure.",
+    "execution_rules": ["Fresh same-day evidence governs whether the optional spin occurs.", "Keep power smooth and finish fresher than the start."],
+    "expected_result": {"session": "No accumulating leg heaviness or sympathetic activation.", "next_day": "Normal or improved freshness for Wednesday low-aerobic work."},
+    "stop_rules": ["Skip for poor sleep, gastrointestinal symptoms, illness, pain, abnormal fatigue or impaired CNS readiness.", "Stop if RPE rises above 3 or legs worsen."],
+    "post_session_review_fields": ["session_or_rest_selected", "legs_start_to_finish", "actual_power_and_duration", "stop_rule_outcome"]
+  }
+}

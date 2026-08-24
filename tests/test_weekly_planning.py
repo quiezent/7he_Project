@@ -80,6 +80,53 @@ def _assert_contract(session: dict) -> None:
         assert session.get(field), field
 
 
+def _write_race_sabbath_plan(root) -> None:
+    write_json(
+        root / "input" / "planned_session_2026-09-20.json",
+        {
+            "date": "2026-09-20",
+            "generated_at": "2026-09-19T18:00:00+08:00",
+            "status": "active_named_race_exception",
+            "sabbath_exception": {
+                "date": "2026-09-20",
+                "authorized_by": "athlete",
+                "authorization_source": "Athlete direct statement on 2026-08-24",
+                "explicit_one_off": True,
+                "scope": "named_race_event_only",
+                "recurring_rule_unchanged": True,
+                "replacement_sabbath_date": "2026-09-21",
+                "event": {
+                    "name": "PDR26",
+                    "date": "2026-09-20",
+                    "discipline": "downhill_mtb",
+                    "venue_key": "denai_peladang",
+                },
+            },
+            "session": {
+                "title": "PDR26 downhill race",
+                "type": "mtb_downhill_race",
+                "modality": "mtb",
+                "race_event": True,
+                "duration_min": 180,
+                "intensity": "race",
+                "schema_version": 3,
+                "contract_fields": SESSION_CONTRACT_FIELDS,
+                "purpose": "Race the named downhill event after Saturday practice.",
+                "dose": {"event": "Timed downhill runs plus event warm-up."},
+                "adaptation_hypothesis": "Specific race execution converts preparation into performance.",
+                "execution_rules": ["Use only the practised line and race setup."],
+                "expected_result": {"technical": "Clean race execution."},
+                "stop_rules": ["Withdraw for impaired processing or unsafe conditions."],
+                "post_session_review_fields": [
+                    "stop_rule_outcome",
+                    "race_run_time",
+                    "technical_quality_notes",
+                ],
+            },
+        },
+    )
+
+
 def test_weekly_plan_writes_artifacts_and_caps_mtb_exposures(tmp_path):
     load_context(tmp_path)
 
@@ -118,6 +165,78 @@ def test_weekly_plan_writes_artifacts_and_caps_mtb_exposures(tmp_path):
     assert sunday["day_name"] == "Sunday"
     assert sunday["type"] == "scheduled_rest"
     assert sunday["duration_min"] == 0
+
+
+def test_weekly_surfaces_named_race_exception_and_enforces_replacement_monday(tmp_path):
+    load_context(tmp_path)
+    _write_race_sabbath_plan(tmp_path)
+
+    race_week = build_weekly_plan(
+        tmp_path,
+        "2026-09-14",
+        state=_state(day="2026-09-14", readiness_level="green", readiness_score=82),
+    )
+
+    sunday = next(item for item in race_week["sessions"] if item["day_name"] == "Sunday")
+    assert sunday["type"] == "mtb_downhill_race"
+    assert sunday["sabbath_exception"]["status"] == (
+        "validated_exact_date_race_event_exception"
+    )
+    assert sunday["weekly_intent_override"]["source"].endswith(
+        "planned_session_2026-09-20.json"
+    )
+    sabbath_gate = next(
+        item for item in race_week["daily_gates"] if item["gate"] == "Sabbath"
+    )
+    assert "authorization is never inferred" in sabbath_gate["rule"].lower()
+
+    replacement_week = build_weekly_plan(
+        tmp_path,
+        "2026-09-21",
+        state=_state(day="2026-09-21", readiness_level="green", readiness_score=82),
+    )
+
+    monday = next(
+        item for item in replacement_week["sessions"] if item["day_name"] == "Monday"
+    )
+    assert monday["type"] == "scheduled_rest"
+    assert monday["title"] == "Replacement Sabbath rest"
+    assert monday["scheduled_rest_rule"]["replacement_for"]["event_name"] == "PDR26"
+    assert monday["weekly_intent_override"]["status"] == (
+        "replacement_sabbath_enforced"
+    )
+    assert monday["weekly_intent_override"]["source"].endswith(
+        "planned_session_2026-09-20.json"
+    )
+
+
+def test_weekly_plan_rejects_unapproved_sunday_training_override(tmp_path):
+    load_context(tmp_path)
+    write_json(
+        tmp_path / "input" / "planned_session_2026-09-20.json",
+        {
+            "date": "2026-09-20",
+            "status": "missing_athlete_authorization",
+            "session": {
+                "title": "Unapproved Sunday race-like ride",
+                "type": "mtb_downhill_race",
+                "modality": "mtb",
+                "race_event": True,
+                "duration_min": 180,
+                "intensity": "race",
+            },
+        },
+    )
+
+    plan = build_weekly_plan(
+        tmp_path,
+        "2026-09-14",
+        state=_state(day="2026-09-14", readiness_level="green", readiness_score=82),
+    )
+
+    sunday = next(item for item in plan["sessions"] if item["day_name"] == "Sunday")
+    assert sunday["type"] == "scheduled_rest"
+    assert sunday["title"] == "Sabbath rest"
 
 
 def test_weekly_plan_respects_two_mtb_exposure_cap_when_configured(tmp_path):

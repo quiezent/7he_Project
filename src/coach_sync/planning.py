@@ -6,6 +6,11 @@ from pathlib import Path
 from .garmin_arbitration import build_garmin_arbitration
 from .io import read_json, write_json
 from .paths import input_dir, snapshots_dir
+from .sabbath import (
+    replacement_sabbath_rule,
+    scheduled_rest_rule,
+    validate_sabbath_exception,
+)
 from .state import build_current_state
 from .time_utils import DEFAULT_TIMEZONE, iso_now, parse_date, today_local
 
@@ -847,48 +852,19 @@ def _with_adaptive_upgrade_option(session: dict, arbitration: dict) -> dict:
     return upgraded
 
 
-def _scheduled_rest_rule(context: dict, target_date: date) -> dict | None:
-    for rule in context.get("training_rules", {}).get("weekly_rest_days", []):
-        if int(rule.get("weekday", -1)) == target_date.weekday():
-            return rule
-    return None
-
-
-def _valid_sabbath_exception(
-    planned_session: dict | None,
-    target_date: date,
-    scheduled_rest: dict | None,
-) -> dict | None:
-    if not planned_session or not scheduled_rest:
-        return None
-    exception = planned_session.get("sabbath_exception")
-    session = planned_session.get("session")
-    if not isinstance(exception, dict) or not isinstance(session, dict):
-        return None
-    exception_date = parse_date(exception.get("date"))
-    duration = int(session.get("duration_min") or 0)
-    valid = bool(
-        exception_date == target_date
-        and str(exception.get("authorized_by") or "").lower() == "athlete"
-        and exception.get("explicit_one_off") is True
-        and exception.get("recurring_rule_unchanged") is True
-        and exception.get("scope") == "indoor_low_aerobic_only"
-        and str(session.get("modality") or "").lower() == "bike_indoor"
-        and str(session.get("intensity") or "").lower() in {"easy", "recovery"}
-        and 0 < duration <= 60
-        and _has_complete_session_contract(session)
-    )
-    if not valid:
-        return None
-    return {
-        **exception,
-        "status": "validated_exact_date_low_consequence_exception",
-        "scheduled_rest_label": scheduled_rest.get("label"),
-    }
-
-
-def _gym_block(state: dict, scheduled_rest: dict | None = None) -> dict:
+def _gym_block(
+    state: dict,
+    scheduled_rest: dict | None = None,
+    sabbath_exception: dict | None = None,
+) -> dict:
     if scheduled_rest:
+        if sabbath_exception:
+            return {
+                "status": "skip",
+                "details": [
+                    "The exact-date Sabbath exception authorizes only its named session; no gym or other training may be added."
+                ],
+            }
         return {
             "status": "skip",
             "details": [
@@ -918,7 +894,9 @@ def build_today_plan(
     full_context = load_context(root)
     tz = full_context.get("athlete", {}).get("timezone", DEFAULT_TIMEZONE)
     target_date = parse_date(for_date) or parse_date(state.get("date")) or today_local(tz)
-    scheduled_rest = _scheduled_rest_rule(full_context, target_date)
+    recurring_scheduled_rest = scheduled_rest_rule(full_context, target_date)
+    replacement_sabbath = replacement_sabbath_rule(root, full_context, target_date)
+    scheduled_rest = replacement_sabbath or recurring_scheduled_rest
     readiness = state.get("readiness", {})
     level = readiness.get("readiness_level")
     hard_guidance = readiness.get("hard_session_guidance")
@@ -929,10 +907,10 @@ def build_today_plan(
         state.get("data_freshness", {}).get("hard_session_confidence") == "limited"
     )
     planned_session = _load_planned_session(root, target_date)
-    sabbath_exception = _valid_sabbath_exception(
+    sabbath_exception = validate_sabbath_exception(
         planned_session,
         target_date,
-        scheduled_rest,
+        recurring_scheduled_rest,
     )
     enforce_scheduled_rest = bool(scheduled_rest and sabbath_exception is None)
     weekly_session = load_weekly_session(root, target_date)
@@ -1014,9 +992,23 @@ def build_today_plan(
             f"{scheduled_rest.get('label', 'Scheduled rest')} is a hard rest constraint: no planned exercise today.",
         )
     elif sabbath_exception:
+        exception_type = sabbath_exception.get("exception_type")
+        if exception_type == "athlete_authorized_race_event":
+            event = sabbath_exception.get("event") or {}
+            exception_guardrail = (
+                "Athlete-authorized exact-date Sabbath exception for the named race "
+                f"{event.get('name') or 'event'} only; replacement Sabbath is enforced on "
+                f"{(sabbath_exception.get('replacement_sabbath') or {}).get('date')}. "
+                "The recurring Sunday rule is unchanged."
+            )
+        else:
+            exception_guardrail = (
+                "Athlete-authorized one-off exact-date Sabbath exception: indoor "
+                "low-aerobic work only; this does not alter the recurring Sunday rule."
+            )
         guardrails.insert(
             0,
-            "Athlete-authorized one-off exact-date Sabbath exception: indoor low-aerobic work only; this does not alter the recurring Sunday rule.",
+            exception_guardrail,
         )
     if stale:
         guardrails.insert(
@@ -1052,7 +1044,11 @@ def build_today_plan(
         "coaching_status": "post_session_review" if post_session_review else "proposal_for_llm_coach",
         "session": session,
         "plan_source": plan_source,
-        "gym": _gym_block(state, scheduled_rest=scheduled_rest),
+        "gym": _gym_block(
+            state,
+            scheduled_rest=scheduled_rest,
+            sabbath_exception=sabbath_exception,
+        ),
         "nutrition": nutrition,
         "guardrails": guardrails,
         "decision_inputs": {
@@ -1063,6 +1059,7 @@ def build_today_plan(
             "hard_session_guidance": hard_guidance,
             "data_freshness": state.get("data_freshness"),
             "scheduled_rest": scheduled_rest,
+            "replacement_sabbath": replacement_sabbath,
             "sabbath_exception": sabbath_exception,
             "garmin_arbitration": garmin_arbitration,
             "cns_readiness": {

@@ -10,6 +10,11 @@ from .garmin_arbitration import build_garmin_arbitration
 from .io import read_json, write_json, write_text
 from .paths import input_dir, snapshots_dir
 from .planning import SESSION_CONTRACT_FIELDS
+from .sabbath import (
+    replacement_sabbath_rule,
+    scheduled_rest_rule,
+    validate_sabbath_exception,
+)
 from .state import build_current_state
 from .time_utils import DEFAULT_TIMEZONE, iso_now, parse_date, today_local
 
@@ -239,11 +244,20 @@ def _session(
     return session
 
 
-def _scheduled_rest(day: date) -> dict[str, Any]:
-    return {
+def _scheduled_rest(
+    day: date,
+    rule: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    rule = rule or {}
+    label = str(rule.get("label") or "Sabbath")
+    reason = str(
+        rule.get("reason")
+        or "Honor Sunday Sabbath as a hard no-exercise day."
+    )
+    session = {
         "date": day.isoformat(),
         "day_name": _day_name(day),
-        "title": "Sabbath rest",
+        "title": f"{label} rest",
         "type": "scheduled_rest",
         "modality": "rest",
         "priority": "hard_constraint",
@@ -253,7 +267,7 @@ def _scheduled_rest(day: date) -> dict[str, Any]:
         "density_cost": "none",
         "duration_min": 0,
         "intensity": "recovery",
-        "purpose": "Honor Sunday Sabbath as a hard no-exercise day.",
+        "purpose": reason,
         "execution_rules": [
             "No ride, gym, intervals, strength loading, or planned training.",
             "Normal life, worship, family time, meals, and easy unwinding are enough.",
@@ -262,16 +276,37 @@ def _scheduled_rest(day: date) -> dict[str, Any]:
             "recovery": "Physical and mental space before the next week.",
         },
     }
+    if rule:
+        session["scheduled_rest_rule"] = rule
+    return session
 
 
 def _apply_explicit_session_overrides(
     root: str | Path | None,
     sessions: list[dict[str, Any]],
+    context: dict[str, Any],
 ) -> list[dict[str, Any]]:
     overrides: dict[str, dict[str, Any]] = {}
     for day_text in {str(item.get("date") or "") for item in sessions}:
         if not day_text:
             continue
+        day = parse_date(day_text)
+        if day is None:
+            continue
+        replacement_rule = replacement_sabbath_rule(root, context, day)
+        if replacement_rule:
+            override = _scheduled_rest(day, replacement_rule)
+            provenance = replacement_rule.get("provenance") or {}
+            override["weekly_intent_override"] = {
+                "source": provenance.get("source_path"),
+                "status": "replacement_sabbath_enforced",
+                "source_exception_status": replacement_rule.get(
+                    "source_exception_status"
+                ),
+            }
+            overrides[day_text] = override
+            continue
+
         payload = read_json(input_dir(root) / f"planned_session_{day_text}.json", {})
         session = payload.get("session") if isinstance(payload, dict) else None
         if not isinstance(session, dict):
@@ -279,18 +314,44 @@ def _apply_explicit_session_overrides(
         payload_date = parse_date(payload.get("date"))
         if payload_date is not None and payload_date.isoformat() != day_text:
             continue
+        recurring_rest = scheduled_rest_rule(context, day)
+        validated_exception = None
+        if recurring_rest:
+            validated_exception = validate_sabbath_exception(
+                {
+                    "session": session,
+                    "sabbath_exception": payload.get("sabbath_exception"),
+                    "source": {
+                        "type": "input_planned_session",
+                        "path": f"input/planned_session_{day_text}.json",
+                    },
+                },
+                day,
+                recurring_rest,
+            )
+            if validated_exception is None:
+                continue
         override = dict(session)
         override.setdefault("date", day_text)
-        day = parse_date(day_text)
-        override.setdefault("day_name", _day_name(day) if day else None)
+        override.setdefault("day_name", _day_name(day))
         override.setdefault("optional", False)
-        override.setdefault("mtb_exposure", False)
-        override.setdefault("bike_touch_status", "none")
-        override.setdefault("density_cost", "none")
+        race_exception = bool(
+            validated_exception
+            and validated_exception.get("exception_type")
+            == "athlete_authorized_race_event"
+        )
+        override.setdefault("mtb_exposure", race_exception)
+        override.setdefault("bike_touch_status", "normal" if race_exception else "none")
+        override.setdefault("density_cost", "meaningful" if race_exception else "none")
         override["weekly_intent_override"] = {
             "source": f"input/planned_session_{day_text}.json",
             "status": payload.get("status"),
         }
+        if validated_exception:
+            override["sabbath_exception"] = validated_exception
+            override["weekly_intent_override"]["sabbath_exception_status"] = (
+                validated_exception.get("status")
+            )
         overrides[day_text] = override
 
     if not overrides:
@@ -685,7 +746,11 @@ def _daily_gates() -> list[dict[str, str]]:
         },
         {
             "gate": "Sabbath",
-            "rule": "Sunday remains no planned exercise regardless of readiness.",
+            "rule": (
+                "Sunday remains no planned exercise regardless of readiness. Only an exact-date, "
+                "athlete-authorized named race in a coach-authored contract may shift that Sabbath "
+                "to the following Monday; authorization is never inferred."
+            ),
         },
     ]
 
@@ -781,7 +846,7 @@ def build_weekly_plan(
     load_focus = _load_focus_summary(state)
     load_target = _weekly_load_target(state)
     sessions, exposure_summary = _build_sessions(start, state, rules)
-    sessions = _apply_explicit_session_overrides(root, sessions)
+    sessions = _apply_explicit_session_overrides(root, sessions, context)
     exposure_summary = _summarize_session_plan(sessions, rules)
     freshness = state.get("data_freshness") or {}
     readiness = state.get("readiness") or {}

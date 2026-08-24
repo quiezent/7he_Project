@@ -44,13 +44,44 @@
     ],
     "target_category": "expert"
   },
+  "bike_allocation_policy": {
+    "enduro_race_specific_bike": {
+      "declared_event_exposures": {
+        "classification": "separately_explicit_event_exposure",
+        "practice_and_race_are_separate_from_normal_training_cap": true
+      },
+      "equipment_key": "specialized_enduro",
+      "normal_training": {
+        "density_rule": "An Enduro training exposure replaces a protected MTB slot rather than stacking as an extra costly day. Official practice and racing on a declared event weekend are modeled as event exposures, not extra training touches, and require taper plus post-event recovery.",
+        "maximum_exposures_per_week": 1,
+        "recce_consumes_weekly_enduro_exposure": true,
+        "recce_replaces_slot_instead_of_stacking": true,
+        "scope": [
+          "race-specific skill transfer",
+          "course recce",
+          "race-bike chassis, braking, impact and cockpit validation"
+        ]
+      },
+      "role": "Protected race and race-specific skill-transfer bike; not the routine fitness-mileage bike."
+    },
+    "primary_fitness_and_volume_bike": {
+      "equipment_key": "specialized_stumpjumper",
+      "mileage_policy": "Clayton is comfortable putting training mileage on the Stumpjumper.",
+      "preferred_training_use": "Routine MTB engine work, climbing repeatability, durability volume and appropriate technical training. Use the power meter for comparable climb work and control descent intent when the physiological target is primary.",
+      "role": "Primary outdoor fitness and volume MTB training bike with current power meter."
+    },
+    "source": [
+      "config/athlete_context.json:athlete.equipment.bikes",
+      "config/athlete_context.json:training_rules.bike_specific_continuity"
+    ]
+  },
   "caveats": [
     "This architecture is observational and personal to Clayton's Garmin record.",
     "P20 is an observed expression metric; trail-heavy months can build real enduro fitness without a clean P20.",
     "Modern HRV/wake Body Battery is strongest from March 2026 onward.",
     "Subjective trail notes are required for expert-skill decisions."
   ],
-  "date": "2026-08-13",
+  "date": "2026-08-24",
   "decision_hierarchy": [
     "Sabbath hard rest and current readiness.",
     "CNS readiness: cap technical consequence, novelty, speed, jumps, enduro simulation, and setup testing when nervous-system processing is not restored.",
@@ -102,13 +133,74 @@
             }
           ]
         },
-        "default_role": "Primary enduro bike for feel-based outdoor riding.",
-        "power_meter_preference": "Do not move the power meter here by default; Clayton prefers to ride the Enduro bike on feel."
+        "default_role": "Protected race and race-specific skill-transfer bike; not the routine fitness-mileage bike.",
+        "power_meter_preference": "Do not move the power meter here by default; Clayton prefers to ride the Enduro bike on feel.",
+        "rear_shock_setups": {
+          "air": {
+            "click_reference": "Unconfirmed; preserve the athlete's raw negative-click notation until its reference direction is explicitly documented.",
+            "custom_tune": "J-Tech JTC02 compression / JTR05 rebound. Athlete reports one low-speed compression shim in the air shock's damper stack was changed to complement the air spring's initial-stroke support and make the complete chassis response closely match the coil setup.",
+            "low_speed_compression_setting_raw": "-7; athlete reports that moving toward more LSC made the bike unstable",
+            "model": "RockShox Super Deluxe Ultimate Air",
+            "pressure_psi": 190,
+            "purpose": "Lighter Enduro race option with subtly better athlete-perceived pumping support.",
+            "rebound_setting_raw": "-4; athlete reports -5 felt underdamped",
+            "sag_pct_estimated": 28,
+            "sag_status": "Approximate athlete estimate; repeat measurement with full riding kit is required.",
+            "shockwiz_compression_ratio": 3.0,
+            "shockwiz_note": "This is the ShockWiz calibration compression ratio, not a Bottomless Token count.",
+            "volume_spacers": "unknown"
+          },
+          "coil": {
+            "click_reference": "Unconfirmed; preserve the athlete's raw negative-click notation until its reference direction is explicitly documented.",
+            "custom_tune": "J-Tech JTC02 compression / JTR05 rebound",
+            "low_speed_compression_setting_raw": "-4",
+            "model": "RockShox Super Deluxe Coil Ultimate RS-SDLC-ULT-A2",
+            "preload_turns": 1,
+            "rebound_setting_raw": "-4 in mullet setup; -5 J-Tech original-equipment reference",
+            "serial_or_tune_reference": "36T00475121",
+            "spring_rate_lb_per_in": 500
+          },
+          "comparison_rule": "The custom damper tuning makes the complete chassis responses closely matched and the athlete has validated immediate interchangeability, while the air and coil springs retain subtle terrain-specific differences. Do not demand a new equivalence proof after every swap; use a course-specific shakedown to confirm installation, pressure or preload, clicks, tyre pressures and current rider response.",
+          "latest_validation": {
+            "bike_and_tyres": "S-Works Enduro MY25, clipless, 23/28 psi",
+            "date": "2026-08-18",
+            "positive_evidence": "No wallow, low-ride-height control problem, bottom-out, pack-down, rear kick, pitch, missed line, reactive brake, correction, rescue or near miss. Mid-stroke support was good and vision/decision speed was 9/10.",
+            "rider_constraint": "A little Flintstone arm pump was associated with rough rock gardens and less-relaxed hands; treat rider relaxation as primary until matched evidence implicates the chassis.",
+            "route_context": "Mixed-intent Pure Quill plus 65-percent Flintstone re-entry after about one year away, with long friend waits. This was a current-state air-shock revalidation, not a new matched air-versus-coil comparison.",
+            "unresolved_evidence": "Unloaded rear grip felt lower and seated ride height felt slightly lower than the coil. Very dry trail, rider loading, unknown token count and unverified sag remain confounders. Exact O-ring travel and pedal-strike outcome were not reported.",
+            "venue": "Bukit Kiara"
+          },
+          "next_test": "For the next race selection, keep the chosen shock fixed and complete a course-representative shakedown. Record full-kit sag or coil preload, O-ring travel where applicable, unloaded-rear tracking, pedal strikes, arm pump and final-stage precision. Change the choice only for a repeated course-relevant symptom, not a single dry-trail sensation.",
+          "prior_back_to_back_validation": {
+            "confidence": "High for athlete-specific functional interchangeability and race-option status; moderate for generalizing either terrain advantage beyond the tested contexts.",
+            "date": "unknown_prior_to_2026-08-18",
+            "evidence_scope": "Athlete-confirmed riding validation. The exact comparison date, route, run-level telemetry and any damper dyno sheet are not currently preserved.",
+            "method": "Athlete-confirmed direct back-to-back testing of the custom-tuned air and coil shocks on the same Enduro platform.",
+            "result": "Differences were subtle enough that Clayton could swap between the two without a meaningful reacclimation period. The coil produced the preferred response and speed on DH lines; the air shock produced subtly better pumping support."
+          },
+          "race_selection": {
+            "air_preference": "Pumpy, pedally or compression-rich stages where rider-generated speed, platform support and the lower system weight are useful.",
+            "coil_preference": "Faster, rougher or longer DH-biased stages where repeated impacts, braking bumps and rear tracking are decisive.",
+            "mixed_course_rule": "Choose the shock whose subtle advantage applies to the race's most decisive stages; do not choose from weight alone. Complete a course-specific shakedown after installation while retaining the recorded shock and tyre settings."
+          },
+          "working_status": "Both the Super Deluxe Ultimate Air and Super Deluxe Coil Ultimate are athlete-validated, immediately swappable race options. Prior back-to-back testing established closely matched overall chassis behavior, and the 2026-08-18 ride successfully revalidated the air setup under the current clipless riding context."
+        },
+        "training_use_policy": {
+          "density_rule": "An Enduro training exposure replaces a protected MTB slot rather than stacking as an extra costly day. Official practice and racing on a declared event weekend are modeled as event exposures, not extra training touches, and require taper plus post-event recovery.",
+          "maximum_normal_training_exposures_per_week": 1,
+          "normal_training_scope_excludes_declared_event_practice_and_race": true,
+          "recce_consumes_weekly_enduro_exposure": true,
+          "scope": [
+            "race-specific skill transfer",
+            "course recce",
+            "race-bike chassis, braking, impact and cockpit validation"
+          ]
+        }
       },
       "specialized_stumpjumper": {
-        "default_role": "Outdoor trail bike with current power meter.",
+        "default_role": "Primary outdoor fitness and volume MTB training bike with current power meter.",
         "mileage_policy": "Clayton is comfortable putting training mileage on the Stumpjumper.",
-        "preferred_training_use": "Power-meter climb-focused Bukit Kiara loop sessions: focus the workout on repeated climbs and cruise the same descent trail to control risk and isolate aerobic/torque fitness.",
+        "preferred_training_use": "Routine MTB engine work, climbing repeatability, durability volume and appropriate technical training. Use the power meter for comparable climb work and control descent intent when the physiological target is primary.",
         "setup_history": [
           {
             "change": "Fork rebound damping increased by one click and shock rebound damping reduced by one click.",
@@ -169,6 +261,44 @@
       "model": "Elite Suito",
       "swap_option": "Stumpjumper can replace the Marin SQ3 on the trainer when needed."
     }
+  },
+  "event_model": {
+    "source": "config/athlete_context.json:athlete.event_focus.upcoming_events",
+    "upcoming_events": [
+      {
+        "course_familiarity": {
+          "2026_dh_line": "New course line and not yet ridden by Clayton.",
+          "enduro_trails": "Trained repeatedly in 2022-2023 and raced on 2024-05-26.",
+          "venue": "Familiar from prior enduro riding and racing."
+        },
+        "date": "2026-09-20",
+        "day_of_week": "Sunday",
+        "discipline": "downhill_mtb",
+        "equipment_key": "specialized_enduro",
+        "event_key": "pdr26",
+        "event_schedule": {
+          "official_practice_date": "2026-09-19",
+          "race_date": "2026-09-20"
+        },
+        "name": "PDR26",
+        "planning_constraint": "Clayton explicitly authorized PDR26 race participation on Sunday 2026-09-20 and shifted that event weekend's Sabbath to Monday 2026-09-21. Saturday practice and Sunday racing are event exposures; Monday is hard rest. Do not generalize this exception to other Sundays or infer future race exceptions.",
+        "recce": {
+          "date": null,
+          "equipment_key": "specialized_enduro",
+          "timing": "early September 2026"
+        },
+        "sabbath_accommodation": {
+          "authorization_source": "Athlete-direct confirmation on 2026-08-24.",
+          "exception_date": "2026-09-20",
+          "exception_scope": "PDR26 race participation only; this is not a general Sunday-training exception.",
+          "recurring_rule_unchanged": true,
+          "replacement_sabbath_date": "2026-09-21",
+          "replacement_sabbath_status": "hard_rest_no_planned_exercise"
+        },
+        "status": "confirmed_with_athlete_authorized_sabbath_shift",
+        "venue_key": "denai_peladang"
+      }
+    ]
   },
   "evidence_basis": {
     "current_limiters": [
@@ -290,7 +420,7 @@
       },
       "latest_garmin_detected_ftp": {
         "activity_id": "23723839107",
-        "age_days": 19,
+        "age_days": 30,
         "category": "mtb",
         "date": "2026-07-25",
         "ftp_w": 211.0,
@@ -299,34 +429,25 @@
       },
       "power_source_note": "Raw Garmin summaries identify indoor/outdoor activity, Garmin device/manufacturer, and power values, but not the exact power source such as Elite Suito versus bike power meter.",
       "recent_60d_best_p20": {
-        "avg_hr": 146.0,
-        "avg_power": 98.0,
+        "avg_hr": 154.0,
+        "avg_power": 94.0,
         "category": "mtb",
-        "date": "2026-06-16",
+        "date": "2026-07-14",
         "device_id": 3360476305,
-        "duration_min": 112.2,
-        "intensity_factor": 0.7350000143051147,
+        "duration_min": 115.7,
+        "intensity_factor": 0.7379999756813049,
         "manufacturer": "GARMIN",
-        "max_hr": 173.0,
+        "max_hr": 180.0,
         "name": "Kuala Lumpur Mountain Biking",
-        "normalized_power": 167.0,
-        "p10_w": 176.0,
-        "p20_w": 157.0,
-        "training_load": 215.4
+        "normalized_power": 154.0,
+        "p10_w": 159.0,
+        "p20_w": 150.0,
+        "training_load": 277.2
       },
       "recent_60d_garmin_detected_ftp": [
         {
-          "activity_id": "23301777471",
-          "age_days": 55,
-          "category": "mtb",
-          "date": "2026-06-19",
-          "ftp_w": 214.0,
-          "name": "Kuala Lumpur Mountain Biking",
-          "source_field": "maxFtp"
-        },
-        {
           "activity_id": "23590320093",
-          "age_days": 30,
+          "age_days": 41,
           "category": "mtb",
           "date": "2026-07-14",
           "ftp_w": 209.0,
@@ -335,7 +456,7 @@
         },
         {
           "activity_id": "23614632613",
-          "age_days": 28,
+          "age_days": 39,
           "category": "mtb",
           "date": "2026-07-16",
           "ftp_w": 214.0,
@@ -344,7 +465,7 @@
         },
         {
           "activity_id": "23723839107",
-          "age_days": 19,
+          "age_days": 30,
           "category": "mtb",
           "date": "2026-07-25",
           "ftp_w": 211.0,
@@ -354,29 +475,29 @@
       ]
     },
     "full_range": {
-      "activity_end": "2026-08-13",
+      "activity_end": "2026-08-24",
       "activity_start": "2021-06-18",
-      "counted_sessions": 1386,
-      "duration_min": 105854.9,
+      "counted_sessions": 1392,
+      "duration_min": 106303.5,
       "elliptical_load": 7241.4,
       "elliptical_sessions": 71,
-      "indoor_bike_load": 38387.6,
-      "indoor_bike_sessions": 601,
-      "mtb_load": 99065.6,
-      "mtb_sessions": 488,
-      "training_load": 160399.2
+      "indoor_bike_load": 38465.7,
+      "indoor_bike_sessions": 603,
+      "mtb_load": 99462.9,
+      "mtb_sessions": 492,
+      "training_load": 160874.6
     },
     "hypothesis_support": {
       "bike_specificity": "weak",
       "consistency_detraining": "strong",
       "nonbike_substitution": "moderate",
-      "recent_365_bike_specific_corr_to_p20": 0.119,
-      "recent_365_elliptical_corr_to_p20": null,
-      "recent_365_indoor_bike_corr_to_p20": 0.509
+      "recent_365_bike_specific_corr_to_p20": null,
+      "recent_365_elliptical_corr_to_p20": 0.106,
+      "recent_365_indoor_bike_corr_to_p20": 0.462
     },
     "nutrition_targets": {
-      "latest_weight_date": "2026-08-08",
-      "latest_weight_kg": 77.28,
+      "latest_weight_date": "2026-08-23",
+      "latest_weight_kg": 77.64,
       "mtb_90_to_150_min": {
         "carbs_g_per_hour": [
           45,
@@ -408,19 +529,19 @@
       "note": "Use the upper end in Kuala Lumpur heat or when skill quality drops late; gut-train before race day."
     },
     "recent_28d": {
-      "bike_specific_load": 1265.9,
-      "bike_specific_ratio": 0.87,
+      "bike_specific_load": 1528.7,
+      "bike_specific_ratio": 0.942,
       "elliptical_ratio": 0.0,
-      "indoor_bike_sessions": 3,
-      "mtb_sessions": 6,
-      "training_load": 1454.5
+      "indoor_bike_sessions": 4,
+      "mtb_sessions": 9,
+      "training_load": 1623.6
     },
     "recent_7d": {
-      "bike_specific_load": 559.8,
+      "bike_specific_load": 447.5,
       "bike_specific_ratio": 1.0,
-      "indoor_bike_sessions": 2,
-      "mtb_sessions": 2,
-      "training_load": 559.8
+      "indoor_bike_sessions": 1,
+      "mtb_sessions": 4,
+      "training_load": 447.5
     },
     "weekly_continuity_blocks": {
       "current_rebuild_apr_to_may_2026": {
@@ -503,7 +624,7 @@
     "heat_rule": "In Kuala Lumpur, treat fuel/hydration as skill protection: sloppy braking, weak pumping, timid jumps, or poor line choice late can be carb/sodium/heat failure.",
     "range_selection_rule": "Choose within the canonical band from same-day heat/humidity, actual sweat response, session consequence, and gut tolerance. Previous-session weather is not a forecast, and Garmin heat acclimation never reduces the target by itself."
   },
-  "generated_at": "2026-08-13T15:53:10+08:00",
+  "generated_at": "2026-08-24T11:27:02+08:00",
   "integrated_coaching_model": {
     "cns_readiness_model": {
       "decision_role": "Use CNS readiness as a technical-consequence ceiling after Sabbath and physical readiness, not as a replacement for Garmin readiness.",

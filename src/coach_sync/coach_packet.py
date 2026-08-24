@@ -672,13 +672,26 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
             )
         )
     elif sabbath_exception:
+        if sabbath_exception.get("exception_type") == "athlete_authorized_race_event":
+            event = sabbath_exception.get("event") or {}
+            replacement = sabbath_exception.get("replacement_sabbath") or {}
+            exception_message = (
+                f"Athlete authorization applies only to the named race {event.get('name') or 'event'} "
+                f"on this exact date; {replacement.get('date')} is the hard replacement Sabbath. "
+                "The recurring Sunday rule is unchanged."
+            )
+        else:
+            exception_message = (
+                "Athlete authorization applies only to this date and indoor low-aerobic scope; "
+                "the recurring Sunday rule is unchanged."
+            )
         trusted.append(
             _signal(
                 "One-off Sabbath exception",
                 sabbath_exception.get("status") or "validated",
                 sabbath_exception,
                 "exact_date_scope_constraint",
-                "Athlete authorization applies only to this date and indoor low-aerobic scope; the recurring Sunday rule is unchanged.",
+                exception_message,
             )
         )
 

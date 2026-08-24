@@ -1,0 +1,27 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-08-26",
+  "generated_at": "2026-08-24T11:18:00+08:00",
+  "status": "provisional_weekly_intent_pending_same_day_gate",
+  "session": {
+    "title": "Suito low-aerobic continuity",
+    "type": "indoor_low_aerobic",
+    "modality": "indoor_cycling",
+    "equipment_key": "marin_san_quentin_3",
+    "duration_min": 60,
+    "duration_range_min": [50, 65],
+    "intensity": "easy",
+    "density_cost": "low",
+    "mtb_exposure": false,
+    "bike_touch_status": "normal",
+    "optional": false,
+    "schema_version": 3,
+    "purpose": "Add recoverable aerobic volume between the week's two protected MTB exposures.",
+    "dose": "Ride 50-65 minutes seated at 116-130 W and RPE 2-3 with steady cadence. No standing torque, tempo blocks or sprints.",
+    "adaptation_hypothesis": "A low-aerobic touch maintains bike-specific oxidative work without consuming Friday's technical or race-bike capacity.",
+    "execution_rules": ["Use strong fan cooling and drink to thirst.", "Keep power steady; do not turn good legs into an interval session."],
+    "expected_result": {"session": "Stable breathing and legs with no meaningful late drift.", "next_day": "Thursday feels suitable for rest or a very short primer."},
+    "stop_rules": ["Downshift or stop for abnormal HR response, worsening leg heaviness, pain, illness or CNS compromise."],
+    "post_session_review_fields": ["fresh_gate_result", "power_hr_and_duration", "legs_start_to_finish", "fluid_and_cooling", "stop_rule_outcome"]
+  }
+}

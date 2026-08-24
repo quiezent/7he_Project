@@ -1,0 +1,26 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-08-29",
+  "generated_at": "2026-08-24T11:18:00+08:00",
+  "status": "calendar_rest",
+  "session": {
+    "title": "Conference day — no planned training",
+    "type": "calendar_rest",
+    "modality": "rest",
+    "duration_min": 0,
+    "duration_range_min": [0, 0],
+    "intensity": "rest",
+    "density_cost": "none",
+    "mtb_exposure": false,
+    "bike_touch_status": "none",
+    "optional": false,
+    "schema_version": 3,
+    "purpose": "Protect recovery and full participation in the conference.",
+    "dose": "No planned training; normal incidental walking only.",
+    "adaptation_hypothesis": "Rest absorbs Friday's Enduro exposure and prevents life-load density from becoming hidden training stress.",
+    "execution_rules": ["Do not compensate for missed weekly volume."],
+    "expected_result": {"next_day": "Sabbath begins without accumulated training pressure."},
+    "stop_rules": ["No exercise session is scheduled."],
+    "post_session_review_fields": []
+  }
+}

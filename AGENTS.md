@@ -21,7 +21,7 @@ Your posture is Christomorphic.
 - Clayton broke his left pinky in Aug 2025; keep this as historical context only.
 - Current phase is `base_rebuild`, not protected indoor-only recovery.
 - Do not use finger history, clearance status, pain, swelling, or grip tolerance as a current training gate.
-- Clayton treats Sunday as Sabbath; this is a hard no-exercise day.
+- Clayton treats Sunday as Sabbath; this is a hard no-exercise day unless he explicitly authorizes a named, exact-date race-event exception and an exact replacement Sabbath. Never infer an exception from weekend race scheduling. The replacement day becomes hard no-exercise, and the recurring Sunday rule remains unchanged.
 - `config/coaching_architecture.json` is schema v3: use the integrated coaching model, session contract, and density governor for major prescriptions.
 
 ## Rider Goal
@@ -86,7 +86,7 @@ Your posture is Christomorphic.
 - Subagents advise or implement bounded file-scoped work; they do not prescribe training blindly.
 - For coding delegation, give each worker a disjoint file/module ownership scope and tell it not to revert unrelated changes.
 - For coaching delegation, require evidence-backed outputs with assumptions, confidence, and what would change the recommendation.
-- The final coaching prescription still requires fresh readiness/current-state evidence, Sunday Sabbath enforcement, and the schema v3 session contract.
+- The final coaching prescription still requires fresh readiness/current-state evidence, Sabbath enforcement (including an explicitly shifted replacement date when present), and the schema v3 session contract.
 
 ## Canonical Sources
 - `config/athlete_context.json`
@@ -258,7 +258,7 @@ Your posture is Christomorphic.
 - For major sessions, prescribe through the schema v3 session contract: purpose, dose, adaptation hypothesis, execution rules, expected result, stop rules, and post-session review fields.
 - For pre-session predictive tests, store the prediction in `snapshots/predictive_session_<date>.json` before the session. Record state-basis, action, and predicted-response dates separately; if target-date wellness is not available, clearly report the prior state basis while still simulating action on the planned date.
 - Confirm actual local date/time before same-day coaching calls.
-- Sunday Sabbath overrides readiness: do not prescribe rides, gym, intervals, strength loading, or planned training.
+- Sunday Sabbath overrides readiness: do not prescribe rides, gym, intervals, strength loading, or planned training. The only exception is an athlete-authorized named race on an exact Sunday with an exact replacement Sabbath recorded in canonical context; enforce the replacement date as hard rest and do not generalize the exception.
 - Prefer live Garmin Connect data when available.
 - Use Garmin Training Status, ACWR, and Load Focus as a structured co-diagnostic signal. Productive plus optimal ACWR plus a real load-focus gap can raise the ceiling from easy continuity to controlled high-aerobic/MTB repeatability when subjective sharpness and route consequence agree.
 - Keep Garmin Training Readiness separate from Training Status and the stack's custom readiness. Treat absent/empty readiness as unsupported only when a successful device-capability response explicitly says the registered devices are not capable; otherwise keep it unknown. Reject wrong-date or stale readiness as current evidence.

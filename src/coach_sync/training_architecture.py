@@ -34,6 +34,79 @@ def _hypothesis_result(hypotheses: dict, hypothesis_id: str) -> dict:
     return {}
 
 
+def _event_model(context: dict) -> dict:
+    event_focus = ((context.get("athlete") or {}).get("event_focus")) or {}
+    upcoming_events = event_focus.get("upcoming_events") or []
+    if isinstance(upcoming_events, dict):
+        upcoming_events = [upcoming_events]
+    return {
+        "source": "config/athlete_context.json:athlete.event_focus.upcoming_events",
+        "upcoming_events": [
+            dict(event) for event in upcoming_events if isinstance(event, dict)
+        ],
+    }
+
+
+def _bike_allocation_policy(context: dict) -> dict:
+    athlete = context.get("athlete") or {}
+    bikes = (((athlete.get("equipment") or {}).get("bikes")) or {})
+    continuity = (
+        (context.get("training_rules") or {}).get("bike_specific_continuity")
+    ) or {}
+
+    primary_key = continuity.get("primary_outdoor_fitness_equipment_key")
+    primary_bike = bikes.get(primary_key) or {}
+    enduro_key = "specialized_enduro"
+    enduro_bike = bikes.get(enduro_key) or {}
+    enduro_policy = enduro_bike.get("training_use_policy") or {}
+    recce_consumes_slot = enduro_policy.get("recce_consumes_weekly_enduro_exposure")
+    if recce_consumes_slot is None:
+        recce_consumes_slot = continuity.get("enduro_recce_consumes_training_cap")
+
+    maximum_enduro_exposures = enduro_policy.get(
+        "maximum_normal_training_exposures_per_week"
+    )
+    if maximum_enduro_exposures is None:
+        maximum_enduro_exposures = continuity.get("enduro_training_max_exposures_per_week")
+
+    event_exposures_are_separate = enduro_policy.get(
+        "normal_training_scope_excludes_declared_event_practice_and_race"
+    )
+    return {
+        "source": [
+            "config/athlete_context.json:athlete.equipment.bikes",
+            "config/athlete_context.json:training_rules.bike_specific_continuity",
+        ],
+        "primary_fitness_and_volume_bike": {
+            "equipment_key": primary_key,
+            "role": primary_bike.get("default_role"),
+            "preferred_training_use": primary_bike.get("preferred_training_use"),
+            "mileage_policy": primary_bike.get("mileage_policy"),
+        },
+        "enduro_race_specific_bike": {
+            "equipment_key": enduro_key,
+            "role": enduro_bike.get("default_role"),
+            "normal_training": {
+                "maximum_exposures_per_week": maximum_enduro_exposures,
+                "recce_consumes_weekly_enduro_exposure": recce_consumes_slot,
+                "recce_replaces_slot_instead_of_stacking": recce_consumes_slot,
+                "density_rule": enduro_policy.get("density_rule"),
+                "scope": enduro_policy.get("scope") or [],
+            },
+            "declared_event_exposures": {
+                "practice_and_race_are_separate_from_normal_training_cap": (
+                    event_exposures_are_separate
+                ),
+                "classification": (
+                    "separately_explicit_event_exposure"
+                    if event_exposures_are_separate
+                    else None
+                ),
+            },
+        },
+    }
+
+
 def _week_block_summary(weeks: list[dict], start: str, end: str) -> dict:
     selected = [week for week in weeks if start <= week.get("week_start", "") <= end]
     return {
@@ -426,6 +499,8 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             ],
         },
         "equipment_model": (context.get("athlete") or {}).get("equipment", {}),
+        "event_model": _event_model(context),
+        "bike_allocation_policy": _bike_allocation_policy(context),
         "evidence_basis": evidence,
         "decision_hierarchy": [
             "Sabbath hard rest and current readiness.",

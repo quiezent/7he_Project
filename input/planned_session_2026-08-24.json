@@ -1,0 +1,123 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-08-24",
+  "generated_at": "2026-08-24T10:57:07+08:00",
+  "status": "active_conditional_same_day_coach_override",
+  "decision_basis": {
+    "freshness": "Live Garmin decision sync completed at 2026-08-24T10:52+08:00 with current wellness, training status, current_state and coach_packet. Direct Garmin MCP sleep, stress, Body Battery and Training Status reads agreed with the stack.",
+    "physical_readiness": "Readiness is 73 green. Primary sleep was 6.23 hours with score 74, verified wake Body Battery was 89 and Body Battery was 61 near 10:42. Resting HR was 47 bpm and overnight HRV was 48 ms with BALANCED status.",
+    "cns": "CNS readiness is 87 ready with ceiling normal_if_physical_readiness_allows. No current structured subjective check-in is available, so the outdoor branch requires a same-moment clarity, illness, gastrointestinal and coordination gate.",
+    "load": "Garmin acute load is 336 versus chronic 377 with ACWR 0.8 OPTIMAL and balanced load focus. High aerobic 846.7 is close to its 876 upper target and anaerobic 340.1 is close to its 400 upper target, so this session builds low-to-moderate aerobic and climbing continuity without sprint, VO2 or maximal descent stacking.",
+    "density": "Saturday was one split mixed training day totaling 143.2 minutes and load 103.6, followed by Sunday Sabbath. The current rolling seven-day load is 447.4 with a local spike ratio of 1.66, so today is meaningful enough to train but capped to preserve the next key MTB exposure and Friday morning race-specific optionality.",
+    "bike_allocation": "Clayton has designated the Stumpjumper as the primary fitness and volume bike. Normal Enduro training is limited to at most one weekly race-specific or skill-transfer exposure, with Denai Peladang course work performed on the Enduro.",
+    "weather": "Current Kuala Lumpur conditions are hot. METMalaysia forecasts possible afternoon thunderstorms for Kuala Lumpur; a live sky/radar check immediately before rollout is required and thunder or lightning blocks or ends the outdoor branch."
+  },
+  "session": {
+    "title": "Stumpjumper Twin Peaks aerobic-climb repeatability",
+    "type": "mtb_aerobic_climb_repeatability",
+    "garmin_ceiling_class": "controlled_familiar_repeatability",
+    "modality": "mtb",
+    "venue": "Bukit Kiara",
+    "equipment_key": "specialized_stumpjumper",
+    "bike": "Stumpjumper Expert MY25 with established clipless system and unchanged stable setup",
+    "action_identity": {
+      "schema_version": 1,
+      "venue_key": "bukit_kiara",
+      "route_key": "pure_quill",
+      "bike_key": "stumpjumper_expert_my25",
+      "access_key": "self_pedaled",
+      "quality_descent_count": 2
+    },
+    "duration_min": 120,
+    "duration_range_min": [105, 130],
+    "intensity": "moderate",
+    "density_cost": "meaningful",
+    "mtb_exposure": true,
+    "optional": false,
+    "bike_touch_status": "normal",
+    "novelty_allowed": false,
+    "open_ended": false,
+    "race_simulation": false,
+    "setup_changes_allowed": false,
+    "setup_test": false,
+    "schema_version": 3,
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Use the Stumpjumper as Clayton's primary fitness platform to train two-cycle Twin Peaks climbing repeatability and bike-specific aerobic durability while preserving technical precision and the Enduro for one weekly race-specific exposure.",
+    "dose": {
+      "self_gate": "Start only with gastrointestinal symptoms resolved, normal food and fluid tolerance, no illness or pain, mental clarity at least 8/10, normal visual width and coordination, and legs and upper body that feel symmetric and ready.",
+      "weather_gate": "The outdoor branch requires no thunder or lightning, no rapidly building cell or gust front, predictable trail grip and a safe familiar egress. Prefer a rollout early enough to finish before the forecast afternoon thunderstorm window.",
+      "opening_gate": "Complete 10-15 minutes easy, bike and pressure checks, figure-eights both ways, deliberate front/rear loading and recentring, and two to three progressive firm stops. Processing, steering and braking timing must feel immediate and symmetric.",
+      "cycle_one": "Climb Twin Peaks at RPE 4, using approximately 150-165 W on uninterrupted climbable sections when traction and terrain permit. Use natural standing on steep pitches, capped at RPE 5 with no sprint or grinding. Descend full Pure Quill at 70-75 percent intent, completing braking before turn-in and using no deliberate feature attack or exit sprint.",
+      "cycle_two_gate": "Begin cycle two only if climb one stayed at RPE 4 or lower overall, breathing and legs normalize, vision and decision speed are normal, front tracking and intended steering are clean, there was no rescue or near miss, and braking and upper-body fatigue are each 2/10 or lower.",
+      "cycle_two_if_admitted": "Repeat the Twin Peaks climb at RPE 5 or lower with the same bounded natural standing. Aim to keep comparable climb power within about 5 percent of cycle one without forcing watts through technical or traction-limited sections. Descend the same full Pure Quill stage at 75-80 percent intent, allowing speed only from cleaner line choice, earlier brake release and centred posture rather than harder pedaling or later braking.",
+      "failed_gate": "If the self, weather or opening gate fails, do not start technical MTB. If the between-cycle gate fails, take the safest familiar egress. The indoor fallback is 50-60 minutes seated at 120-125 W and RPE 2-3 with no torque, tempo or sprint work.",
+      "hard_cap": "Two complete Twin Peaks-to-Pure-Quill cycles, required familiar egress only, 130 minutes elapsed and approximately 400-500 m climbing. No third descent, alternate stage, maximal standing torque, jump progression, segment attempt or setup change."
+    },
+    "adaptation_hypothesis": "Moderate self-pedaled climbing on the lighter Stumpjumper will develop bike-specific aerobic recovery and submaximal standing-torque economy, while two controlled familiar descents preserve perception-action timing without consuming the neural and mechanical cost reserved for the weekly Enduro-specific exposure.",
+    "execution_rules": [
+      "The primary target is climbing/aerobic repeatability. Descending is controlled technical transfer, not the second maximal target.",
+      "Use the Stumpjumper, external HR strap, power meter and unchanged HSC+1 baseline. Do not combine the fitness dose with a suspension or tyre-pressure experiment.",
+      "On climbs, remain conversational overall. Stand because the pitch and traction call for it, not to chase power, speed or historical maxima.",
+      "On descents, finish braking before turn-in, identify the exit before the apex, remain dynamically centred and recenter before steering or impact. Do not pedal-attack features or flats today.",
+      "Start normally fed. For the expected 105-130-minute hot ride, target approximately 45-65 g carbohydrate, 650-850 ml fluid and 600-900 mg sodium per elapsed hour. A practical carry is 1 L 100Plus Active plus 500 ml water, about 2.5 g table salt distributed across the bottles, and four 15 g honey sachets used from minute 20 through about minute 105.",
+      "Thunder or lightning is an immediate stop; showers alone only remain acceptable while visibility, grip, runoff and egress stay predictable."
+    ],
+    "expected_result": {
+      "garmin_training_load": {
+        "expected": 175,
+        "range": [130, 220],
+        "basis": "Coach-selected broad planning range from recent Twin Peaks and controlled Stumpjumper sessions; action and technical quality matter more than matching Garmin load."
+      },
+      "rpe_range_out_of_10": [4, 6],
+      "physiology": "The second climb remains controlled at RPE 5 or lower, comparable power is within about 5 percent of the first when terrain permits, natural standing remains powerful rather than grinding, and the session ends with enough reserve for Friday's possible Enduro exposure.",
+      "technical": "The second descent matches or improves on the first for vision, early line choice, brake release, dynamic centre, front tracking and intended steering, with no rescue correction.",
+      "next_day": "Normal cognition and legs with no disproportionate upper-body, sleep or autonomic penalty."
+    },
+    "stop_rules": [
+      "Do not begin technical MTB if gastrointestinal symptoms, illness, pain, clarity below 8/10, delayed processing, abnormal coordination, asymmetric legs or upper body, or unsafe weather is present.",
+      "Do not begin cycle two after reactive mid-turn braking, missed or delayed line choice, unintended deflection or left pull, rescue correction, near miss, narrowed vision, compensatory concentration, or braking or upper-body fatigue above 2/10.",
+      "Stop intensity if the first climb exceeds RPE 5, the second climb exceeds RPE 6, breathing does not normalize during the reset, or power requires grinding rather than controlled torque.",
+      "Stop technical intent for fork pack-down or ping, rear kick or wallow, chassis pitch that changes steering, or any tyre, brake, cleat or mechanical concern.",
+      "Thunder, lightning, a rapidly building cell, gust front, flowing water or unsafe visibility requires the shortest safe familiar egress. Feeling excellent does not authorize a third descent or setup change."
+    ],
+    "post_session_review_fields": [
+      "self_gate_result_and_pre_ride_clarity_10",
+      "gastrointestinal_status_and_food_fluid_tolerance",
+      "opening_gate_result",
+      "actual_duration_min",
+      "actual_distance_km",
+      "actual_ascent_m",
+      "actual_training_load",
+      "actual_rpe",
+      "workout_feel",
+      "bike_setup_and_tyre_pressures",
+      "trail_condition_and_weather",
+      "completed_quality_descent_count",
+      "climb_rpe_by_cycle",
+      "standing_effort_quality",
+      "descent_intent_by_cycle",
+      "cycle_two_gate_result",
+      "vision_and_decision_speed_first_vs_final",
+      "brake_release_and_exit_commitment_first_vs_final",
+      "front_tracking_and_dynamic_centre",
+      "missed_line_reactive_braking_deflection_rescue_or_near_miss",
+      "fork_ping_pack_down_rear_kick_wallow_or_pitch",
+      "braking_fatigue",
+      "upper_body_fatigue",
+      "late_session_skill_fade",
+      "fueling_carbs_g_per_hour",
+      "fluid_ml_per_hour",
+      "sodium_mg_per_hour",
+      "stop_rule_outcome",
+      "next_morning_response"
+    ]
+  }
+}

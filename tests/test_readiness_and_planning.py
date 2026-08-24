@@ -1061,6 +1061,129 @@ def test_exact_date_athlete_sabbath_exception_allows_only_low_aerobic_indoor(tmp
     assert any("one-off" in item.lower() for item in plan["guardrails"])
 
 
+def _downhill_race_session() -> dict:
+    return {
+        "title": "PDR26 downhill race",
+        "type": "mtb_downhill_race",
+        "modality": "mtb",
+        "race_event": True,
+        "duration_min": 180,
+        "intensity": "race",
+        "schema_version": 3,
+        "contract_fields": SESSION_CONTRACT_FIELDS,
+        "purpose": "Race the named downhill event after Saturday practice.",
+        "dose": {"event": "Timed downhill race runs plus event warm-up."},
+        "adaptation_hypothesis": "Specific race execution converts preparation into performance.",
+        "execution_rules": ["Use only the practised line and race setup."],
+        "expected_result": {"technical": "Clean, repeatable race execution."},
+        "stop_rules": ["Withdraw for impaired processing or unsafe course conditions."],
+        "post_session_review_fields": [
+            "stop_rule_outcome",
+            "race_run_time",
+            "technical_quality_notes",
+        ],
+    }
+
+
+def _write_downhill_race_exception(root, *, replacement: str | None = "2026-09-21") -> None:
+    exception = {
+        "date": "2026-09-20",
+        "authorized_by": "athlete",
+        "authorization_source": "Athlete direct statement on 2026-08-24",
+        "explicit_one_off": True,
+        "scope": "named_race_event_only",
+        "recurring_rule_unchanged": True,
+        "event": {
+            "name": "PDR26",
+            "date": "2026-09-20",
+            "discipline": "downhill_mtb",
+            "venue_key": "denai_peladang",
+        },
+    }
+    if replacement is not None:
+        exception["replacement_sabbath_date"] = replacement
+    write_json(
+        root / "input" / "planned_session_2026-09-20.json",
+        {
+            "date": "2026-09-20",
+            "generated_at": "2026-09-19T18:00:00+08:00",
+            "status": "active_named_race_exception",
+            "sabbath_exception": exception,
+            "session": _downhill_race_session(),
+        },
+    )
+
+
+def test_exact_date_athlete_race_exception_shifts_sabbath_to_monday(tmp_path):
+    load_context(tmp_path)
+    _write_downhill_race_exception(tmp_path)
+
+    sunday = build_today_plan(
+        tmp_path,
+        "2026-09-20",
+        state=_green_state("2026-09-20"),
+    )
+
+    assert sunday["session"]["type"] == "mtb_downhill_race"
+    exception = sunday["decision_inputs"]["sabbath_exception"]
+    assert exception["status"] == "validated_exact_date_race_event_exception"
+    assert exception["event"]["name"] == "PDR26"
+    assert exception["replacement_sabbath"] == {
+        "date": "2026-09-21",
+        "status": "hard_no_exercise",
+        "reason": "Replacement Sabbath after PDR26 race day; no planned exercise.",
+    }
+    assert exception["provenance"]["source_path"].endswith(
+        "planned_session_2026-09-20.json"
+    )
+    assert sunday["gym"]["status"] == "skip"
+    assert any("replacement sabbath" in item.lower() for item in sunday["guardrails"])
+
+    write_json(
+        tmp_path / "input" / "planned_session_2026-09-21.json",
+        {
+            "date": "2026-09-21",
+            "session": {
+                "title": "Monday ride that must not override replacement Sabbath",
+                "type": "bike_quality",
+                "modality": "bike_indoor",
+                "duration_min": 60,
+                "intensity": "hard",
+            },
+        },
+    )
+    monday = build_today_plan(
+        tmp_path,
+        "2026-09-21",
+        state=_green_state("2026-09-21"),
+    )
+
+    assert monday["session"]["type"] == "scheduled_rest"
+    assert monday["session"]["duration_min"] == 0
+    replacement = monday["decision_inputs"]["replacement_sabbath"]
+    assert replacement["label"] == "Replacement Sabbath"
+    assert replacement["replacement_for"]["event_name"] == "PDR26"
+    assert replacement["provenance"]["source_path"].endswith(
+        "planned_session_2026-09-20.json"
+    )
+    assert monday["decision_inputs"]["sabbath_exception"] is None
+    assert monday["gym"]["status"] == "skip"
+
+
+def test_race_sabbath_exception_fails_closed_without_exact_replacement_monday(tmp_path):
+    load_context(tmp_path)
+    _write_downhill_race_exception(tmp_path, replacement=None)
+
+    plan = build_today_plan(
+        tmp_path,
+        "2026-09-20",
+        state=_green_state("2026-09-20"),
+    )
+
+    assert plan["session"]["type"] == "scheduled_rest"
+    assert plan["decision_inputs"]["sabbath_exception"] is None
+
+
 def test_sabbath_exception_rejects_hard_or_incomplete_session(tmp_path):
     load_context(tmp_path)
     target = "2026-05-03"

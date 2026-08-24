@@ -1,0 +1,39 @@
+{
+  "artifact_type": "coach_authored_planned_session",
+  "date": "2026-08-28",
+  "generated_at": "2026-08-24T11:18:00+08:00",
+  "status": "provisional_key_session_pending_same_day_sync_and_gate",
+  "session": {
+    "title": "Enduro two-cycle race-bike transfer",
+    "type": "mtb_race_bike_skill_transfer",
+    "modality": "mtb",
+    "venue": "Bukit Kiara",
+    "equipment_key": "specialized_enduro",
+    "action_identity": {"schema_version": 1, "venue_key": "bukit_kiara", "route_key": "pure_quill", "bike_key": "specialized_enduro", "access_key": "self_pedaled", "quality_descent_count": 2},
+    "duration_min": 120,
+    "duration_range_min": [105, 130],
+    "intensity": "moderate_technical",
+    "density_cost": "meaningful",
+    "mtb_exposure": true,
+    "bike_touch_status": "normal",
+    "optional": false,
+    "novelty_allowed": false,
+    "race_simulation": false,
+    "setup_changes_allowed": false,
+    "schema_version": 3,
+    "purpose": "Use the week's sole normal Enduro training exposure to transfer centred posture, braking timing and line speed from the Stumpjumper onto the race chassis without creating conference-week fatigue.",
+    "dose": {
+      "admission_gate": "Requires a fresh Friday Garmin sync, physical readiness not red, CNS ready or normal, clarity at least 8/10, normal vision and coordination, no illness or pain, clean response to Monday and no costly Thursday work.",
+      "opening_gate": "Easy warm-up plus figure-eights, dynamic loading, recentering and progressive stops on the unchanged race-bike system.",
+      "cycle_one": "Twin Peaks climb at RPE 4-5, then full Pure Quill at 75-80 percent with braking completed before turn-in and no feature attack.",
+      "cycle_two_gate": "Proceed only if vision, decision speed, front tracking and brake timing are clean; braking and upper-body fatigue are no more than 2/10; and there was no rescue, near miss or chassis concern.",
+      "cycle_two": "Repeat the climb at RPE 5 or lower and Pure Quill at 80-85 percent. Increase speed only through cleaner line memory, release and exit—not later braking or harder pedaling.",
+      "hard_cap": "Two complete cycles and familiar egress, 130 minutes maximum. No third stage, setup comparison, sprint, jump progression or race simulation."
+    },
+    "adaptation_hypothesis": "One deliberate weekly Enduro exposure is sufficient to retain race-bike mass, chassis, braking, cockpit and clipless automaticity while the Stumpjumper carries routine fitness volume.",
+    "execution_rules": ["Keep the currently selected Enduro shock, damping, tyres, pressures, cockpit and cleats unchanged.", "Treat this as race-bike calibration through rider execution, not an equipment test.", "Start fueled and use the canonical hot-MTB carbohydrate, fluid and sodium bands."],
+    "expected_result": {"technical": "Cycle two matches or improves cycle one for vision, braking, front authority and dynamic centre with no extra arm pump.", "physiology": "Climbs remain controlled and the session leaves no conference-day depletion.", "next_day": "Normal cognition, upper body and legs during Saturday's conference."},
+    "stop_rules": ["No technical start if the admission or opening gate fails.", "Stop after cycle one for delayed line choice, reactive braking, deflection, rescue, near miss, narrowed vision, arm pump above 2/10 or abnormal chassis behavior.", "Thunder, lightning or unsafe grip requires immediate familiar egress.", "Feeling excellent does not authorize a third cycle."],
+    "post_session_review_fields": ["fresh_and_opening_gate_results", "climb_rpe_by_cycle", "descent_intent_by_cycle", "vision_and_decision_speed_first_vs_final", "brake_release_front_tracking_and_dynamic_centre", "braking_and_upper_body_fatigue", "missed_line_deflection_rescue_or_near_miss", "fork_rear_and_chassis_behavior", "fueling_carbs_fluid_and_sodium_per_hour", "stop_rule_outcome", "next_morning_response"]
+  }
+}

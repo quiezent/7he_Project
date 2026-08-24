@@ -115,6 +115,69 @@ def test_coach_packet_promotes_sabbath_constraint(tmp_path):
     assert packet["evidence"]["trusted"][0]["name"] == "Scheduled rest"
 
 
+def test_coach_packet_surfaces_named_race_exception_and_replacement_provenance(tmp_path):
+    load_context(tmp_path)
+    state = {
+        "date": "2026-09-20",
+        "readiness": {
+            "readiness_level": "green",
+            "readiness_score": 82,
+            "confidence": "medium",
+            "reasons": [],
+        },
+        "data_freshness": {
+            "status": "current",
+            "activity_data": {"status": "current"},
+        },
+        "phase": {"name": "race_specific"},
+        "training_status_current": {},
+    }
+    exception = {
+        "exception_type": "athlete_authorized_race_event",
+        "status": "validated_exact_date_race_event_exception",
+        "event": {
+            "name": "PDR26",
+            "date": "2026-09-20",
+            "discipline": "downhill",
+            "venue": "Denai Peladang",
+        },
+        "replacement_sabbath": {
+            "date": "2026-09-21",
+            "status": "hard_no_exercise",
+        },
+        "provenance": {
+            "source_type": "coach_authored_planned_session",
+            "source_path": "input/planned_session_2026-09-20.json",
+        },
+    }
+    plan = {
+        "date": "2026-09-20",
+        "decision_inputs": {
+            "scheduled_rest": {"label": "Sabbath", "status": "hard_rest"},
+            "sabbath_exception": exception,
+        },
+        "session": {
+            "title": "PDR26 downhill race",
+            "type": "mtb_downhill_race",
+            "modality": "mtb",
+            "duration_min": 180,
+            "intensity": "race",
+        },
+    }
+
+    packet = build_coach_packet(tmp_path, "2026-09-20", state=state, plan=plan)
+
+    signal = next(
+        item
+        for item in packet["evidence"]["trusted"]
+        if item["name"] == "One-off Sabbath exception"
+    )
+    assert signal["value"]["provenance"]["source_path"].endswith(
+        "planned_session_2026-09-20.json"
+    )
+    assert "2026-09-21 is the hard replacement sabbath" in signal["message"].lower()
+
+
 def test_coach_packet_labels_non_sabbath_scheduled_rest_as_recovery(tmp_path):
     load_context(tmp_path)
     state = {

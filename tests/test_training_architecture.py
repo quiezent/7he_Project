@@ -30,14 +30,68 @@ def _context():
     return {
         "athlete": {
             "name": "Clayton",
+            "event_focus": {
+                "upcoming_events": [
+                    {
+                        "event_key": "pdr26",
+                        "name": "PDR26",
+                        "date": "2026-09-20",
+                        "day_of_week": "Sunday",
+                        "discipline": "downhill_mtb",
+                        "venue_key": "denai_peladang",
+                        "equipment_key": "specialized_enduro",
+                        "status": "confirmed_with_athlete_authorized_sabbath_shift",
+                        "event_schedule": {
+                            "official_practice_date": "2026-09-19",
+                            "race_date": "2026-09-20",
+                        },
+                        "sabbath_accommodation": {
+                            "exception_date": "2026-09-20",
+                            "exception_scope": "PDR26 race participation only",
+                            "replacement_sabbath_date": "2026-09-21",
+                        },
+                        "recce": {
+                            "timing": "early September 2026",
+                            "date": None,
+                            "equipment_key": "specialized_enduro",
+                        },
+                        "course_familiarity": {
+                            "venue": "familiar",
+                            "2026_dh_line": "new and not yet ridden",
+                        },
+                    }
+                ]
+            },
             "equipment": {
                 "trainer": {"model": "Elite Suito"},
                 "power_meter_policy": {"enduro_bike": "Ride by feel."},
+                "bikes": {
+                    "specialized_stumpjumper": {
+                        "default_role": "Primary outdoor fitness and volume MTB training bike.",
+                        "preferred_training_use": "Routine MTB engine and durability work.",
+                        "mileage_policy": "Training mileage is expected.",
+                    },
+                    "specialized_enduro": {
+                        "default_role": "Protected race and race-specific skill-transfer bike.",
+                        "training_use_policy": {
+                            "maximum_normal_training_exposures_per_week": 1,
+                            "normal_training_scope_excludes_declared_event_practice_and_race": True,
+                            "recce_consumes_weekly_enduro_exposure": True,
+                            "scope": ["race-specific skill transfer", "course recce"],
+                            "density_rule": "Replace a protected MTB slot rather than stacking.",
+                        },
+                    },
+                },
             },
             "rider_category": {"current": "experienced", "target": "expert"},
         },
         "goal_progression": {"current_phase": "base_rebuild"},
         "training_rules": {
+            "bike_specific_continuity": {
+                "primary_outdoor_fitness_equipment_key": "specialized_stumpjumper",
+                "enduro_training_max_exposures_per_week": 1,
+                "enduro_recce_consumes_training_cap": True,
+            },
             "weekly_rest_days": [
                 {"weekday": 6, "label": "Sabbath", "status": "hard_rest"}
             ]
@@ -66,6 +120,33 @@ def test_training_architecture_builds_config_and_snapshot(tmp_path):
     assert "stop_rule_outcome" in artifact["session_contract"]["post_session_review"]
     assert artifact["athlete_model"]["highest_return_sequence"][0] == "bike-specific continuity"
     assert artifact["equipment_model"]["trainer"]["model"] == "Elite Suito"
+    event = artifact["event_model"]["upcoming_events"][0]
+    assert event["event_key"] == "pdr26"
+    assert event["date"] == "2026-09-20"
+    assert event["day_of_week"] == "Sunday"
+    assert event["venue_key"] == "denai_peladang"
+    assert event["equipment_key"] == "specialized_enduro"
+    assert event["status"] == "confirmed_with_athlete_authorized_sabbath_shift"
+    assert event["recce"]["timing"] == "early September 2026"
+    assert event["course_familiarity"]["2026_dh_line"] == "new and not yet ridden"
+    assert event["sabbath_accommodation"]["replacement_sabbath_date"] == "2026-09-21"
+    allocation = artifact["bike_allocation_policy"]
+    assert allocation["primary_fitness_and_volume_bike"]["equipment_key"] == (
+        "specialized_stumpjumper"
+    )
+    assert "fitness and volume" in allocation["primary_fitness_and_volume_bike"][
+        "role"
+    ]
+    enduro = allocation["enduro_race_specific_bike"]
+    assert enduro["normal_training"]["maximum_exposures_per_week"] == 1
+    assert enduro["normal_training"]["recce_consumes_weekly_enduro_exposure"] is True
+    assert enduro["normal_training"]["recce_replaces_slot_instead_of_stacking"] is True
+    assert enduro["declared_event_exposures"][
+        "practice_and_race_are_separate_from_normal_training_cap"
+    ] is True
+    assert enduro["declared_event_exposures"]["classification"] == (
+        "separately_explicit_event_exposure"
+    )
     assert artifact["macrocycle"][0]["phase"] == "base_rebuild"
     assert "density_governor" in artifact["weekly_architecture"]
     assert "weekly_plan" in artifact["artifact_contract"]

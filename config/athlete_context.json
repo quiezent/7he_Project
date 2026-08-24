@@ -35,7 +35,42 @@
         },
         "practice_day": "One controlled run of all stages without draining next-day power.",
         "race_day": "Repeated hard stage efforts after prior-day trail exposure."
-      }
+      },
+      "upcoming_events": [
+        {
+          "event_key": "pdr26",
+          "name": "PDR26",
+          "date": "2026-09-20",
+          "day_of_week": "Sunday",
+          "discipline": "downhill_mtb",
+          "venue_key": "denai_peladang",
+          "equipment_key": "specialized_enduro",
+          "status": "confirmed_with_athlete_authorized_sabbath_shift",
+          "event_schedule": {
+            "official_practice_date": "2026-09-19",
+            "race_date": "2026-09-20"
+          },
+          "sabbath_accommodation": {
+            "authorization_source": "Athlete-direct confirmation on 2026-08-24.",
+            "exception_date": "2026-09-20",
+            "exception_scope": "PDR26 race participation only; this is not a general Sunday-training exception.",
+            "replacement_sabbath_date": "2026-09-21",
+            "replacement_sabbath_status": "hard_rest_no_planned_exercise",
+            "recurring_rule_unchanged": true
+          },
+          "recce": {
+            "timing": "early September 2026",
+            "date": null,
+            "equipment_key": "specialized_enduro"
+          },
+          "course_familiarity": {
+            "venue": "Familiar from prior enduro riding and racing.",
+            "enduro_trails": "Trained repeatedly in 2022-2023 and raced on 2024-05-26.",
+            "2026_dh_line": "New course line and not yet ridden by Clayton."
+          },
+          "planning_constraint": "Clayton explicitly authorized PDR26 race participation on Sunday 2026-09-20 and shifted that event weekend's Sabbath to Monday 2026-09-21. Saturday practice and Sunday racing are event exposures; Monday is hard rest. Do not generalize this exception to other Sundays or infer future race exceptions."
+        }
+      ]
     },
     "venue_profiles": {
       "bukit_kiara": {
@@ -245,6 +280,44 @@
           "For self-pedaled Bukit Dinding, treat the session like an enduro durability exposure with meaningful aerobic and upper-body cost.",
           "Do not use race-day Garmin load alone to estimate DH violence; descending impact and braking fatigue are under-represented."
         ]
+      },
+      "denai_peladang": {
+        "aliases": [
+          "Denai Peladang",
+          "Lembah Peladang Agro Park",
+          "Puncak Alam",
+          "Ijok",
+          "Shah Alam"
+        ],
+        "garmin_location_note": "Garmin reverse-geocodes the same venue cluster inconsistently as Ijok, Puncak Alam and Shah Alam; athlete confirmation identifies the cluster as Denai Peladang.",
+        "access_model": {
+          "training_role": "Event-specific downhill and enduro venue rather than a routine weekly anchor.",
+          "2026_course_status": "PDR26 uses a new downhill line that Clayton has not ridden; prior venue familiarity does not establish line familiarity."
+        },
+        "historical_evidence": {
+          "identified_activity_count_through_2024_race": 31,
+          "2022_2023_training_summary": "Twenty-two MTB sessions totaling 45.8 hours, 234.2 km, 8,440 m climbing and Garmin load 5,758.9. Eighteen of the 22 used the SQ3 or Stumpjumper and four used an Enduro.",
+          "2024_enduro_race": {
+            "activity_id": "15581569158",
+            "date": "2024-05-26",
+            "athlete_identified_event": "Denai Peladang enduro race",
+            "garmin_activity_name": "Puncak Alam Mountain Biking",
+            "bike": "S-Works Enduro MY24",
+            "elapsed_duration_min": 141.8,
+            "distance_km": 11.49,
+            "elevation_gain_m": 408.0,
+            "training_load": 298.0,
+            "aerobic_training_effect": 3.9,
+            "anaerobic_training_effect": 3.3,
+            "interpretation": "Strong evidence of venue and enduro-race familiarity, but not a baseline for the new 2026 downhill line."
+          }
+        },
+        "coaching_rules": [
+          "Use the Stumpjumper for most aerobic, torque and repeatability volume; preserve one weekly Enduro exposure for race-specific chassis, braking, arm-pump, impact and cockpit transfer.",
+          "The early-September recce consumes that week's Enduro exposure and replaces another costly MTB session rather than stacking above the density cap.",
+          "Treat the first recce as new-course discovery: sighting first, then sector confirmation, with no race-speed run until line memory, braking points and technical gates are clean.",
+          "Prescribe downhill work by clean-run count, line accuracy, braking quality, arm pump and final-run decision speed; Garmin load alone under-represents consequence."
+        ]
       }
     },
     "local_training_assets": {
@@ -291,7 +364,18 @@
           "outdoor_role": "Can be taken outdoors when needed."
         },
         "specialized_enduro": {
-          "default_role": "Primary enduro bike for feel-based outdoor riding.",
+          "default_role": "Protected race and race-specific skill-transfer bike; not the routine fitness-mileage bike.",
+          "training_use_policy": {
+            "maximum_normal_training_exposures_per_week": 1,
+            "normal_training_scope_excludes_declared_event_practice_and_race": true,
+            "scope": [
+              "race-specific skill transfer",
+              "course recce",
+              "race-bike chassis, braking, impact and cockpit validation"
+            ],
+            "recce_consumes_weekly_enduro_exposure": true,
+            "density_rule": "An Enduro training exposure replaces a protected MTB slot rather than stacking as an extra costly day. Official practice and racing on a declared event weekend are modeled as event exposures, not extra training touches, and require taper plus post-event recovery."
+          },
           "current_fork": {
             "installed_date": "2026-06-01",
             "model": "RockShox Zeb Ultimate",
@@ -368,8 +452,8 @@
           }
         },
         "specialized_stumpjumper": {
-          "default_role": "Outdoor trail bike with current power meter.",
-          "preferred_training_use": "Power-meter climb-focused Bukit Kiara loop sessions: focus the workout on repeated climbs and cruise the same descent trail to control risk and isolate aerobic/torque fitness.",
+          "default_role": "Primary outdoor fitness and volume MTB training bike with current power meter.",
+          "preferred_training_use": "Routine MTB engine work, climbing repeatability, durability volume and appropriate technical training. Use the power meter for comparable climb work and control descent intent when the physiological target is primary.",
           "mileage_policy": "Clayton is comfortable putting training mileage on the Stumpjumper.",
           "trainer_swap_option": "Can replace the Marin SQ3 on the Elite Suito if needed.",
           "setup_history": [
@@ -595,6 +679,16 @@
       "note": "Putrajaya Challenge Park profile added from 2025-05-17 practice/trail-detail activity and 2025-06-01 DH seeding/race files. PCP is classified as a short curated jump-line DH venue: about 0.58 km, 1:30-1:40, and 55 m descending for the race line.",
       "timestamp": "2026-06-05T17:10:00+08:00",
       "type": "venue_profile_added"
+    },
+    {
+      "note": "Clayton designated the Stumpjumper as the primary outdoor fitness and volume bike and limited normal Enduro training to one weekly race-specific or skill-transfer exposure. PDR26 was added for 2026-09-20 at Denai Peladang with an early-September Enduro recce; the new DH line is unvalidated.",
+      "timestamp": "2026-08-24T11:03:00+08:00",
+      "type": "race_focus_and_equipment_policy_updated"
+    },
+    {
+      "note": "Clayton explicitly authorized the PDR26 Sunday race on 2026-09-20 and moved that event weekend's Sabbath to Monday 2026-09-21. The exception is race-specific; the recurring Sunday hard-rest rule remains unchanged.",
+      "timestamp": "2026-08-24T11:15:00+08:00",
+      "type": "event_specific_sabbath_shift_authorized"
     }
   ],
   "medical": {
@@ -835,7 +929,10 @@
       ],
       "counting_rule": "Count unique bike days, not split activity files. Any hard run counts toward the meaningful-cost cap.",
       "protect_mtb_exposures_per_week": 2,
-      "maximum_mtb_exposures_per_week": 3
+      "maximum_mtb_exposures_per_week": 3,
+      "primary_outdoor_fitness_equipment_key": "specialized_stumpjumper",
+      "enduro_training_max_exposures_per_week": 1,
+      "enduro_recce_consumes_training_cap": true
     },
     "elliptical_use": {
       "allowed": "Recovery/support aerobic work, usually HR-capped around 120 bpm.",
@@ -877,6 +974,13 @@
     "training_status_stale_warning_days": 1,
     "training_status_stale_hard_days": 2,
     "stale_data_warning_days": 1,
+    "event_specific_sabbath_shift_policy": {
+      "authorization_required": "Direct athlete authorization naming the event, exact Sunday event date and exact replacement Sabbath date.",
+      "default": "Without all required fields, Sunday remains hard rest.",
+      "scope": "The exception applies only to the named official race event and does not authorize ordinary Sunday training, recce or future races.",
+      "replacement_rule": "The exact replacement Sabbath is hard rest with no planned exercise.",
+      "density_rule": "Official practice and race exposures are modeled as one event weekend; taper before it and recover after it rather than counting them as normal weekly training additions."
+    },
     "weekly_rest_days": [
       {
         "label": "Sabbath",
@@ -886,5 +990,5 @@
       }
     ]
   },
-  "updated_at": "2026-07-28T15:09:00+08:00"
+  "updated_at": "2026-08-24T11:15:00+08:00"
 }
