@@ -2,7 +2,13 @@
   "artifact_type": "coach_authored_planned_session",
   "date": "2026-08-24",
   "generated_at": "2026-08-24T12:53:34+08:00",
-  "status": "active_same_day_environmental_override",
+  "status": "not_executed_action_mismatch_resequenced_to_2026-08-25",
+  "actual_disposition": {
+    "activity_id": "24093612973",
+    "executed_action": "A 25.5-minute outdoor Specialized Levo SL Gen 2 e-MTB test ride was completed instead.",
+    "alignment": "mismatched_modality_duration_session_count_and_adaptation",
+    "guardrail": "The Levo ride's Garmin load fell inside the Suito contract's broad expected load range, but aggregate load similarity does not make the actions or adaptations equivalent."
+  },
   "decision_basis": {
     "freshness": "Live Garmin decision sync completed at 2026-08-24T12:50+08:00 with current wellness, training status, current_state and coach_packet.",
     "physical_readiness": "Readiness is 73 green. Primary sleep was 6.23 hours with score 74, verified wake Body Battery was 89 and current Body Battery was 48 near 12:36. Resting HR was 47 bpm and overnight HRV was 48 ms with BALANCED status.",

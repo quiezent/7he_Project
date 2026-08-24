@@ -32,7 +32,7 @@
         "lap_2_route": "2K",
         "lap_3_route": "Climb back from 2K.",
         "lap_4_route": "Short unassisted climb described by the athlete as approximately 8 percent; Garmin lap geometry recorded approximately 11.1 percent average.",
-        "lap_4_rpe": null,
+        "lap_4_rpe": 8,
         "lap_4_gearing_and_torque_notes": "Normal 12-speed gearing feel; the bike felt slightly heavier, without perceived motor drag or stiction.",
         "technical_quality_notes": "The Levo SL felt intuitive and required little adaptation. Bunny hops were harder because the rear felt heavier. The rear brake locked more frequently and more easily than on the Stumpjumper.",
         "late_session_skill_fade": "not_reported",

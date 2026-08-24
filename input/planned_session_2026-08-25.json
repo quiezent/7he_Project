@@ -1,27 +1,95 @@
 {
   "artifact_type": "coach_authored_planned_session",
   "date": "2026-08-25",
-  "generated_at": "2026-08-24T12:53:34+08:00",
-  "status": "provisional_weekly_intent_pending_same_day_gate",
+  "generated_at": "2026-08-24T17:38:36+08:00",
+  "status": "provisional_next_day_resequenced_session_requires_fresh_gate",
+  "decision_basis": {
+    "prior_day_action": "The planned Monday Suito session was not executed. Clayton completed a 25.5-minute Levo SL e-MTB test instead; it was non-zero density but did not supply the planned sustained tempo/torque adaptation.",
+    "prior_day_cost": "The e-MTB activity recorded Garmin load 84.8, aerobic TE 3.0, anaerobic TE 1.2 and one 98.7-second unassisted climb at athlete-reported RPE 8. HR-derived load has moderate confidence because no external heart-rate sensor was recorded.",
+    "prior_day_recovery_context": "At 17:25 Monday, physical readiness was yellow 58, current Body Battery 25, sleep 6.23 hours and the stack's seven-day load was 532.3 versus 269.3 in the preceding seven days. CNS remained ready.",
+    "airway_context": "Clayton reported a slight sore throat and intermittent outdoor runny nose after haze exposure. Tuesday's structured session requires these symptoms to be absent at rest in the cleaner indoor environment.",
+    "weekly_trade": "Executing Tuesday 3x8 spends the week's structured aerobic-development slot. Wednesday becomes recovery or low-cost continuity; neither two Twin Peaks nor indoor VO2 may be stacked the following day. Friday Enduro remains the next protected meaningful session, subject to fresh gates."
+  },
   "session": {
-    "title": "Easy Suito recovery continuity",
-    "type": "low_cost_bike_continuity",
+    "title": "Resequenced Suito 3x8 tempo/torque development",
+    "type": "indoor_tempo_torque",
+    "garmin_ceiling_class": "controlled_aerobic_development",
     "modality": "indoor_cycling",
+    "venue": "Home Elite Suito",
     "equipment_key": "marin_san_quentin_3",
-    "duration_min": 40,
-    "duration_range_min": [30, 45],
-    "intensity": "recovery",
-    "density_cost": "low",
+    "action_identity": {
+      "schema_version": 1,
+      "venue_key": "home_elite_suito",
+      "route_key": "suito_3x8_tempo_torque",
+      "bike_key": "marin_san_quentin_3",
+      "access_key": "indoor_trainer",
+      "quality_descent_count": 0
+    },
+    "duration_min": 62,
+    "duration_range_min": [58, 66],
+    "intensity": "moderate",
+    "density_cost": "meaningful",
     "mtb_exposure": false,
-    "bike_touch_status": "normal",
     "optional": false,
+    "bike_touch_status": "normal",
+    "novelty_allowed": false,
+    "open_ended": false,
+    "race_simulation": false,
+    "setup_changes_allowed": false,
+    "setup_test": false,
     "schema_version": 3,
-    "purpose": "Absorb Monday's haze-day Suito 3x8 session while preserving a low-cost bike-specific touch before Wednesday's provisional displaced Stumpjumper session.",
-    "dose": "With a clean post-Monday recovery gate, ride 30-40 minutes seated at 110-120 W and RPE 2 with normal cadence; no torque, tempo or intervals. A failed recovery gate converts the day to complete rest.",
-    "adaptation_hypothesis": "Very low-cost circulation can support recovery and bike continuity without adding meaningful density before Friday's Enduro exposure.",
-    "execution_rules": ["Fresh same-day evidence governs whether the optional spin occurs.", "Keep power smooth and finish fresher than the start."],
-    "expected_result": {"session": "No accumulating leg heaviness or sympathetic activation.", "next_day": "Normal or improved freshness for Wednesday's conditional MTB work."},
-    "stop_rules": ["Convert to complete rest for poor sleep, gastrointestinal or respiratory symptoms, illness, pain, abnormal fatigue, impaired CNS readiness or a triggered-but-continued Monday session.", "Stop if RPE rises above 3 or legs worsen."],
-    "post_session_review_fields": ["session_or_rest_selected", "legs_start_to_finish", "actual_power_and_duration", "stop_rule_outcome"]
+    "contract_fields": [
+      "purpose",
+      "dose",
+      "adaptation_hypothesis",
+      "execution_rules",
+      "expected_result",
+      "stop_rules",
+      "post_session_review_fields"
+    ],
+    "purpose": "Recover the sustained bike-specific aerobic and muscular-endurance stimulus that Monday's short assisted test ride did not provide, without converting the week into consecutive intensity days.",
+    "dose": {
+      "fresh_admission_gate": "Run the live Garmin decision workflow Tuesday before training. Start only with physical readiness not red, CNS ready or normal, mental clarity at least 8/10, normal breathing at rest, no sore throat, runny nose, cough, wheeze, chest tightness, unusual fatigue, illness, gastrointestinal disturbance or pain, and symmetric normal legs.",
+      "clean_air_gate": "Keep doors and windows closed and particle filtration running. Use the indoor PM2.5 monitor as exposure context, not a guarantee of safety. Do not start if the reading is rising, smoke odour is present, or eye, nose or throat irritation appears indoors.",
+      "warm_up": "Ride 12-15 minutes seated, progressing from 105 W toward 140 W. Confirm normal breathing, expected HR response, stable cadence and posture before beginning structured work.",
+      "main_set": "Complete 3x8 minutes seated at 165-170 W, cadence 70-75 rpm and RPE 5-6, with 4 minutes at 100-115 W between repetitions. Hold the same range for all three repetitions; do not add the previously optional 175 W finish.",
+      "cool_down": "Ride 8-10 minutes at 100-115 W. Total duration 58-66 minutes.",
+      "fallback": "If respiratory symptoms are absent but readiness, sleep or leg response is merely yellow, replace the structured set with 30-40 minutes at 110-120 W and RPE 2. Any respiratory or irritation symptom selects complete rest."
+    },
+    "adaptation_hypothesis": "Twenty-four controlled minutes at 78-81 percent of the current 211 W Garmin operational FTP will rebuild sustained bike-specific aerobic and torque durability. Keeping Wednesday low-cost allows this stimulus to be absorbed before Friday's protected Enduro exposure.",
+    "execution_rules": [
+      "Use strong internal fan cooling, remain seated and keep the established 12 mm aft saddle position unchanged.",
+      "Power and form govern the repetitions; HR is a response signal and must not be chased.",
+      "Eat a normal carbohydrate-containing meal. If the last meal was more than three hours earlier, take 20-30 g carbohydrate before or during the ride. Drink approximately 500-750 ml per hour with sodium according to indoor sweat loss.",
+      "No standing torque, cadence drills, fourth repetition, extra watts or post-session volume.",
+      "Finish early enough to protect the planned 23:00 sleep opportunity and US-market-work cutoff.",
+      "Wednesday is recovery or low-cost continuity only; do not add Twin Peaks, VO2, threshold or sprint work."
+    ],
+    "expected_result": {
+      "garmin_training_load": {
+        "expected": 70,
+        "range": [45, 95],
+        "basis": "Broad athlete-specific range for controlled 3x8 Suito work; execution quality and next-day absorption matter more than matching the point estimate."
+      },
+      "session": "All repetitions remain within approximately 3 percent power spread, cadence and posture stay stable, rep three remains RPE 6 or lower, and no respiratory irritation appears.",
+      "next_day": "Normal cognition, breathing and legs with no disproportionate RHR, HRV, Body Battery, sleep, airway, knee, back, hand or fit cost. Wednesday remains deliberately low-cost even after a green response."
+    },
+    "stop_rules": [
+      "Do not start, or stop immediately, for sore throat, runny nose, cough, wheeze, chest tightness, unusual shortness of breath, eye irritation, smoke odour, dizziness or headache.",
+      "End the structured set for pain, an abnormal HR response relative to power and cooling, posture or cadence collapse, power loss above 5 percent, or if repetition two already exceeds RPE 6.",
+      "Do not convert stopped intervals into extra easy duration or move the missing work into Wednesday."
+    ],
+    "post_session_review_fields": [
+      "fresh_gate_result_and_pre_session_clarity_10",
+      "airway_symptom_status_before_during_and_after",
+      "clean_air_controls_and_indoor_pm2_5",
+      "repetition_average_power_hr_cadence_and_rpe",
+      "power_spread_posture_and_form",
+      "legs_start_to_finish",
+      "body_or_fit_symptoms",
+      "fluid_fuel_sodium_and_cooling",
+      "stop_rule_outcome",
+      "next_morning_response"
+    ]
   }
 }
