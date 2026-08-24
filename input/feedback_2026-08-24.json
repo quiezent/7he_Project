@@ -1,0 +1,63 @@
+{
+  "date": "2026-08-24",
+  "entries": [
+    {
+      "timestamp_local": "2026-08-24T17:25:14+08:00",
+      "source": "athlete_post_session_report_with_garmin_fit_and_route_matched_power_audit",
+      "activity_id": "24093612973",
+      "action_identity_status": "mismatched_modality_duration_and_session_count_e_mtb_test_vs_indoor_tempo_contract",
+      "reported_context": {
+        "session_intent": "Short test ride of a Specialized Levo SL Gen 2 rather than the planned Elite Suito tempo/torque session.",
+        "bike": "Specialized Levo SL Gen 2 with SRAM GX 12-speed drivetrain.",
+        "athlete_interface_mode_labels": {
+          "0": "off",
+          "1": "eco",
+          "2": "trail",
+          "3": "turbo"
+        },
+        "garmin_fit_raw_code_correlation": {
+          "0": "off",
+          "1": "eco",
+          "3": "trail",
+          "5": "turbo"
+        },
+        "mode_mapping_guardrail": "Preserve the bike's user-interface ordinal separately from Garmin's raw FIT code. The raw FIT trace contains 0/1/3/5, while the athlete reports the bike interface as 0/1/2/3. Do not relabel the raw values without this explicit correlation.",
+        "lap_4_pedaling_feel": "Pedaled like a slightly heavier version of Clayton's other 12-speed bikes. No perceived motor drag or stiction while assistance was off.",
+        "post_session_feel": "Athlete reports no detectable difference or meaningful fatigue after the short e-bike test and initially intended to complete the planned Suito session as well.",
+        "home_air_context": "Athlete reports doors and windows closed, air filters operating, and indoor PM2.5 below 30.",
+        "haze_response": "Slight sore throat and intermittent runny nose when outdoors. No cough, wheeze or chest symptom was reported."
+      },
+      "session_contract_review": {
+        "bike_and_setup": "Specialized Levo SL Gen 2 test bike; SRAM GX 12-speed drivetrain.",
+        "lap_2_route": "2K",
+        "lap_3_route": "Climb back from 2K.",
+        "lap_4_route": "Short unassisted climb described by the athlete as approximately 8 percent; Garmin lap geometry recorded approximately 11.1 percent average.",
+        "lap_4_rpe": null,
+        "lap_4_gearing_and_torque_notes": "Normal 12-speed gearing feel; the bike felt slightly heavier, without perceived motor drag or stiction.",
+        "technical_quality_notes": "The Levo SL felt intuitive and required little adaptation. Bunny hops were harder because the rear felt heavier. The rear brake locked more frequently and more easily than on the Stumpjumper.",
+        "late_session_skill_fade": "not_reported",
+        "stop_rule_outcome": "not_triggered",
+        "stop_rule_outcome_source": "athlete_explicit_report",
+        "respiratory_or_irritation_symptoms": "Slight sore throat and intermittent outdoor runny nose during the haze episode; indoor environment reported substantially cleaner.",
+        "fueling_carbs_g_per_hour": null,
+        "fluid_ml_per_hour": null,
+        "sodium_mg_per_hour": null
+      },
+      "objective_ebike_evidence": {
+        "assist_mode": "Lap 4 contained 99 consecutive one-second records at raw Garmin FIT assist code 0, corroborating assistance off.",
+        "battery": "Lap 4 remained at Garmin e-bike battery level 35 throughout.",
+        "power_observability": "No rider power, motor power, cadence, torque, assist-level percentage, current or voltage was recorded. Any rider-watt value is modeled rather than measured.",
+        "route_matched_rider_power_model": "Seventeen closely route-matched Stumpjumper power-meter passages predict 190.5 W Stumpjumper-equivalent at 98.697 seconds. A practical Levo rider-power range of approximately 200-220 W remains moderate-low-confidence and is not valid for FTP calibration."
+      },
+      "coach_contract_audit": {
+        "written_action": "One 60-70 minute indoor Suito session containing 3x8 minutes at 165-170 W.",
+        "executed_action": "One 25.5 minute outdoor e-MTB test ride with assisted riding and one approximately 99-second unassisted climb.",
+        "physiology_load_comparison": "Garmin load 84.8 lies within the written contract's broad expected 50-105 range, but HR source confidence is reduced because no external heart-rate sensor was recorded.",
+        "action_alignment": "mismatched",
+        "adaptation_alignment": "mismatched_no_sustained_tempo_torque_dose",
+        "calibration_disposition": "Not eligible for true digital-twin calibration. Similar aggregate Garmin load does not repair the modality, duration, session-count or sustained-work mismatch.",
+        "density_interpretation": "The ride is not equivalent to the Suito stimulus, but it remains non-zero same-day cardiovascular, thermal, respiratory and technical stress when deciding whether to stack another meaningful session."
+      }
+    }
+  ]
+}
