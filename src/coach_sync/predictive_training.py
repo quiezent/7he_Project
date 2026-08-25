@@ -116,6 +116,7 @@ MIN_MATCHED_ROUTE_REPEAT_LOAD_SAMPLES = 2
 MAX_DETAILED_REJECTED_ACTION_CANDIDATES = 25
 LOOP_ARTIFACT_LOAD_TOLERANCE = 0.1
 MATCHED_ACTION_DURATION_RATIO_RANGE = (0.8, 1.25)
+OUT_OF_POLICY_DELIVERED_ACTION_WEIGHT = 0.35
 MATCHED_2K_SESSION_TYPE = "mtb_skill_familiar_capped"
 MATCHED_2K_ACTION_IDENTITY = {
     "schema_version": 1,
@@ -2327,6 +2328,222 @@ def _stop_rule_review(expected: dict, blocks: list[dict]) -> dict:
     }
 
 
+def _nested_review_value(
+    blocks: list[dict],
+    aliases: tuple[str, ...],
+) -> tuple[Any, str | None]:
+    """Return a structured feedback value without copying its whole parent block."""
+    normalized_aliases = {_normalized_key(alias) for alias in aliases}
+
+    def find_nested(value: Any, path: str) -> tuple[Any, str | None]:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                child_path = f"{path}.{key}"
+                if _normalized_key(key) in normalized_aliases and _review_value_present(child):
+                    return child, child_path
+            for key, child in value.items():
+                found, found_path = find_nested(child, f"{path}.{key}")
+                if found_path:
+                    return found, found_path
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                found, found_path = find_nested(child, f"{path}[{index}]")
+                if found_path:
+                    return found, found_path
+        return None, None
+
+    for block in reversed(blocks):
+        source = str(block.get("source") or "feedback")
+        found, found_path = find_nested(block.get("payload") or {}, source)
+        if found_path:
+            return found, found_path
+    return None, None
+
+
+def _trigger_repetition(value: Any) -> int | None:
+    numeric = as_number(value)
+    if numeric is not None and float(numeric).is_integer() and numeric > 0:
+        return int(numeric)
+    match = re.search(r"(?:rep(?:etition)?)[_\s-]*(\d+)", str(value or ""), re.IGNORECASE)
+    return int(match.group(1)) if match else None
+
+
+def _bounded_rpe_values(value: Any) -> list[float]:
+    if not isinstance(value, (list, tuple)):
+        return []
+    values = []
+    for item in value:
+        number = as_number(item)
+        if number is None or number < 0 or number > 10:
+            return []
+        values.append(float(number))
+    return values
+
+
+def _sanitized_repetition_rows(value: Any) -> list[dict]:
+    if not isinstance(value, list):
+        return []
+    allowed = (
+        "duration_min",
+        "average_power_w",
+        "normalized_power_w",
+        "average_hr_bpm",
+        "max_hr_bpm",
+        "average_cadence_rpm",
+    )
+    rows = []
+    for index, item in enumerate(value, start=1):
+        if not isinstance(item, dict):
+            continue
+        number = as_number(item.get("number"))
+        repetition = int(number) if number is not None and number > 0 else index
+        row = {"number": repetition}
+        for field in allowed:
+            metric = as_number(item.get(field))
+            if metric is not None:
+                row[field] = _round(metric, 1)
+        if len(row) > 1:
+            rows.append(row)
+    return rows
+
+
+def _feedback_source_scope(source: str | None) -> str | None:
+    if not source:
+        return None
+    match = re.match(r"(feedback\.entries\[\d+\])", source)
+    if match:
+        return match.group(1)
+    return "feedback" if source.startswith("feedback") else None
+
+
+def _execution_learning_evidence(
+    expected: dict,
+    blocks: list[dict],
+    stop_rule: dict,
+) -> dict:
+    """Build bounded evidence for action-boundary and stop-rule learning."""
+    trigger_raw, trigger_source = _nested_review_value(
+        blocks,
+        ("stop_trigger_timing", "stop_rule_trigger_timing", "trigger_timing"),
+    )
+    trigger_repetition = _trigger_repetition(trigger_raw)
+    rep_rpe_raw, rep_rpe_source = _nested_review_value(
+        blocks,
+        (
+            "repetition_reported_rpe_0_to_10",
+            "rep_by_rep_reported_rpe_0_to_10",
+            "repetition_rpe_0_to_10",
+        ),
+    )
+    repetition_rpe = _bounded_rpe_values(rep_rpe_raw)
+    component_aliases = ["trigger_repetition_rpe_components_0_to_10"]
+    if trigger_repetition:
+        component_aliases.extend(
+            (
+                f"repetition_{trigger_repetition}_rpe_components_0_to_10",
+                f"rep_{trigger_repetition}_rpe_components_0_to_10",
+            )
+        )
+    component_raw, component_source = _nested_review_value(
+        blocks,
+        tuple(component_aliases),
+    )
+    components = {}
+    if isinstance(component_raw, dict):
+        for key, value in component_raw.items():
+            number = as_number(value)
+            if number is not None and 0 <= number <= 10:
+                components[_normalized_key(key)] = _round(number, 1)
+
+    objective_raw, objective_source = _nested_review_value(
+        blocks,
+        ("objective_interval_evidence",),
+    )
+    repetitions = _sanitized_repetition_rows(
+        objective_raw.get("repetitions") if isinstance(objective_raw, dict) else None
+    )
+    continuation_reason, continuation_source = _nested_review_value(
+        blocks,
+        ("continuation_reason", "stop_rule_continuation_reason"),
+    )
+
+    rpe_range = expected.get("expected_rpe_score_range") or []
+    rpe_ceiling = as_number(rpe_range[1]) if isinstance(rpe_range, (list, tuple)) and len(rpe_range) == 2 else None
+    if rpe_ceiling is not None and rpe_ceiling > 10:
+        rpe_ceiling /= 10.0
+    last_within_rpe_ceiling = None
+    if trigger_repetition and repetition_rpe and rpe_ceiling is not None:
+        for repetition, value in enumerate(repetition_rpe[: trigger_repetition - 1], start=1):
+            if value <= rpe_ceiling:
+                last_within_rpe_ceiling = repetition
+            else:
+                break
+
+    trigger_dimension = "reported_repetition_rpe"
+    if components:
+        maximum = max(components.values())
+        leaders = sorted(key for key, value in components.items() if value == maximum)
+        if len(leaders) == 1:
+            trigger_dimension = leaders[0]
+
+    power_values = [
+        row["average_power_w"]
+        for row in repetitions
+        if row.get("average_power_w") is not None
+    ]
+    external_work_stable = None
+    if len(power_values) >= 2:
+        mean_power = sum(power_values) / len(power_values)
+        external_work_stable = max(power_values) - min(power_values) <= max(5.0, mean_power * 0.03)
+
+    explicitly_triggered = stop_rule.get("status") in {
+        "triggered_and_stopped",
+        "triggered_and_downshifted",
+        "triggered_but_continued",
+    }
+    source_scope_aligned = bool(
+        _feedback_source_scope(trigger_source)
+        and _feedback_source_scope(trigger_source)
+        == _feedback_source_scope(rep_rpe_source)
+    )
+    boundary_eligible = bool(
+        explicitly_triggered
+        and trigger_repetition
+        and repetition_rpe
+        and len(repetition_rpe) >= trigger_repetition
+        and source_scope_aligned
+    )
+    delivered_action_characterized = bool(
+        boundary_eligible
+        and repetitions
+        and any(row.get("number") == trigger_repetition for row in repetitions)
+        and _feedback_source_scope(objective_source)
+        == _feedback_source_scope(trigger_source)
+    )
+    return {
+        "structured_boundary_evidence": boundary_eligible,
+        "structured_delivered_action_evidence": delivered_action_characterized,
+        "feedback_source_scope_aligned": source_scope_aligned,
+        "trigger": {
+            "timing": trigger_raw,
+            "repetition": trigger_repetition,
+            "dimension": trigger_dimension if boundary_eligible else None,
+            "rpe_components_0_to_10": components,
+            "source": trigger_source,
+            "component_source": component_source,
+        },
+        "repetition_reported_rpe_0_to_10": repetition_rpe,
+        "repetition_rpe_source": rep_rpe_source,
+        "expected_rpe_ceiling_0_to_10": _round(rpe_ceiling, 1),
+        "last_within_rpe_ceiling_repetition": last_within_rpe_ceiling,
+        "objective_repetitions": repetitions,
+        "objective_repetitions_source": objective_source,
+        "external_work_stable": external_work_stable,
+        "continuation_reason": continuation_reason if isinstance(continuation_reason, str) else None,
+        "continuation_reason_source": continuation_source,
+    }
+
+
 def _technical_quality_review(expected: dict, blocks: list[dict]) -> dict:
     if not _is_technical_session(expected):
         return {
@@ -2570,6 +2787,7 @@ def _contract_quality_review(
     completion_ratio = len(completed) / len(required_rows) if required_rows else 1.0
     action = _action_alignment(expected, actual, blocks)
     stop_rule = _stop_rule_review(expected, blocks)
+    execution_learning_evidence = _execution_learning_evidence(expected, blocks, stop_rule)
     technical_quality = _technical_quality_review(expected, blocks)
     fueling_adequacy = _fueling_adequacy_review(expected, blocks)
     reasons = []
@@ -2618,6 +2836,7 @@ def _contract_quality_review(
         "contract": contract,
         "action_alignment": action,
         "stop_rule_outcome": stop_rule,
+        "execution_learning_evidence": execution_learning_evidence,
         "technical_quality": technical_quality,
         "fueling_adequacy": fueling_adequacy,
         "review_field_completion": {
@@ -3080,6 +3299,203 @@ def _stress_test_comparison(prediction: dict, actual_response: float | None) -> 
     }
 
 
+def _learning_disposition(
+    quality: dict,
+    adherence: str,
+    response_status: str,
+    response_delta: float | None,
+    physiology_status: str,
+    physiology_eligible: bool,
+    physiology_weight: float,
+    calibration_status: str,
+    calibration_eligible: bool,
+    calibration_weight: float,
+) -> dict:
+    """Separate nominal validation from observations of the delivered action."""
+    quality_status = str(quality.get("status") or "not_reviewed")
+    stop_rule = quality.get("stop_rule_outcome") or {}
+    stop_status = str(stop_rule.get("status") or "unknown")
+    learning_evidence = quality.get("execution_learning_evidence") or {}
+    unsafe_continuation = stop_status == "triggered_but_continued"
+
+    if unsafe_continuation:
+        nominal = {
+            "status": "rejected_unsafe_stop_rule_continued",
+            "eligible": False,
+            "weight": 0.0,
+            "permanent_exclusion": True,
+            "target": "nominal_prescription",
+            "reason": (
+                "The stop rule was overridden, so this session can never validate the nominal prescription, "
+                "even if next-day recovery is favorable."
+            ),
+        }
+    else:
+        nominal = {
+            "status": calibration_status,
+            "eligible": calibration_eligible,
+            "weight": calibration_weight,
+            "permanent_exclusion": False,
+            "target": "nominal_prescription",
+            "reason": next(iter(quality.get("reasons") or []), None),
+        }
+
+    action_matched = (quality.get("action_alignment") or {}).get("status") == "matched"
+    structured_boundary = bool(learning_evidence.get("structured_boundary_evidence"))
+    structured_delivered_action = bool(
+        learning_evidence.get("structured_delivered_action_evidence")
+    )
+    if unsafe_continuation:
+        if response_status == "pending_next_day":
+            delivered_status = "pending_next_day"
+            delivered_eligible = False
+            delivered_weight = 0.0
+        elif response_status == "no_expected_response":
+            delivered_status = "not_comparable_no_expected_response"
+            delivered_eligible = False
+            delivered_weight = 0.0
+        elif not action_matched:
+            delivered_status = "not_eligible_action_mismatch"
+            delivered_eligible = False
+            delivered_weight = 0.0
+        elif adherence != "matched_expected_load":
+            delivered_status = "not_eligible_load_changed_model_input"
+            delivered_eligible = False
+            delivered_weight = 0.0
+        elif not structured_delivered_action:
+            delivered_status = "not_eligible_insufficient_characterization"
+            delivered_eligible = False
+            delivered_weight = 0.0
+        elif response_status == "within_expected_band":
+            delivered_status = "observed_within_expected_band"
+            delivered_eligible = True
+            delivered_weight = OUT_OF_POLICY_DELIVERED_ACTION_WEIGHT
+        else:
+            delivered_status = "observed_model_miss"
+            delivered_eligible = True
+            delivered_weight = OUT_OF_POLICY_DELIVERED_ACTION_WEIGHT
+        delivered = {
+            "status": delivered_status,
+            "eligible": delivered_eligible,
+            "weight": delivered_weight,
+            "target": "executed_action_only",
+            "policy_status": "out_of_policy_stop_rule_override",
+            "nominal_prescription_validation": False,
+            "response_status": response_status,
+            "response_delta": _round(response_delta),
+            "characterization_status": (
+                "structured"
+                if structured_delivered_action
+                else "insufficient_structured_evidence"
+            ),
+            "evidence_limitations": (
+                (quality.get("review_field_completion") or {}).get("missing") or []
+            ),
+        }
+    else:
+        delivered = {
+            "status": physiology_status,
+            "eligible": physiology_eligible,
+            "weight": physiology_weight,
+            "target": "delivered_action",
+            "policy_status": "in_policy" if quality_status == "complete" else "not_fully_validated",
+            "nominal_prescription_validation": calibration_eligible,
+            "response_status": response_status,
+            "response_delta": _round(response_delta),
+            "characterization_status": quality_status,
+            "evidence_limitations": (
+                (quality.get("review_field_completion") or {}).get("missing") or []
+            ),
+        }
+
+    trigger = learning_evidence.get("trigger") or {}
+    if stop_status in {
+        "triggered_and_stopped",
+        "triggered_and_downshifted",
+        "triggered_but_continued",
+    }:
+        boundary = {
+            "status": "eligible" if structured_boundary else "insufficient_structured_evidence",
+            "eligible": structured_boundary,
+            "weight": 1.0 if structured_boundary else 0.0,
+            "target": "execution_boundary",
+            "stop_rule_outcome": stop_status,
+            "trigger": trigger,
+            "repetition_reported_rpe_0_to_10": learning_evidence.get(
+                "repetition_reported_rpe_0_to_10"
+            )
+            or [],
+            "expected_rpe_ceiling_0_to_10": learning_evidence.get(
+                "expected_rpe_ceiling_0_to_10"
+            ),
+            "last_within_rpe_ceiling_repetition": learning_evidence.get(
+                "last_within_rpe_ceiling_repetition"
+            ),
+            "objective_repetitions": learning_evidence.get("objective_repetitions") or [],
+            "external_work_stable": learning_evidence.get("external_work_stable"),
+            "interpretation_guardrail": (
+                "This lane estimates the observed execution boundary; it does not validate the nominal dose, "
+                "FTP, or VO2 physiology."
+            ),
+        }
+    else:
+        boundary = {
+            "status": "not_applicable",
+            "eligible": False,
+            "weight": 0.0,
+            "target": "execution_boundary",
+        }
+
+    if unsafe_continuation:
+        continuation_reason = learning_evidence.get("continuation_reason")
+        safety = {
+            "status": "eligible_stop_rule_override",
+            "eligible": True,
+            "weight": 1.0,
+            "target": "stop_rule_execution_behavior",
+            "event": "stop_rule_overridden",
+            "continuation_reason": continuation_reason,
+            "characterization_status": "complete" if continuation_reason else "partial",
+            "reason_source": learning_evidence.get("continuation_reason_source"),
+        }
+        counterfactual = {
+            "status": "unidentifiable",
+            "eligible": False,
+            "weight": 0.0,
+            "target": "rule_compliant_nominal_response",
+            "reason": (
+                "No response was observed for the counterfactual action in which the athlete stopped or "
+                "downshifted when the rule triggered."
+            ),
+        }
+    else:
+        safety = {
+            "status": "not_applicable",
+            "eligible": False,
+            "weight": 0.0,
+            "target": "stop_rule_execution_behavior",
+        }
+        counterfactual = {
+            "status": "not_applicable",
+            "eligible": False,
+            "weight": 0.0,
+            "target": "rule_compliant_nominal_response",
+        }
+
+    return {
+        "schema_version": 1,
+        "backward_compatible_field_mapping": {
+            "physiology_calibration_status_eligible_weight": "delivered_action_response",
+            "calibration_status_eligible_weight": "nominal_contract_validation",
+        },
+        "nominal_contract_validation": nominal,
+        "delivered_action_response": delivered,
+        "execution_boundary_learning": boundary,
+        "safety_adherence_learning": safety,
+        "counterfactual_nominal_response": counterfactual,
+    }
+
+
 def _compare_prediction(
     prediction: dict,
     actual: dict,
@@ -3167,7 +3583,21 @@ def _compare_prediction(
         "calibration_eligible": False,
         "reasons": ["Contract-quality evidence was not built for this review."],
     }
-    if not physiology_calibration_eligible:
+    quality_status = quality.get("status")
+    unsafe_stop_rule_continued = quality_status == "unsafe_stop_rule_continued"
+    if unsafe_stop_rule_continued and physiology_calibration_eligible:
+        physiology_calibration_status = (
+            "out_of_policy_observation"
+            if response_status == "within_expected_band"
+            else "out_of_policy_model_miss"
+        )
+        physiology_calibration_weight = OUT_OF_POLICY_DELIVERED_ACTION_WEIGHT
+
+    if unsafe_stop_rule_continued:
+        calibration_status = "contract_unreliable"
+        calibration_weight = 0.0
+        calibration_eligible = False
+    elif not physiology_calibration_eligible:
         calibration_status = physiology_calibration_status
         calibration_weight = 0.0
         calibration_eligible = False
@@ -3176,7 +3606,6 @@ def _compare_prediction(
         calibration_weight = physiology_calibration_weight
         calibration_eligible = True
     else:
-        quality_status = quality.get("status")
         calibration_status = {
             "contract_missing": "contract_missing",
             "action_mismatch": "contract_action_mismatch",
@@ -3187,7 +3616,13 @@ def _compare_prediction(
         calibration_weight = 0.0
         calibration_eligible = False
 
-    if allowed_optional_skip:
+    if unsafe_stop_rule_continued:
+        interpretation = (
+            "The stop rule was triggered but the session continued. This permanently rejects nominal-contract "
+            "validation; retain the characterized execution boundary and, after next-day evidence arrives, the "
+            "lower-weight delivered-action response observation."
+        )
+    elif allowed_optional_skip:
         interpretation = (
             "The optional session was not performed; this was allowed by the written plan and is not "
             "adherence drift. No delivered session-response pair exists for calibration."
@@ -3220,6 +3655,19 @@ def _compare_prediction(
             "not_applicable_optional_skip"
         )
 
+    learning_disposition = _learning_disposition(
+        quality,
+        adherence,
+        response_status,
+        response_delta,
+        physiology_calibration_status,
+        physiology_calibration_eligible,
+        physiology_calibration_weight,
+        calibration_status,
+        calibration_eligible,
+        calibration_weight,
+    )
+
     return {
         "adherence_status": adherence,
         "training_load_expectation": load_expectation,
@@ -3250,6 +3698,7 @@ def _compare_prediction(
         "calibration_status": calibration_status,
         "calibration_eligible": calibration_eligible,
         "calibration_weight": calibration_weight,
+        "learning_disposition": learning_disposition,
         "interpretation": interpretation,
     }
 
@@ -3291,6 +3740,11 @@ def _review_text(review: dict) -> str:
     cns = audit.get("cns_outcome") or {}
     next_day_cns = cns.get("next_day") or {}
     optionality = review.get("optionality_resolution") or {}
+    learning = comparison.get("learning_disposition") or {}
+    nominal = learning.get("nominal_contract_validation") or {}
+    delivered = learning.get("delivered_action_response") or {}
+    boundary = learning.get("execution_boundary_learning") or {}
+    safety = learning.get("safety_adherence_learning") or {}
     return "\n".join(
         [
             f"Predictive Session Review - {review['date']}",
@@ -3299,12 +3753,15 @@ def _review_text(review: dict) -> str:
             f"Optionality resolution: {optionality.get('status')} (applied: {optionality.get('applied')})",
             f"Load delta: {comparison.get('training_load_delta')} ({comparison.get('training_load_delta_pct')}%)",
             f"Next-day response: {response.get('score')} / {response.get('readiness_level')} / {comparison.get('response_status')}",
-            f"Physiology calibration: {comparison.get('physiology_calibration_status')} (eligible: {comparison.get('physiology_calibration_eligible')})",
+            f"Nominal contract validation: {nominal.get('status')} (eligible: {nominal.get('eligible')}, weight: {nominal.get('weight')})",
+            f"Delivered-action response: {delivered.get('status')} ({delivered.get('policy_status')}; eligible: {delivered.get('eligible')}, weight: {delivered.get('weight')})",
+            f"Execution-boundary learning: {boundary.get('status')}; safety learning: {safety.get('status')}",
+            f"Legacy physiology/delivered-action field: {comparison.get('physiology_calibration_status')} (eligible: {comparison.get('physiology_calibration_eligible')})",
             f"Contract quality: {quality.get('status')} (review fields: {len(review_fields.get('completed') or [])}/{len(review_fields.get('required') or [])})",
             f"Stop-rule outcome: {stop_rule.get('status')}; technical quality: {technical.get('status')}",
             f"Fueling audit: {fueling.get('status')}; next-day CNS: {next_day_cns.get('status')}",
             f"Coaching evidence confidence: {audit.get('confidence')} (calibration effect: {audit.get('calibration_eligibility_effect')})",
-            f"Calibration: {comparison.get('calibration_status')} (eligible: {comparison.get('calibration_eligible')})",
+            f"Legacy full/nominal calibration field: {comparison.get('calibration_status')} (eligible: {comparison.get('calibration_eligible')})",
             f"Interpretation: {comparison.get('interpretation')}",
             "",
         ]
@@ -3462,6 +3919,19 @@ def build_predictive_review(
             "interpretation": "No dated pre-session prescription was stored for this date, so this session cannot calibrate the digital twin.",
         }
     )
+    if not prediction:
+        comparison["learning_disposition"] = _learning_disposition(
+            contract_quality,
+            "no_stored_prescription",
+            "not_reviewed",
+            None,
+            "not_calibratable",
+            False,
+            0.0,
+            "not_calibratable",
+            False,
+            0.0,
+        )
     coaching_evidence_audit = _coaching_evidence_audit(
         root,
         target,

@@ -126,7 +126,8 @@ After editable install, the same stack is available through:
 - A prediction records separate state-basis, action, and next-day response dates. If target-date Garmin wellness does not exist yet, it states the prior wellness basis while still simulating the action on its planned date; the next Garmin sync remains the final gate.
 - After the session and next-day Garmin sync, run:
   `python tools/predictive_review.py --date <YYYY-MM-DD>`
-- A full calibration requires more than a matched Garmin load: modality, session count, and duration must match; the schema v3 review fields must be complete; stop-rule outcome must be explicit; and MTB sessions must document technical quality and late-session skill fade. The review keeps a physiology-only match separate from a full calibration sample.
+- The review separates four learning lanes instead of reducing the session to one eligible/ineligible verdict: nominal-contract validation, delivered-action response, execution-boundary learning, and safety-adherence learning. Nominal validation requires more than a matched Garmin load: modality, session count, and duration must match; the schema v3 review fields must be complete; stop-rule outcome must be explicit; and MTB sessions must document technical quality and late-session skill fade.
+- A `triggered_but_continued` outcome permanently rejects nominal validation, but structured rep/lap evidence can still update the execution boundary and safety-adherence lanes. After next-day wellness arrives, the delivered action may become a reduced-weight out-of-policy response observation; a good morning never proves the stop-rule override was safe or reveals the unobserved rule-compliant counterfactual.
 - If a stored session explicitly has `optional: true`, performing no session is `allowed_optional_skip`, not adherence drift; because no action-response pair exists, it remains non-calibratable. Legacy reviews may recover an omitted optional flag only from an exact same-date match to the recorded `input_planned_session` source, without mutating the stored prediction.
 - Record the manual evidence either at the top level of `input/feedback_YYYY-MM-DD.json` or in a matching `entries[]` item. A minimal MTB example is:
 
@@ -232,8 +233,9 @@ Blank template fields are ignored.
   - separate Garmin Training Readiness feed with endpoint, date, freshness, and device-capability provenance; context only, never a replacement for physical or CNS readiness gates
   - selected-field TTDI AirGradient raw PM2.5 context for Bukit Kiara outdoor decisions; high fresh evidence can downshift or close exposure, but the surface cannot promote readiness, clear another Klang Valley venue, or represent indoor air
 - `snapshots/air_quality_current.json` / `snapshots/air_quality_ledger.json`
-  - public TTDI station observation and bounded fetch history with station-timestamp freshness, strict semantic validation, selected-field privacy, last-known-good retention, and separate latest-attempt status
-  - `pm02` is stored as raw `ug/m3`, never relabeled as AQI; live sync refreshes it once and rebuild-only commands do not use the network
+  - public TTDI station points and bounded fetch history with station-timestamp freshness, strict semantic validation, selected-field privacy, last-known-good retention, separate latest-attempt status, and a density-qualified recent exposure-window status
+  - `pm02` is stored as raw `ug/m3`, never relabeled as AQI, NowCast, 24-hour average, or inhaled dose; live sync refreshes it once and rebuild-only commands do not use the network
+  - sport-exercise bands are applied directly: below 25 no point-specific downshift, 25-50 moderate caution, 51-150 closes planned MTB/long endurance/high-ventilation work at the covered venue, and above 150 closes planned outdoor exercise there; point/window evidence is still combined with current symptoms, duration, and ventilation
 - `snapshots/garmin_surface_manifest.json`
   - endpoint-by-endpoint collection state, raw/normalized field coverage, contiguous data eras and gaps, units, lineage, privacy verification, and downstream coaching use
 - `snapshots/last_live_sync_status.json` / `snapshots/sync_run_ledger.json`
@@ -378,7 +380,8 @@ Blank template fields are ignored.
 ## Modeling Rules
 - ML outputs are coaching evidence, not instructions.
 - Use the coaching-adjusted response for the practical prescription call; keep the raw tree output visible for audit.
-- Only complete contract-quality sessions calibrate the digital twin: matched load, action alignment, explicit stop-rule outcome, complete relevant review fields, clean technical outcome where applicable, and next-day Garmin response. Physiology-only matches remain useful evidence but do not update calibration confidence.
+- Only complete contract-quality sessions validate the nominal prescription: matched load, action alignment, explicit stop-rule outcome, complete relevant review fields, clean technical outcome where applicable, and next-day Garmin response. Separately preserve delivered-action response, execution-boundary, and safety-adherence learning when their evidence is adequate.
+- A stop-rule override receives zero nominal-validation weight. It can still teach where execution failed and why the athlete continued; once next-day evidence exists, the delivered action can enter the response model at reduced out-of-policy weight without being misrepresented as safe or plan-compliant.
 - More is not better; better is better. The coach packet is the preferred decision surface.
 - Use long activity history for modality/load baselines and block labels.
 - Use modern complete wellness only for HRV/wake Body Battery models.

@@ -230,6 +230,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                     "Verify readiness, CNS readiness, training status, devices, gear, self-evaluation, and recent load before prescribing.",
                     "Store a pre-session expected result and compare it with actual load, RPE, feel, and next-day wellness.",
                     "Classify execution drift before calling a model miss or adaptation problem.",
+                    "Keep nominal-contract validation separate from delivered-action response, execution-boundary learning, and safety-adherence learning.",
                     "Use subjective trail notes to train what Garmin cannot see.",
                 ],
             },
@@ -291,13 +292,17 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                     "age_basis": "station measurement timestamp, not fetch time",
                 },
                 "decision_role": air_quality_proxy.get("decision_use"),
-                "thresholds_ug_m3": air_quality_proxy.get(
-                    "coaching_thresholds_ug_m3"
+                "sports_exercise_bands_ug_m3": air_quality_proxy.get(
+                    "sports_exercise_bands_ug_m3"
                 ),
+                "trend_requirements": air_quality_proxy.get("trend_requirements"),
                 "hard_guards": [
                     "Preserve AirGradient pm02 as raw PM2.5 mass concentration in ug/m3; do not call one current sample AQI or a 24-hour average.",
+                    "Use direct sport-exercise PM2.5 bands rather than applying regulatory 24-hour AQI concentration breakpoints to a single raw observation.",
+                    "A fresh point from 25 to 50 ug/m3 is moderate caution, not automatic outdoor closure. From 51 to 150 ug/m3, close planned MTB, long endurance, and other high-ventilation work at the covered venue; above 150 ug/m3, close planned outdoor exercise there.",
+                    "Only call ledger evidence an exposure window when the configured sample-count, span, and maximum-gap requirements pass; otherwise expose it as insufficient and do not infer persistence, clearance, AQI, NowCast, or inhaled dose.",
                     "Treat the public raw sensor reading as an exposure-caution proxy that may differ from corrected dashboard or regulatory-reference data; never use a low point value as precise medical clearance.",
-                    "A fresh high value may close or downshift outdoor training; a low, falling, retained, stale, or failed value never promotes readiness or opens training.",
+                    "A fresh point or sufficiently dense recent window may close or downshift outdoor training; a low, falling, retained, stale, sparse, or failed value never promotes readiness or opens training.",
                     "The TTDI station is a Kiara/TTDI proxy, not positive clearance for the whole Klang Valley or a different venue.",
                     "The outdoor station cannot establish home indoor air quality; use the athlete's separate indoor monitor and airway symptoms.",
                     "Fresh explicitly current airway or smoke-exposure symptoms are a separate head-coach gate and may override a lower station value; the PM module never infers current symptoms from free text or historical notes.",
@@ -555,7 +560,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             "Sabbath hard rest and current readiness.",
             "CNS readiness: cap technical consequence, novelty, speed, jumps, enduro simulation, and setup testing when nervous-system processing is not restored.",
             "Garmin freshness: wellness, activity, and training status must be current for hard guidance; Garmin Training Readiness is separately dated context only.",
-            "Outdoor exposure: fresh TTDI raw PM2.5 and current airway symptoms may close or downshift Kiara training, but can never promote readiness or positively clear another venue.",
+            "Outdoor exposure: use the fresh TTDI raw PM2.5 point, a sufficiently dense recent exposure window when available, planned ventilation/duration, and current airway symptoms to close or downshift Kiara training; environmental evidence can never promote readiness or positively clear another venue.",
             "Garmin diagnosis arbitration: use Training Status, ACWR, and Load Focus to decide whether the session ceiling should downshift, hold, or allow a controlled upgrade.",
             "Current phase and recent load: avoid spikes while rebuilding.",
             "Bike-specific continuity: protect the weekly minimum before adding non-bike work.",
@@ -578,7 +583,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             "adaptation_hypothesis": "State what should improve and what next-day response would mean the dose was absorbed.",
             "execution_rules": "Describe how to ride the session and what not to chase.",
             "expected_result": "Store expected Garmin load/range, high-intensity minutes, RPE/feel, and next-day readiness expectation before training when the predictive loop is used.",
-            "post_session_review": "Record the required review fields after the session. For a calibratable session, record an explicit stop_rule_outcome. MTB/technical work must also record technical_quality_notes and late_session_skill_fade; a triggered-but-continued stop rule, degraded technical quality, or an incomplete review blocks full digital-twin calibration.",
+            "post_session_review": "Record the required review fields after the session. For nominal-contract validation, record an explicit stop_rule_outcome. MTB/technical work must also record technical_quality_notes and late_session_skill_fade; a triggered-but-continued stop rule permanently rejects nominal validation, while still permitting separately labelled execution-boundary, safety-adherence, and later delivered-action learning when the evidence is adequate.",
             "stop_rules": [
                 "End technical work if braking timing gets lazy or line choice becomes reactive.",
                 "End DH/jump quality if arm pump changes grip, brake modulation, or body position.",
@@ -620,7 +625,10 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             "post_session": [
                 "After Garmin sync, compare actual load, self-evaluation, and next-day response with the stored expectation.",
                 "If actual load differs materially, classify execution/adherence before judging adaptation.",
-                "Only complete contract-quality sessions are eligible for digital-twin calibration: matched load, modality/session-count/duration alignment, explicit stop-rule outcome, complete relevant review fields, clean technical outcome when applicable, and next-day Garmin response. Keep physiology-only matches visible but do not use them as full calibration rows.",
+                "Keep four learning lanes explicit: nominal-contract validation, delivered-action response, execution-boundary learning, and safety-adherence learning. Do not collapse a session to one eligible/ineligible label.",
+                "Only complete contract-quality sessions are eligible for nominal-contract validation: matched load, modality/session-count/duration alignment, explicit stop-rule outcome, complete relevant review fields, clean technical outcome when applicable, and next-day Garmin response.",
+                "A triggered-but-continued stop rule permanently excludes nominal-contract validation, but structured rep/lap evidence may still characterize the execution boundary immediately, the stop override may update safety-adherence learning, and a matched next-day response may later enter the delivered-action lane at reduced out-of-policy weight.",
+                "Never treat favorable next-day recovery after a stop-rule override as proof that violating the rule was safe, and never claim the unobserved rule-compliant counterfactual response.",
                 "Audit raw timing, elevation, moving/rest, device temperature, Garmin estimated water loss, power, Training Effect/TSS, Gear, HR-source confidence, matching loop context, fueling rates, and session/next-day CNS when available; these improve interpretation but cannot loosen calibration eligibility.",
                 "If actual load matches but response misses, treat the miss as a model-calibration signal and inspect heat, fueling, sleep, stress, trail violence, and sensor quality.",
                 "If load matches but trail skill faded, treat the workout as under-fuelled, under-recovered, too technically dense, or poorly targeted until notes prove otherwise.",
@@ -885,7 +893,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             "cns_readiness": "snapshots/cns_readiness.json is the current technical-consequence ceiling after current_state rebuild.",
             "garmin_surface_manifest": "snapshots/garmin_surface_manifest.json inventories configured Garmin endpoints, attempt states, raw/normalized field coverage, eras/gaps, units, lineage, privacy checks, and actual downstream consumers.",
             "garmin_training_readiness": "snapshots/garmin_training_readiness_current.json is a separate context-only Garmin feed with source date, age, endpoint health, and tri-state device-capability provenance; it cannot replace physical readiness or the CNS ceiling.",
-            "outdoor_air_quality": "snapshots/air_quality_current.json and snapshots/air_quality_ledger.json preserve a selected-field AirGradient TTDI raw PM2.5 observation, station-timestamp freshness, last-known-good data, latest-attempt state, privacy exclusions, spatial limits, and an outdoor-only downshift gate. Rebuilds do not fetch it; the surface never promotes training or represents indoor air.",
+            "outdoor_air_quality": "snapshots/air_quality_current.json and snapshots/air_quality_ledger.json preserve selected-field AirGradient TTDI raw PM2.5 points, station-timestamp freshness, a density-qualified recent exposure window, last-known-good data, latest-attempt state, privacy exclusions, spatial limits, and sport-specific outdoor-only downshift gates. Rebuilds do not fetch it; the surface never promotes training, computes AQI, or represents indoor air.",
             "latest_session_evidence": "snapshots/current_state.json latest_session_evidence is the bounded raw-session interpretation block; every joined field must retain source, unit, and confidence limits.",
             "live_sync_provenance": "snapshots/last_live_sync_status.json and snapshots/sync_run_ledger.json preserve live-contact truth across later rebuild-only runs.",
             "oxygenation_respiration": "Dedicated Garmin Pulse Ox and respiration endpoints retain attempt state, coverage, valid samples, and negative sentinels. Daily or sleep values are contextual only and never imputed into an activity interval or used as medical diagnosis or training clearance.",

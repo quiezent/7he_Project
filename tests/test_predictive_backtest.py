@@ -2,7 +2,11 @@ from datetime import date, timedelta
 
 from coach_sync.context import load_context
 from coach_sync.io import write_json
-from coach_sync.predictive_backtest import build_predictive_backtest
+from coach_sync.predictive_backtest import (
+    _calibration_summary,
+    _coverage,
+    build_predictive_backtest,
+)
 
 
 def _write_wellness(root, day: date, good: bool) -> None:
@@ -100,3 +104,71 @@ def test_predictive_backtest_replays_pre_session_then_reviews_actuals(tmp_path):
     }
     assert (tmp_path / "snapshots" / "predictive_backtest_10_dates.json").exists()
     assert (tmp_path / "snapshots" / "predictive_backtest_10_dates.txt").exists()
+
+
+def test_backtest_separates_clean_nominal_from_out_of_policy_response_observation():
+    clean = {
+        "comparison": {
+            "adherence_status": "matched_expected_load",
+            "response_delta": 10,
+            "physiology_calibration_eligible": True,
+            "calibration_eligible": True,
+            "learning_disposition": {
+                "nominal_contract_validation": {
+                    "status": "calibrated",
+                    "eligible": True,
+                    "weight": 1.0,
+                },
+                "delivered_action_response": {
+                    "status": "calibrated",
+                    "eligible": True,
+                    "weight": 1.0,
+                    "policy_status": "in_policy",
+                },
+                "execution_boundary_learning": {"eligible": False},
+                "safety_adherence_learning": {"eligible": False},
+            },
+        }
+    }
+    overrun = {
+        "comparison": {
+            "adherence_status": "matched_expected_load",
+            "response_delta": -30,
+            "physiology_calibration_eligible": True,
+            "calibration_eligible": False,
+            "learning_disposition": {
+                "nominal_contract_validation": {
+                    "status": "rejected_unsafe_stop_rule_continued",
+                    "eligible": False,
+                    "weight": 0.0,
+                },
+                "delivered_action_response": {
+                    "status": "observed_model_miss",
+                    "eligible": True,
+                    "weight": 0.35,
+                    "policy_status": "out_of_policy_stop_rule_override",
+                },
+                "execution_boundary_learning": {"eligible": True},
+                "safety_adherence_learning": {"eligible": True},
+            },
+        }
+    }
+
+    rows = [clean, overrun]
+    coverage = _coverage(rows)
+    summary = _calibration_summary(rows)
+
+    assert coverage["physiology_calibratable_dates"] == 2
+    assert coverage["contract_calibratable_dates"] == 1
+    assert coverage["nominal_contract_validation_dates"] == 1
+    assert coverage["delivered_action_response_dates"] == 2
+    assert coverage["out_of_policy_delivered_action_response_dates"] == 1
+    assert coverage["execution_boundary_learning_dates"] == 1
+    assert coverage["safety_adherence_learning_dates"] == 1
+    assert summary["mean_abs_response_error_matched_load"] == 20.0
+    assert summary["mean_abs_response_error_clean_nominal"] == 10.0
+    assert summary["mean_abs_response_error_delivered_action"] == 20.0
+    assert summary["mean_abs_response_error_out_of_policy_delivered_action"] == 30.0
+    assert summary["clean_nominal_count"] == 1
+    assert summary["out_of_policy_delivered_action_count"] == 1
+    assert summary["out_of_policy_excluded_from_clean_nominal_metrics"] is True

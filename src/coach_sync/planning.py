@@ -666,12 +666,20 @@ def _air_quality_blocks_session(
     }:
         return True
     if gate not in {
-        "outdoor_hard_training_closed",
-        "retained_outdoor_hard_training_closed_pending_refresh",
+        "outdoor_mtb_endurance_high_ventilation_closed",
+        "retained_outdoor_mtb_endurance_high_ventilation_closed_pending_refresh",
     }:
         return False
     intensity = str(session.get("intensity") or "").lower()
-    return _is_mtb_session(session) or intensity not in {"easy", "recovery"}
+    try:
+        duration_min = int(session.get("duration_min") or 0)
+    except (TypeError, ValueError):
+        duration_min = 0
+    return bool(
+        _is_mtb_session(session)
+        or duration_min >= 60
+        or intensity not in {"easy", "recovery"}
+    )
 
 
 def _session_is_already_low_consequence(session: dict) -> bool:

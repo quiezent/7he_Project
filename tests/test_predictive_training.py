@@ -1423,6 +1423,152 @@ def test_contract_quality_rejects_stop_rule_overrun_even_with_complete_review_fi
     assert quality["stop_rule_outcome"]["status"] == "triggered_but_continued"
     assert comparison["calibration_status"] == "contract_unreliable"
     assert comparison["calibration_eligible"] is False
+    learning = comparison["learning_disposition"]
+    assert learning["nominal_contract_validation"] == {
+        "status": "rejected_unsafe_stop_rule_continued",
+        "eligible": False,
+        "weight": 0.0,
+        "permanent_exclusion": True,
+        "target": "nominal_prescription",
+        "reason": (
+            "The stop rule was overridden, so this session can never validate the nominal prescription, "
+            "even if next-day recovery is favorable."
+        ),
+    }
+    assert learning["delivered_action_response"]["status"] == (
+        "not_eligible_insufficient_characterization"
+    )
+    assert learning["execution_boundary_learning"]["eligible"] is False
+    assert learning["safety_adherence_learning"]["eligible"] is True
+    assert learning["counterfactual_nominal_response"]["status"] == "unidentifiable"
+
+
+def test_characterized_stop_rule_overrun_learns_boundary_then_low_weight_delivered_response(
+    tmp_path,
+):
+    latest = _seed_history(tmp_path)
+    review_day = latest + timedelta(days=1)
+    activity_id = 97
+    _write_indoor_contract_activity(tmp_path, review_day, activity_id=activity_id)
+    _write_self_evaluation(tmp_path, review_day, activity_id=activity_id)
+    prescription = _contract_prescription(
+        review_day,
+        session_type="indoor_tempo_torque",
+        modality="bike_indoor",
+        categories={"bike_indoor": 1},
+        review_fields=[
+            "actual_duration_min",
+            "actual_training_load",
+            "actual_rpe",
+            "workout_feel",
+            "stop_rule_outcome",
+            "next_morning_response",
+        ],
+    )
+    expected = prescription["prediction"]["expected_session"]
+    expected.update(
+        {
+            "duration_min": 60,
+            "expected_training_load": 50,
+            "expected_training_load_range": [45, 55],
+            "expected_rpe_score_range": [50, 60],
+            "expected_result": {"garmin_load": "45-55"},
+        }
+    )
+    write_json(
+        tmp_path / "input" / f"feedback_{review_day.isoformat()}.json",
+        {
+            "date": review_day.isoformat(),
+            "entries": [
+                {
+                    "activity_id": str(activity_id),
+                    "reported_context": {
+                        "continuation_reason": (
+                            "Athlete believed completing repetition three was necessary for VO2max."
+                        )
+                    },
+                    "session_contract_review": {
+                        "stop_rule_outcome": "triggered_but_continued",
+                        "stop_trigger_timing": "repetition_3",
+                        "repetition_reported_rpe_0_to_10": [5, 6, 8],
+                        "repetition_3_rpe_components_0_to_10": {
+                            "local_legs": 8,
+                            "breathing": 5,
+                            "whole_body": 5,
+                        },
+                    },
+                    "objective_interval_evidence": {
+                        "repetitions": [
+                            {
+                                "number": 1,
+                                "duration_min": 8,
+                                "average_power_w": 169,
+                                "average_hr_bpm": 140,
+                                "average_cadence_rpm": 70,
+                            },
+                            {
+                                "number": 2,
+                                "duration_min": 8,
+                                "average_power_w": 168,
+                                "average_hr_bpm": 145,
+                                "average_cadence_rpm": 68,
+                            },
+                            {
+                                "number": 3,
+                                "duration_min": 8,
+                                "average_power_w": 168,
+                                "average_hr_bpm": 150,
+                                "average_cadence_rpm": 70,
+                            },
+                        ]
+                    },
+                }
+            ],
+        },
+    )
+
+    pending = build_predictive_review(tmp_path, review_day, prescription=prescription)
+    pending_comparison = pending["comparison"]
+    pending_learning = pending_comparison["learning_disposition"]
+
+    assert pending_comparison["calibration_status"] == "contract_unreliable"
+    assert pending_learning["nominal_contract_validation"]["permanent_exclusion"] is True
+    assert pending_learning["delivered_action_response"]["status"] == "pending_next_day"
+    assert pending_learning["delivered_action_response"]["eligible"] is False
+    boundary = pending_learning["execution_boundary_learning"]
+    assert boundary["eligible"] is True
+    assert boundary["trigger"]["repetition"] == 3
+    assert boundary["trigger"]["dimension"] == "local_legs"
+    assert boundary["repetition_reported_rpe_0_to_10"] == [5.0, 6.0, 8.0]
+    assert boundary["last_within_rpe_ceiling_repetition"] == 2
+    assert boundary["external_work_stable"] is True
+    safety = pending_learning["safety_adherence_learning"]
+    assert safety["eligible"] is True
+    assert safety["event"] == "stop_rule_overridden"
+    assert safety["characterization_status"] == "complete"
+
+    _write_wellness(tmp_path, review_day + timedelta(days=1), good=True)
+    observed = build_predictive_review(tmp_path, review_day, prescription=prescription)
+    observed_comparison = observed["comparison"]
+    observed_learning = observed_comparison["learning_disposition"]
+    delivered = observed_learning["delivered_action_response"]
+
+    assert delivered["status"] in {
+        "observed_within_expected_band",
+        "observed_model_miss",
+    }
+    assert delivered["eligible"] is True
+    assert delivered["weight"] == 0.35
+    assert delivered["target"] == "executed_action_only"
+    assert delivered["policy_status"] == "out_of_policy_stop_rule_override"
+    assert delivered["nominal_prescription_validation"] is False
+    assert observed_comparison["physiology_calibration_eligible"] is True
+    assert observed_comparison["physiology_calibration_weight"] == 0.35
+    assert observed_comparison["calibration_eligible"] is False
+    assert observed_learning["nominal_contract_validation"]["weight"] == 0.0
+    assert observed_learning["counterfactual_nominal_response"]["status"] == (
+        "unidentifiable"
+    )
 
 
 def test_contract_quality_rejects_explicit_structured_route_mismatch(tmp_path):

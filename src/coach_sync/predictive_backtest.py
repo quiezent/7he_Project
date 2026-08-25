@@ -478,6 +478,38 @@ def _row_for_date(
     }
 
 
+def _learning_channel(comparison: dict, channel: str) -> dict:
+    learning = comparison.get("learning_disposition") or {}
+    value = learning.get(channel)
+    if isinstance(value, dict):
+        return value
+
+    quality_status = (comparison.get("contract_quality") or {}).get("status")
+    unsafe = quality_status == "unsafe_stop_rule_continued"
+    if channel == "nominal_contract_validation":
+        return {
+            "status": "rejected_unsafe_stop_rule_continued"
+            if unsafe
+            else comparison.get("calibration_status"),
+            "eligible": False if unsafe else bool(comparison.get("calibration_eligible")),
+            "weight": 0.0 if unsafe else comparison.get("calibration_weight", 0.0),
+        }
+    if channel == "delivered_action_response":
+        return {
+            "status": "not_eligible_legacy_unsafe_row_uncharacterized"
+            if unsafe
+            else comparison.get("physiology_calibration_status"),
+            "eligible": False
+            if unsafe
+            else bool(comparison.get("physiology_calibration_eligible")),
+            "weight": 0.0
+            if unsafe
+            else comparison.get("physiology_calibration_weight", 0.0),
+            "policy_status": "out_of_policy_stop_rule_override" if unsafe else "legacy_unknown",
+        }
+    return {"status": "not_available_legacy_row", "eligible": False, "weight": 0.0}
+
+
 def _coverage(rows: list[dict]) -> dict:
     return {
         "dates": len(rows),
@@ -496,6 +528,47 @@ def _coverage(rows: list[dict]) -> dict:
         "contract_calibratable_dates": sum(
             1 for row in rows if row.get("comparison", {}).get("calibration_eligible")
         ),
+        "nominal_contract_validation_dates": sum(
+            1
+            for row in rows
+            if _learning_channel(
+                row.get("comparison") or {}, "nominal_contract_validation"
+            ).get("eligible")
+        ),
+        "delivered_action_response_dates": sum(
+            1
+            for row in rows
+            if _learning_channel(
+                row.get("comparison") or {}, "delivered_action_response"
+            ).get("eligible")
+        ),
+        "out_of_policy_delivered_action_response_dates": sum(
+            1
+            for row in rows
+            if (
+                _learning_channel(
+                    row.get("comparison") or {}, "delivered_action_response"
+                ).get("eligible")
+                and _learning_channel(
+                    row.get("comparison") or {}, "delivered_action_response"
+                ).get("policy_status")
+                == "out_of_policy_stop_rule_override"
+            )
+        ),
+        "execution_boundary_learning_dates": sum(
+            1
+            for row in rows
+            if _learning_channel(
+                row.get("comparison") or {}, "execution_boundary_learning"
+            ).get("eligible")
+        ),
+        "safety_adherence_learning_dates": sum(
+            1
+            for row in rows
+            if _learning_channel(
+                row.get("comparison") or {}, "safety_adherence_learning"
+            ).get("eligible")
+        ),
     }
 
 
@@ -505,6 +578,9 @@ def _calibration_summary(rows: list[dict]) -> dict:
     contract_quality_counts: dict[str, int] = {}
     matched_errors = []
     contract_calibratable_errors = []
+    clean_nominal_errors = []
+    delivered_action_errors = []
+    out_of_policy_delivered_action_errors = []
     all_errors = []
     stress_errors = []
     for row in rows:
@@ -525,6 +601,14 @@ def _calibration_summary(rows: list[dict]) -> dict:
                 matched_errors.append(abs(delta))
             if comparison.get("calibration_eligible"):
                 contract_calibratable_errors.append(abs(delta))
+            nominal = _learning_channel(comparison, "nominal_contract_validation")
+            delivered = _learning_channel(comparison, "delivered_action_response")
+            if nominal.get("eligible"):
+                clean_nominal_errors.append(abs(delta))
+            if delivered.get("eligible"):
+                delivered_action_errors.append(abs(delta))
+                if delivered.get("policy_status") == "out_of_policy_stop_rule_override":
+                    out_of_policy_delivered_action_errors.append(abs(delta))
         stress = comparison.get("execution_risk_stress_test") or {}
         stress_delta = stress.get("response_delta")
         if stress.get("available") and adherence == "harder_than_predicted" and stress_delta is not None:
@@ -542,12 +626,37 @@ def _calibration_summary(rows: list[dict]) -> dict:
             if contract_calibratable_errors
             else None
         ),
+        "mean_abs_response_error_clean_nominal": (
+            _round(sum(clean_nominal_errors) / len(clean_nominal_errors), 1)
+            if clean_nominal_errors
+            else None
+        ),
+        "mean_abs_response_error_delivered_action": (
+            _round(sum(delivered_action_errors) / len(delivered_action_errors), 1)
+            if delivered_action_errors
+            else None
+        ),
+        "mean_abs_response_error_out_of_policy_delivered_action": (
+            _round(
+                sum(out_of_policy_delivered_action_errors)
+                / len(out_of_policy_delivered_action_errors),
+                1,
+            )
+            if out_of_policy_delivered_action_errors
+            else None
+        ),
+        "out_of_policy_excluded_from_clean_nominal_metrics": True,
         "mean_abs_stress_test_error_for_drifted_sessions": (
             _round(sum(stress_errors) / len(stress_errors), 1) if stress_errors else None
         ),
         "stress_test_drifted_count": len(stress_errors),
         "matched_load_count": len(matched_errors),
         "contract_calibratable_count": len(contract_calibratable_errors),
+        "clean_nominal_count": len(clean_nominal_errors),
+        "delivered_action_count": len(delivered_action_errors),
+        "out_of_policy_delivered_action_count": len(
+            out_of_policy_delivered_action_errors
+        ),
     }
 
 
@@ -567,12 +676,15 @@ def _text_report(artifact: dict) -> str:
         comparison = row.get("comparison") or {}
         stress = comparison.get("execution_risk_stress_test") or {}
         quality = comparison.get("contract_quality") or {}
+        nominal = _learning_channel(comparison, "nominal_contract_validation")
+        delivered = _learning_channel(comparison, "delivered_action_response")
         recovery = row.get("next_day_recovery") or {}
         lines.append(
             "- {date}: prescribed {title} ({intensity}, {duration} min, load {expected_load}); "
             "actual {actual_categories}, {actual_duration} min, load {actual_load}; "
             "next-day {actual_score} vs expected {expected_score} / adjusted {adjusted_score}; "
-            "stress-test {stress_score} ({stress_status}); {response_status}; {adherence}; contract {contract_status}".format(
+            "stress-test {stress_score} ({stress_status}); {response_status}; {adherence}; contract {contract_status}; "
+            "nominal {nominal_status}; delivered {delivered_status} ({delivered_policy})".format(
                 date=row.get("date"),
                 title=expected.get("title"),
                 intensity=expected.get("intensity"),
@@ -589,6 +701,9 @@ def _text_report(artifact: dict) -> str:
                 response_status=comparison.get("response_status"),
                 adherence=comparison.get("adherence_status"),
                 contract_status=quality.get("status"),
+                nominal_status=nominal.get("status"),
+                delivered_status=delivered.get("status"),
+                delivered_policy=delivered.get("policy_status"),
             )
         )
     lines.extend(

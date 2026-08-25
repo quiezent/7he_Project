@@ -27,7 +27,15 @@
           "indoor_pm2_5_ug_m3_reported_upper_bound": 30.0,
           "indoor_controls": "Doors and windows closed with air filters operating.",
           "measurement_source": "athlete_reported_local_monitors",
-          "guardrail": "The indoor value is exposure context, not proof of zero respiratory risk."
+          "guardrail": "The indoor value is exposure context, not proof of zero respiratory risk.",
+          "later_dashboard_context": {
+            "displayed_pm2_5_average_ug_m3": 70.8,
+            "displayed_period_local_approx": "12:29-15:52",
+            "athlete_interpretation": "Rain temporarily suppressed the haze; a raw current PM2.5 point of 38.0 ug/m3 was considered reasonable for outdoor activity.",
+            "visual_pattern": "PM2.5 fell sharply during the rain, reached a short trough near the high-30s to 40s, then rebounded before the end of the displayed window.",
+            "source": "athlete-provided dashboard screenshot",
+            "provenance_guardrail": "The displayed average and qualitative trajectory are athlete-provided contextual evidence. Exact underlying samples were not supplied, so the stack must not reconstruct a regulatory AQI or an exact rolling series from the image."
+          }
         }
       },
       "session_contract_review": {
@@ -126,12 +134,19 @@
         "interpretation": "External work matched the written power dose closely, while HR rose progressively at near-identical power. Repetitions one and two remained controlled at reported rep RPE 5 and 6. Repetition three reached reported rep RPE 8 through local-leg strain while breathing and whole-body effort remained 5, supporting a torque-durability limiter rather than VO2 physiology."
       },
       "coach_contract_audit": {
-        "written_action": "Three seated eight-minute repetitions at 165-168 W, 70-75 rpm and RPE 5-6 with four-minute recoveries; end the structured set if repetition two already exceeded RPE 6.",
+        "written_action": "Three seated eight-minute repetitions at 165-170 W, 70-75 rpm and RPE 5-6 with four-minute recoveries; end the structured set if repetition two already exceeded RPE 6.",
         "executed_action": "Three complete eight-minute repetitions at 169/168/168 W and 70/68/70 rpm with complete recoveries. Reported rep RPE progressed 5/6/8; repetition three reached local-leg RPE 8 while breathing and whole-body RPE remained 5, and the athlete continued through the triggered stop rule.",
         "load_alignment": "Garmin load 75.0 matched the written expected range of 40-90.",
         "action_alignment": "matched_modality_session_count_duration_and_power_dose",
         "adaptation_alignment": "tempo_torque_external_dose_matched_with_late_local_leg_cost_above_target",
-        "calibration_disposition": "Not eligible for true digital-twin calibration because the explicit stop outcome was triggered_but_continued, despite matched external dose and Garmin load.",
+        "calibration_disposition": "Nominal contract validation is rejected because the explicit stop outcome was triggered_but_continued. The session is not discarded: it is immediately usable for local-leg execution-boundary and safety-adherence learning, while delivered-action physiological response learning remains pending fresh next-day evidence.",
+        "digital_twin_learning_channels": {
+          "nominal_contract_validation": "rejected_unsafe_stop_rule_continued",
+          "delivered_action_response": "pending_next_day_out_of_policy_observation",
+          "execution_boundary_learning": "eligible_reps_1_2_clean_rep_3_local_leg_trigger",
+          "safety_adherence_learning": "eligible_stop_rule_overridden",
+          "counterfactual_stopped_response": "unidentifiable"
+        },
         "next_constraint": "No VO2, threshold, Twin Peaks or other meaningful-cost session on 2026-08-26. Use rest or genuinely easy continuity only, then reassess absorption before the protected Friday Enduro exposure."
       }
     }

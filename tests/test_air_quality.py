@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import coach_sync.garmin_sync as garmin_sync_module
@@ -41,10 +41,18 @@ def _configure(root) -> dict:
         "spatial_guardrail": "Does not positively clear the whole Klang Valley.",
         "automatic_gate_venue_keys": ["bukit_kiara"],
         "automatic_gate_venue_aliases": ["Bukit Kiara", "Kiara", "TTDI"],
-        "coaching_thresholds_ug_m3": {
-            "elevated_from": 9.1,
-            "outdoor_hard_closed_from": 35.5,
-            "all_outdoor_closed_from": 55.5,
+        "sports_exercise_bands_ug_m3": {
+            "good_below": 25,
+            "moderate_from": 25,
+            "poor_from": 51,
+            "very_poor_from": 101,
+            "hazardous_above": 150,
+        },
+        "trend_requirements": {
+            "window_minutes": 60,
+            "minimum_samples": 6,
+            "minimum_span_minutes": 25,
+            "maximum_gap_minutes": 10,
         },
     }
     return save_context(context, root)
@@ -70,7 +78,27 @@ def _payload(timestamp: str, pm25: float = 72.5, **updates) -> dict:
     return payload
 
 
-def test_air_quality_refresh_selects_raw_pm25_and_closes_outdoor_training(tmp_path):
+def _refresh_series(root, samples: list[tuple[datetime, float]]) -> dict:
+    artifact = {}
+    for observed_local, pm25 in samples:
+        timestamp = (
+            observed_local.astimezone(timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
+        artifact = refresh_air_quality(
+            root,
+            now=observed_local + timedelta(minutes=1),
+            fetcher=lambda _url, _timeout, stamp=timestamp, value=pm25: (
+                200,
+                _payload(stamp, pm25=value),
+                {},
+            ),
+        )
+    return artifact
+
+
+def test_single_38_point_is_moderate_caution_with_insufficient_window(tmp_path):
     _configure(tmp_path)
     now = datetime(2026, 8, 25, 14, 10, tzinfo=KL)
 
@@ -79,7 +107,7 @@ def test_air_quality_refresh_selects_raw_pm25_and_closes_outdoor_training(tmp_pa
         now=now,
         fetcher=lambda _url, _timeout: (
             200,
-            _payload("2026-08-25T06:08:30Z"),
+            _payload("2026-08-25T06:08:30Z", pm25=38.0),
             {},
         ),
     )
@@ -88,13 +116,28 @@ def test_air_quality_refresh_selects_raw_pm25_and_closes_outdoor_training(tmp_pa
     assert artifact["freshness"]["status"] == "current"
     assert artifact["current"]["observed_at_local"] == "2026-08-25T14:08:30+08:00"
     assert artifact["current"]["pm2_5"] == {
-        "value": 72.5,
+        "value": 38.0,
         "unit": "ug/m3",
         "source_field": "pm02",
         "value_kind": "raw_unadjusted_mass_concentration",
         "corrected_value_used": False,
     }
-    assert artifact["decision"]["gate"] == "outdoor_training_closed"
+    assert artifact["decision"]["gate"] == "outdoor_moderate_caution"
+    assert artifact["decision"]["point_classification"] == {
+        "key": "moderate_caution",
+        "severity": "moderate",
+        "pm2_5_ug_m3": 38.0,
+        "classification_input": "direct_current_pm2_5_mass_concentration",
+        "is_aqi": False,
+    }
+    assert artifact["decision"]["decision_reference"]["basis"] == (
+        "current_point_only_exposure_window_insufficient"
+    )
+    assert artifact["exposure_window"]["status"] == "insufficient"
+    assert artifact["exposure_window"]["sample_count"] == 1
+    assert artifact["exposure_window"]["sample_mean_pm2_5_ug_m3"] is None
+    assert artifact["exposure_window"]["trend"] is None
+    assert "not an EPA NowCast" in artifact["exposure_window"]["interpretation"]
     assert artifact["decision"]["can_promote_training"] is False
     assert artifact["privacy"]["raw_payload_stored"] is False
     assert set(artifact["current"]) == {
@@ -111,7 +154,158 @@ def test_air_quality_refresh_selects_raw_pm25_and_closes_outdoor_training(tmp_pa
     assert set(artifact["current"]["location"]) == {"id", "name", "timezone"}
     assert "private serial value" not in str(artifact)
     ledger = read_json(tmp_path / "snapshots" / "air_quality_ledger.json", {})
-    assert ledger["entries"][-1]["pm2_5_ug_m3"] == 72.5
+    assert ledger["entries"][-1]["pm2_5_ug_m3"] == 38.0
+
+
+@pytest.mark.parametrize(
+    ("pm25", "band", "band_severity", "gate"),
+    [
+        (24.9, "normal_exercise_conditions", "normal", "no_pm25_downshift_from_current_sample"),
+        (25.0, "moderate_caution", "moderate", "outdoor_moderate_caution"),
+        (50.9, "moderate_caution", "moderate", "outdoor_moderate_caution"),
+        (
+            51.0,
+            "poor_conditions_for_exercise",
+            "poor",
+            "outdoor_mtb_endurance_high_ventilation_closed",
+        ),
+        (
+            100.0,
+            "poor_conditions_for_exercise",
+            "poor",
+            "outdoor_mtb_endurance_high_ventilation_closed",
+        ),
+        (
+            101.0,
+            "poor_conditions_for_exercise",
+            "upper_poor",
+            "outdoor_mtb_endurance_high_ventilation_closed",
+        ),
+        (
+            150.0,
+            "poor_conditions_for_exercise",
+            "upper_poor",
+            "outdoor_mtb_endurance_high_ventilation_closed",
+        ),
+        (
+            150.1,
+            "likely_hazardous_for_outdoor_exercise",
+            "hazardous",
+            "outdoor_training_closed",
+        ),
+    ],
+)
+def test_direct_sports_pm25_boundaries_are_not_epa_aqi_breakpoints(
+    tmp_path,
+    pm25,
+    band,
+    band_severity,
+    gate,
+):
+    _configure(tmp_path)
+    artifact = refresh_air_quality(
+        tmp_path,
+        now=datetime(2026, 8, 25, 14, 10, tzinfo=KL),
+        fetcher=lambda _url, _timeout: (
+            200,
+            _payload("2026-08-25T06:09:00Z", pm25=pm25),
+            {},
+        ),
+    )
+
+    classification = artifact["decision"]["point_classification"]
+    assert classification["key"] == band
+    assert classification["severity"] == band_severity
+    assert classification["is_aqi"] is False
+    assert artifact["decision"]["gate"] == gate
+    assert artifact["decision"]["sports_exercise_bands"]["standard"] == (
+        "AIS_2023_exercise_in_bushfire_smoke"
+    )
+    assert "not a separate AIS category" in artifact["decision"][
+        "sports_exercise_bands"
+    ]["upper_poor_marker_rule"]
+
+
+def test_sufficient_falling_window_retains_worse_recent_exposure_gate(tmp_path):
+    _configure(tmp_path)
+    start = datetime(2026, 8, 25, 13, 40, tzinfo=KL)
+    artifact = _refresh_series(
+        tmp_path,
+        [
+            (start + timedelta(minutes=index * 5), value)
+            for index, value in enumerate([75.0, 70.0, 65.0, 55.0, 45.0, 38.0])
+        ],
+    )
+
+    window = artifact["exposure_window"]
+    assert window["status"] == "sufficient"
+    assert window["sufficient"] is True
+    assert window["sample_count"] == 6
+    assert window["span_minutes"] == 25.0
+    assert window["maximum_observed_gap_minutes"] == 5.0
+    assert window["sample_mean_pm2_5_ug_m3"] == 58.0
+    assert window["minimum_pm2_5_ug_m3"] == 38.0
+    assert window["maximum_pm2_5_ug_m3"] == 75.0
+    assert window["trend"] == "falling"
+    assert artifact["decision"]["point_classification"]["key"] == (
+        "moderate_caution"
+    )
+    assert artifact["decision"]["decision_reference"] == {
+        "pm2_5_ug_m3": 58.0,
+        "basis": "worse_of_current_point_and_sufficient_bounded_window_sample_mean",
+        "classification": {
+            "key": "poor_conditions_for_exercise",
+            "severity": "poor",
+            "pm2_5_ug_m3": 58.0,
+            "classification_input": "direct_current_pm2_5_mass_concentration",
+            "is_aqi": False,
+        },
+    }
+    assert artifact["decision"]["gate"] == (
+        "outdoor_mtb_endurance_high_ventilation_closed"
+    )
+
+
+@pytest.mark.parametrize(
+    ("offsets", "expected_reasons"),
+    [
+        (
+            [0, 10, 20],
+            {
+                "minimum_sample_count_not_met",
+                "minimum_observation_span_not_met",
+            },
+        ),
+        (
+            [0, 3, 6, 9, 15, 30],
+            {"maximum_gap_requirement_not_met"},
+        ),
+    ],
+)
+def test_sparse_or_gapped_ledger_stays_explicitly_insufficient(
+    tmp_path,
+    offsets,
+    expected_reasons,
+):
+    _configure(tmp_path)
+    start = datetime(2026, 8, 25, 13, 35, tzinfo=KL)
+    artifact = _refresh_series(
+        tmp_path,
+        [
+            (start + timedelta(minutes=offset), 38.0)
+            for offset in offsets
+        ],
+    )
+
+    window = artifact["exposure_window"]
+    assert window["status"] == "insufficient"
+    assert window["sufficient"] is False
+    assert set(window["insufficiency_reasons"]) == expected_reasons
+    assert window["sample_mean_pm2_5_ug_m3"] is None
+    assert window["minimum_pm2_5_ug_m3"] is None
+    assert window["maximum_pm2_5_ug_m3"] is None
+    assert window["trend"] is None
+    assert artifact["decision"]["gate"] == "outdoor_moderate_caution"
 
 
 def test_air_quality_retains_last_good_after_semantic_or_transport_failure(tmp_path):
@@ -264,12 +458,10 @@ def test_stale_high_air_quality_retains_downshift_but_requires_refresh(tmp_path)
 
     assert retained["freshness"]["status"] == "stale"
     assert retained["decision"]["gate"] == (
-        "retained_outdoor_training_closed_pending_refresh"
+        "retained_outdoor_mtb_endurance_high_ventilation_closed_pending_refresh"
     )
     assert retained["decision"]["can_promote_training"] is False
-    assert "until a fresh venue-relevant source is checked" in retained["decision"][
-        "reason"
-    ]
+    assert "until refreshed" in retained["decision"]["reason"]
 
 
 def test_air_quality_gate_replaces_written_mtb_with_indoor_and_surfaces_in_packet(
@@ -331,7 +523,7 @@ def test_air_quality_gate_replaces_written_mtb_with_indoor_and_surfaces_in_packe
         for item in plan["constraint_resolution"]["applied"]
     )
     assert plan["decision_inputs"]["air_quality"]["decision"]["gate"] == (
-        "outdoor_training_closed"
+        "outdoor_mtb_endurance_high_ventilation_closed"
     )
 
     packet = build_coach_packet(
@@ -353,7 +545,7 @@ def test_air_quality_gate_replaces_written_mtb_with_indoor_and_surfaces_in_packe
         if item["source"] == "air_quality"
     )
     assert caution["severity"] == "red"
-    assert caution["type"] == "outdoor_training_closed"
+    assert caution["type"] == "outdoor_mtb_endurance_high_ventilation_closed"
 
 
 def test_air_quality_does_not_override_stricter_cns_recovery_or_other_venue(
@@ -554,7 +746,7 @@ def test_sync_refreshes_air_quality_once_live_and_never_on_rebuild(
             "observed_at_local": "2026-08-25T14:08:30+08:00",
             "pm2_5": {"value": 72.5, "unit": "ug/m3"},
         },
-        "decision": {"gate": "outdoor_training_closed"},
+        "decision": {"gate": "outdoor_mtb_endurance_high_ventilation_closed"},
         "latest_attempt": {"status": "success"},
     }
 
@@ -582,7 +774,9 @@ def test_sync_refreshes_air_quality_once_live_and_never_on_rebuild(
     )
     assert calls["refresh"] == 0
     assert calls["load"] >= 2
-    assert rebuild["air_quality_sync"]["gate"] == "outdoor_training_closed"
+    assert rebuild["air_quality_sync"]["gate"] == (
+        "outdoor_mtb_endurance_high_ventilation_closed"
+    )
     stored_state = read_json(tmp_path / "snapshots" / "current_state.json", {})
     assert stored_state["air_quality"]["current"]["pm2_5"]["value"] == 72.5
 

@@ -736,6 +736,16 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
                 "pm2_5": (air_quality.get("current") or {}).get("pm2_5"),
                 "freshness": air_quality.get("freshness"),
                 "gate": (air_quality.get("decision") or {}).get("gate"),
+                "point_classification": (air_quality.get("decision") or {}).get(
+                    "point_classification"
+                ),
+                "decision_reference": (air_quality.get("decision") or {}).get(
+                    "decision_reference"
+                ),
+                "exposure_window_status": (air_quality.get("decision") or {}).get(
+                    "exposure_window_status"
+                ),
+                "exposure_window": air_quality.get("exposure_window"),
                 "latest_attempt": air_quality.get("latest_attempt"),
                 "spatial_scope": (air_quality.get("decision") or {}).get(
                     "spatial_scope"
@@ -935,9 +945,21 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
                 "latest_review": (
                     predictive.get("latest_review", {}).get("comparison") if predictive else None
                 ),
+                "latest_learning_disposition": (
+                    (
+                        predictive.get("latest_review", {}).get("comparison")
+                        or {}
+                    ).get("learning_disposition")
+                    if predictive
+                    else None
+                ),
             },
-            "pre_session_expectation_and_post_session_calibration",
-            "Store an expected session response before training, then compare the actual session and next-day Garmin response afterward.",
+            "pre_session_expectation_and_post_session_multi_channel_learning",
+            (
+                "Store an expected response before training, then separate nominal-contract validation, "
+                "delivered-action response, execution-boundary learning, and safety-adherence learning. "
+                "A stop-rule override can inform the latter lanes but can never validate the nominal dose."
+            ),
         ),
     ])
     return trusted
