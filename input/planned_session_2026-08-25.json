@@ -2,13 +2,18 @@
   "artifact_type": "coach_authored_planned_session",
   "date": "2026-08-25",
   "generated_at": "2026-08-24T17:38:36+08:00",
-  "status": "provisional_next_day_resequenced_session_requires_fresh_gate",
+  "status": "active_same_day_yellow_capped_requires_subjective_and_airway_gate",
   "decision_basis": {
     "prior_day_action": "The planned Monday Suito session was not executed. Clayton completed a 25.5-minute Levo SL e-MTB test instead; it was non-zero density but did not supply the planned sustained tempo/torque adaptation.",
     "prior_day_cost": "The e-MTB activity recorded Garmin load 84.8, aerobic TE 3.0, anaerobic TE 1.2 and one 98.7-second unassisted climb at athlete-reported RPE 8. HR-derived load has moderate confidence because no external heart-rate sensor was recorded.",
     "prior_day_recovery_context": "At 17:25 Monday, physical readiness was yellow 58, current Body Battery 25, sleep 6.23 hours and the stack's seven-day load was 532.3 versus 269.3 in the preceding seven days. CNS remained ready.",
     "airway_context": "Clayton reported a slight sore throat and intermittent outdoor runny nose after haze exposure. Tuesday's structured session requires these symptoms to be absent at rest in the cleaner indoor environment.",
-    "weekly_trade": "Executing Tuesday 3x8 spends the week's structured aerobic-development slot. Wednesday becomes recovery or low-cost continuity; neither two Twin Peaks nor indoor VO2 may be stacked the following day. Friday Enduro remains the next protected meaningful session, subject to fresh gates."
+    "weekly_trade": "Executing Tuesday 3x8 spends the week's structured aerobic-development slot. Wednesday becomes recovery or low-cost continuity; neither two Twin Peaks nor indoor VO2 may be stacked the following day. Friday Enduro remains the next protected meaningful session, subject to fresh gates.",
+    "same_day_refresh": "Live Garmin decision sync completed 2026-08-25 at 11:09-11:10 Asia/Kuala_Lumpur.",
+    "same_day_readiness": "Physical readiness is yellow 65. Primary sleep was 5.97 hours with score 70, wake/current Body Battery 68, overnight HRV 45 ms BALANCED, resting HR 47 matching the seven-day average, and average stress 21 through the partial morning window.",
+    "same_day_cns": "CNS is watch 74 with controlled_skill_only ceiling. The watch classification is driven by short primary sleep rather than impaired/compromised CNS evidence; this permits only narrow low-consequence controlled tempo after a clean subjective and warm-up gate.",
+    "same_day_training_status": "Garmin acute/chronic load is 372/384 with ACWR 0.9 OPTIMAL and MAINTAINING_3 status. High aerobic remains above its target and anaerobic near its upper target, so no VO2, threshold, sprint or added interval work is allowed.",
+    "same_day_air_quality": "Athlete reports outdoor PM2.5 92.3 ug/m3 and has selected indoor training. Outdoor exercise remains closed."
   },
   "session": {
     "title": "Resequenced Suito 3x8 tempo/torque development",
@@ -49,10 +54,10 @@
     ],
     "purpose": "Recover the sustained bike-specific aerobic and muscular-endurance stimulus that Monday's short assisted test ride did not provide, without converting the week into consecutive intensity days.",
     "dose": {
-      "fresh_admission_gate": "Run the live Garmin decision workflow Tuesday before training. Start only with physical readiness not red, CNS ready or normal, mental clarity at least 8/10, normal breathing at rest, no sore throat, runny nose, cough, wheeze, chest tightness, unusual fatigue, illness, gastrointestinal disturbance or pain, and symmetric normal legs.",
+      "fresh_admission_gate": "The live Garmin workflow is current. Start only with mental clarity at least 8/10, normal breathing at rest, no current sore throat, runny nose, cough, wheeze, chest tightness, unusual fatigue, illness, gastrointestinal disturbance or pain, and symmetric normal legs. Today's CNS watch is acceptable only because it is driven by short sleep without impaired/compromised signals; any subjective processing or coordination concern selects the fallback or rest.",
       "clean_air_gate": "Keep doors and windows closed and particle filtration running. Use the indoor PM2.5 monitor as exposure context, not a guarantee of safety. Do not start if the reading is rising, smoke odour is present, or eye, nose or throat irritation appears indoors.",
       "warm_up": "Ride 12-15 minutes seated, progressing from 105 W toward 140 W. Confirm normal breathing, expected HR response, stable cadence and posture before beginning structured work.",
-      "main_set": "Complete 3x8 minutes seated at 165-170 W, cadence 70-75 rpm and RPE 5-6, with 4 minutes at 100-115 W between repetitions. Hold the same range for all three repetitions; do not add the previously optional 175 W finish.",
+      "main_set": "Complete 3x8 minutes seated at 165-168 W, cadence 70-75 rpm and RPE 5-6, with 4 minutes at 100-115 W between repetitions. Rep three may touch 170 W only if rep two finishes at RPE 5 or lower with normal HR, breathing, cadence and posture. Do not add the previously optional 175 W finish.",
       "cool_down": "Ride 8-10 minutes at 100-115 W. Total duration 58-66 minutes.",
       "fallback": "If respiratory symptoms are absent but readiness, sleep or leg response is merely yellow, replace the structured set with 30-40 minutes at 110-120 W and RPE 2. Any respiratory or irritation symptom selects complete rest."
     },
@@ -67,9 +72,9 @@
     ],
     "expected_result": {
       "garmin_training_load": {
-        "expected": 70,
-        "range": [45, 95],
-        "basis": "Broad athlete-specific range for controlled 3x8 Suito work; execution quality and next-day absorption matter more than matching the point estimate."
+        "expected": 65,
+        "range": [40, 90],
+        "basis": "Yellow-capped athlete-specific range for controlled 3x8 Suito work; execution quality and next-day absorption matter more than matching the point estimate."
       },
       "session": "All repetitions remain within approximately 3 percent power spread, cadence and posture stay stable, rep three remains RPE 6 or lower, and no respiratory irritation appears.",
       "next_day": "Normal cognition, breathing and legs with no disproportionate RHR, HRV, Body Battery, sleep, airway, knee, back, hand or fit cost. Wednesday remains deliberately low-cost even after a green response."
