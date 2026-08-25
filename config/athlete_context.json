@@ -83,6 +83,38 @@
           "distance_priority": "Nearest of Clayton's three main KL MTB venues.",
           "training_role": "Default weekly anchor for climb-loop fitness, enduro repeatability, and controlled trail exposure."
         },
+        "air_quality_proxy": {
+          "provider": "AirGradient",
+          "endpoint": "https://api.airgradient.com/public/api/v1/world/locations/86311/measures/current",
+          "location_id": 86311,
+          "location_name": "Taman Tun Dr. Ismail",
+          "station_timezone": "Asia/Kuala_Lumpur",
+          "fresh_max_age_minutes": 10,
+          "usable_max_age_minutes": 60,
+          "future_timestamp_tolerance_minutes": 2,
+          "timeout_seconds": 8,
+          "spatial_scope": "Hyperlocal outdoor PM2.5 proxy for TTDI and Bukit Kiara; a high reading is a conservative caution signal for nearby Klang Valley activity.",
+          "spatial_guardrail": "This single TTDI station cannot positively clear the whole Klang Valley or another venue. Check a venue-local source when TTDI is low but training is elsewhere.",
+          "automatic_gate_venue_keys": [
+            "bukit_kiara"
+          ],
+          "automatic_gate_venue_aliases": [
+            "Bukit Kiara",
+            "Kiara",
+            "Taman Tun Dr. Ismail",
+            "TTDI"
+          ],
+          "measurement_rule": "Use AirGradient pm02 as raw current PM2.5 mass concentration in ug/m3. Do not label a single current observation as AQI or a 24-hour average, and do not silently substitute pm02_corrected if it later appears.",
+          "measurement_guardrail": "The public AirGradient raw sensor observation may differ from corrected dashboard or regulatory-reference data. Use it conservatively for exposure downshift, never as a precise medical measurement or low-value clearance.",
+          "decision_use": "Outdoor exposure gate only: high fresh evidence may close or downshift outdoor training, while low, falling, stale or failed evidence never promotes readiness, CNS consequence, intensity or outdoor training.",
+          "indoor_separation_rule": "Home indoor PM2.5 remains a separately sourced athlete/local-monitor surface; the TTDI outdoor station cannot verify indoor air.",
+          "coaching_thresholds_ug_m3": {
+            "elevated_from": 9.1,
+            "outdoor_hard_closed_from": 35.5,
+            "all_outdoor_closed_from": 55.5,
+            "basis": "Operational coaching exposure thresholds anchored to current EPA PM2.5 concentration intervals. These thresholds act on a fresh raw point observation for precautionary coaching and are not an AQI calculation."
+          }
+        },
         "twin_peak_stage_network": {
           "start_hub": {
             "name": "Twin Peak",
@@ -694,6 +726,11 @@
       "note": "Direct Garmin comparison confirmed cycling VO2max 51.1 with chronic load 561 on 2025-07-15 versus 47.6 with chronic load 377 on 2026-08-24. The rebuild target remains 5-6 bike days with one weekly structured aerobic-development stimulus; the conference week was corrected so Wednesday is conditional 3x8 tempo/torque rather than recovery-only.",
       "timestamp": "2026-08-24T11:45:00+08:00",
       "type": "cycling_vo2_rebuild_strategy_updated"
+    },
+    {
+      "note": "Clayton designated the public AirGradient Taman Tun Dr. Ismail location 86311 as the live outdoor PM2.5 proxy for Bukit Kiara/TTDI decisions. The raw current observation may close or downshift outdoor exposure but can never promote training, cannot verify home indoor air, and cannot positively clear the whole Klang Valley.",
+      "timestamp": "2026-08-25T14:34:28+08:00",
+      "type": "air_quality_proxy_configured"
     }
   ],
   "medical": {
@@ -1021,5 +1058,5 @@
       }
     ]
   },
-  "updated_at": "2026-08-24T11:45:00+08:00"
+  "updated_at": "2026-08-25T14:34:28+08:00"
 }

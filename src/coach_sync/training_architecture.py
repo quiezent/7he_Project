@@ -201,6 +201,12 @@ def _evidence_summary(profile: dict, hypotheses: dict, audit: dict) -> dict:
 def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, target: date) -> dict:
     evidence = _evidence_summary(profile, hypotheses, audit)
     current_phase = (context.get("goal_progression") or {}).get("current_phase", "base_rebuild")
+    air_quality_proxy = (
+        (((context.get("athlete") or {}).get("venue_profiles") or {}).get("bukit_kiara") or {}).get(
+            "air_quality_proxy"
+        )
+        or {}
+    )
     return {
         "date": target.isoformat(),
         "generated_at": iso_now(DEFAULT_TIMEZONE),
@@ -259,6 +265,45 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                     "CNS readiness cannot authorize intensity when physical readiness is red.",
                     "Good Body Battery cannot override brain fog, strained HRV, weak feel, or delayed decision speed.",
                     "Low load cannot justify technical consequence if CNS status is impaired or compromised.",
+                ],
+            },
+            "outdoor_air_quality_model": {
+                "purpose": (
+                    "Use a fresh hyperlocal outdoor particulate observation to close or downshift "
+                    "Kiara exposure without confusing environmental safety with athlete readiness."
+                ),
+                "provider": air_quality_proxy.get("provider"),
+                "location_id": air_quality_proxy.get("location_id"),
+                "location_name": air_quality_proxy.get("location_name"),
+                "automatic_gate_venue_keys": air_quality_proxy.get(
+                    "automatic_gate_venue_keys"
+                ),
+                "automatic_gate_venue_aliases": air_quality_proxy.get(
+                    "automatic_gate_venue_aliases"
+                ),
+                "measurement_rule": air_quality_proxy.get("measurement_rule"),
+                "measurement_guardrail": air_quality_proxy.get(
+                    "measurement_guardrail"
+                ),
+                "freshness": {
+                    "fresh_max_age_minutes": air_quality_proxy.get("fresh_max_age_minutes"),
+                    "usable_max_age_minutes": air_quality_proxy.get("usable_max_age_minutes"),
+                    "age_basis": "station measurement timestamp, not fetch time",
+                },
+                "decision_role": air_quality_proxy.get("decision_use"),
+                "thresholds_ug_m3": air_quality_proxy.get(
+                    "coaching_thresholds_ug_m3"
+                ),
+                "hard_guards": [
+                    "Preserve AirGradient pm02 as raw PM2.5 mass concentration in ug/m3; do not call one current sample AQI or a 24-hour average.",
+                    "Treat the public raw sensor reading as an exposure-caution proxy that may differ from corrected dashboard or regulatory-reference data; never use a low point value as precise medical clearance.",
+                    "A fresh high value may close or downshift outdoor training; a low, falling, retained, stale, or failed value never promotes readiness or opens training.",
+                    "The TTDI station is a Kiara/TTDI proxy, not positive clearance for the whole Klang Valley or a different venue.",
+                    "The outdoor station cannot establish home indoor air quality; use the athlete's separate indoor monitor and airway symptoms.",
+                    "Fresh explicitly current airway or smoke-exposure symptoms are a separate head-coach gate and may override a lower station value; the PM module never infers current symptoms from free text or historical notes.",
+                    "Automatic modality substitution requires a structured session venue matching the configured TTDI/Bukit Kiara coverage keys; unknown or different venues receive caution pending venue-local evidence.",
+                    "An environmental block on an authorized Sunday race returns to Sabbath rest and never creates substitute exercise; a stricter CNS or readiness replacement remains authoritative.",
+                    "Live sync may refresh this public surface once; rebuild-only paths remain network-silent and retain last-known-good plus latest-attempt provenance.",
                 ],
             },
             "sleep_work_timing_governor": {
@@ -493,6 +538,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                 "Do not count elliptical load as bike-specific maintenance.",
                 "Do not treat Garmin readiness as direct trail-skill readiness without subjective notes.",
                 "Do not infer exercise-time oxygenation or respiration from daily or sleep Garmin summaries.",
+                "Do not use one low TTDI PM2.5 point observation to clear the whole Klang Valley, infer indoor air, or promote training readiness.",
                 "Do not treat low training load as permission for high-consequence MTB when CNS readiness is impaired or compromised.",
                 "Do not use historical finger injury as a current training gate.",
                 "Do not copy a full ideal week when life load, sleep, HRV, arm pump, or back-to-back trail plans require density control.",
@@ -509,6 +555,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             "Sabbath hard rest and current readiness.",
             "CNS readiness: cap technical consequence, novelty, speed, jumps, enduro simulation, and setup testing when nervous-system processing is not restored.",
             "Garmin freshness: wellness, activity, and training status must be current for hard guidance; Garmin Training Readiness is separately dated context only.",
+            "Outdoor exposure: fresh TTDI raw PM2.5 and current airway symptoms may close or downshift Kiara training, but can never promote readiness or positively clear another venue.",
             "Garmin diagnosis arbitration: use Training Status, ACWR, and Load Focus to decide whether the session ceiling should downshift, hold, or allow a controlled upgrade.",
             "Current phase and recent load: avoid spikes while rebuilding.",
             "Bike-specific continuity: protect the weekly minimum before adding non-bike work.",
@@ -537,6 +584,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                 "End DH/jump quality if arm pump changes grip, brake modulation, or body position.",
                 "End intensity if HR drift or RPE turns a controlled session into survival.",
                 "Downshift immediately if rain or wet roots/rocks raise consequence beyond the session purpose.",
+                "Stop or move indoors if particulate exposure or airway symptoms breach the written environmental gate.",
                 "Downshift technical consequence if brain fog, visual processing, braking timing, or line choice gets slower than the first quality rep.",
             ],
         },
@@ -837,6 +885,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             "cns_readiness": "snapshots/cns_readiness.json is the current technical-consequence ceiling after current_state rebuild.",
             "garmin_surface_manifest": "snapshots/garmin_surface_manifest.json inventories configured Garmin endpoints, attempt states, raw/normalized field coverage, eras/gaps, units, lineage, privacy checks, and actual downstream consumers.",
             "garmin_training_readiness": "snapshots/garmin_training_readiness_current.json is a separate context-only Garmin feed with source date, age, endpoint health, and tri-state device-capability provenance; it cannot replace physical readiness or the CNS ceiling.",
+            "outdoor_air_quality": "snapshots/air_quality_current.json and snapshots/air_quality_ledger.json preserve a selected-field AirGradient TTDI raw PM2.5 observation, station-timestamp freshness, last-known-good data, latest-attempt state, privacy exclusions, spatial limits, and an outdoor-only downshift gate. Rebuilds do not fetch it; the surface never promotes training or represents indoor air.",
             "latest_session_evidence": "snapshots/current_state.json latest_session_evidence is the bounded raw-session interpretation block; every joined field must retain source, unit, and confidence limits.",
             "live_sync_provenance": "snapshots/last_live_sync_status.json and snapshots/sync_run_ledger.json preserve live-contact truth across later rebuild-only runs.",
             "oxygenation_respiration": "Dedicated Garmin Pulse Ox and respiration endpoints retain attempt state, coverage, valid samples, and negative sentinels. Daily or sleep values are contextual only and never imputed into an activity interval or used as medical diagnosis or training clearance.",

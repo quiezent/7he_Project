@@ -639,6 +639,7 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
     device_audit = state.get("device_audit") or {}
     self_evaluation = state.get("self_evaluation") or {}
     latest_session = state.get("latest_session_evidence") or {}
+    air_quality = state.get("air_quality") or {}
     gear_coverage = (gear_audit.get("coverage") or {}).get("status")
     device_coverage = (device_audit.get("coverage") or {}).get("status")
     gear_status = "flagged" if gear_audit.get("flags") else "clear" if gear_coverage == "complete" else gear_coverage or "unknown"
@@ -722,6 +723,35 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
             },
             "load_confidence_gate",
             activity_freshness.get("message") or "No Garmin activity freshness message is available.",
+        ),
+        _signal(
+            "TTDI/Bukit Kiara outdoor air quality",
+            air_quality.get("status") or "unconfigured",
+            {
+                "provider": air_quality.get("provider"),
+                "location": air_quality.get("location"),
+                "observed_at_local": (air_quality.get("current") or {}).get(
+                    "observed_at_local"
+                ),
+                "pm2_5": (air_quality.get("current") or {}).get("pm2_5"),
+                "freshness": air_quality.get("freshness"),
+                "gate": (air_quality.get("decision") or {}).get("gate"),
+                "latest_attempt": air_quality.get("latest_attempt"),
+                "spatial_scope": (air_quality.get("decision") or {}).get(
+                    "spatial_scope"
+                ),
+                "spatial_guardrail": (air_quality.get("decision") or {}).get(
+                    "spatial_guardrail"
+                ),
+                "automatic_gate_venue_keys": (
+                    (air_quality.get("decision") or {}).get(
+                        "automatic_gate_venue_keys"
+                    )
+                ),
+            },
+            "outdoor_exposure_downshift_or_closure_only_never_readiness_promotion",
+            (air_quality.get("decision") or {}).get("reason")
+            or "No configured TTDI outdoor PM2.5 decision surface is available.",
         ),
         _signal(
             "Readiness",
@@ -932,6 +962,25 @@ def _build_cautions(state: dict) -> list[dict]:
                 "type": "hard_session_limiter",
                 "severity": "yellow",
                 "message": limiter,
+            }
+        )
+    air_quality = state.get("air_quality") or {}
+    air_decision = air_quality.get("decision") or {}
+    air_gate = air_decision.get("gate")
+    if (
+        air_quality.get("status") != "unconfigured"
+        and air_gate not in {None, "no_pm25_downshift_from_current_sample"}
+    ):
+        cautions.append(
+            {
+                "source": "air_quality",
+                "type": air_gate,
+                "severity": air_decision.get("severity") or "yellow",
+                "message": air_decision.get("reason")
+                or "Outdoor air-quality evidence requires verification or downshift.",
+                "decision_role": (
+                    "Outdoor exposure gate only; never a readiness or CNS promotion signal."
+                ),
             }
         )
     for flag in (state.get("cns_readiness") or {}).get("flags") or []:
@@ -1298,6 +1347,14 @@ def _next_data_needed(state: dict) -> list[str]:
         needed.append("Complete recent Devices & Apps coverage so HR-source confidence is known for key rides.")
     if ((state.get("self_evaluation") or {}).get("coverage") or {}).get("status") != "complete":
         needed.append("Complete recent self-evaluation metadata coverage; log feel/RPE after key sessions when Garmin has none.")
+    air_quality = state.get("air_quality") or {}
+    if (
+        air_quality.get("status") != "unconfigured"
+        and (air_quality.get("freshness") or {}).get("status") != "current"
+    ):
+        needed.append(
+            "Refresh the TTDI AirGradient surface before an outdoor Kiara call; stale, missing, or failed PM2.5 evidence cannot open outdoor training."
+        )
     wearable = state.get("wearable_coverage") or {}
     unexplained_runs = [
         row
@@ -1424,6 +1481,7 @@ def build_coach_packet(
             "source_state": "snapshots/current_state.json",
             "source_plan": "snapshots/today_plan.json",
             "source_cycling_ftp": "snapshots/garmin_cycling_ftp_current.json",
+            "source_air_quality": "snapshots/air_quality_current.json",
         },
     }
     write_json(snapshots_dir(root) / "coach_packet.json", packet)

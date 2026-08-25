@@ -5,6 +5,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from .activity_profile import build_activity_profile
+from .air_quality import load_air_quality_context
 from .body_battery_model import build_body_battery_model
 from .context import load_context
 from .cns_readiness import build_cns_readiness
@@ -296,6 +297,7 @@ def build_current_state(
         target_date,
         activities=activities,
     )
+    air_quality = load_air_quality_context(root, target_date)
     phase = determine_phase(context, target_date)
     wellness_date, wellness = load_latest_wellness(root, target_date)
     training_status_date, training_status = load_latest_training_status(root, target_date)
@@ -516,6 +518,7 @@ def build_current_state(
         "readiness": readiness,
         "readiness_accuracy": readiness.get("readiness_accuracy"),
         "data_freshness": freshness,
+        "air_quality": air_quality,
         "training_load": training_load,
         "wellness_trends": wellness_trends,
         "wellness_verification": wellness_verification,

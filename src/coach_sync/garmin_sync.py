@@ -5,6 +5,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any, Callable
 
+from .air_quality import load_air_quality_context, refresh_air_quality
 from .briefing import build_daily_brief
 from .cleanup import cleanup_derived
 from .coach_packet import build_coach_packet
@@ -1375,6 +1376,11 @@ def sync_connect(
         )
     )
     _record_sync_run(root, live, rebuild_only=rebuild_only, decision_only=decision_only)
+    air_quality = (
+        load_air_quality_context(root)
+        if rebuild_only
+        else refresh_air_quality(root)
+    )
     state = build_current_state(root, refresh_models=not decision_only)
     state_date = parse_date(state.get("date"))
     weekly_session = load_weekly_session(root, state_date) if state_date else None
@@ -1392,6 +1398,21 @@ def sync_connect(
             "generated_at": iso_now(DEFAULT_TIMEZONE),
             "mode": "decision_only",
             "live_sync": live,
+            "air_quality_sync": {
+                "status": air_quality.get("status"),
+                "freshness": (air_quality.get("freshness") or {}).get("status"),
+                "pm2_5_ug_m3": (
+                    ((air_quality.get("current") or {}).get("pm2_5") or {}).get("value")
+                ),
+                "observed_at_local": (air_quality.get("current") or {}).get(
+                    "observed_at_local"
+                ),
+                "gate": (air_quality.get("decision") or {}).get("gate"),
+                "latest_attempt_status": (
+                    (air_quality.get("latest_attempt") or {}).get("status")
+                ),
+                "artifact": str(snapshots_dir(root) / "air_quality_current.json"),
+            },
             "state_file": str(snapshots_dir(root) / "current_state.json"),
             "weekly_plan_file": str(snapshots_dir(root) / "weekly_plan.txt") if weekly_plan_available else None,
             "coach_packet_file": str(snapshots_dir(root) / "coach_packet.txt"),
@@ -1431,6 +1452,21 @@ def sync_connect(
     status = {
         "generated_at": iso_now(DEFAULT_TIMEZONE),
         "live_sync": live,
+        "air_quality_sync": {
+            "status": air_quality.get("status"),
+            "freshness": (air_quality.get("freshness") or {}).get("status"),
+            "pm2_5_ug_m3": (
+                ((air_quality.get("current") or {}).get("pm2_5") or {}).get("value")
+            ),
+            "observed_at_local": (air_quality.get("current") or {}).get(
+                "observed_at_local"
+            ),
+            "gate": (air_quality.get("decision") or {}).get("gate"),
+            "latest_attempt_status": (
+                (air_quality.get("latest_attempt") or {}).get("status")
+            ),
+            "artifact": str(snapshots_dir(root) / "air_quality_current.json"),
+        },
         "state_file": str(snapshots_dir(root) / "current_state.json"),
         "brief_file": str(snapshots_dir(root) / "daily_brief.txt"),
         "weekly_plan_file": str(snapshots_dir(root) / "weekly_plan.txt") if weekly_plan_available else None,

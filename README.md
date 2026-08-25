@@ -68,6 +68,7 @@ Preferred direct commands:
 - Wear-state coverage: `python tools/wearable_coverage.py --date <YYYY-MM-DD>`
 - Training status: `python tools/training_status.py`
 - Garmin Training Readiness: `python tools/training_readiness.py --date <YYYY-MM-DD>`
+- TTDI/Bukit Kiara outdoor PM2.5: `python tools/air_quality.py`
 - Activity profile: `python tools/activity_profile.py`
 - N-of-1 adaptation profile: `python tools/adaptation_profile.py --all`
 - Training hypothesis tests: `python tools/training_hypotheses.py --date <YYYY-MM-DD>`
@@ -229,6 +230,10 @@ Blank template fields are ignored.
   - training status, ACWR, load focus, VO2 max, and acclimation
 - `snapshots/garmin_training_readiness_current.json`
   - separate Garmin Training Readiness feed with endpoint, date, freshness, and device-capability provenance; context only, never a replacement for physical or CNS readiness gates
+  - selected-field TTDI AirGradient raw PM2.5 context for Bukit Kiara outdoor decisions; high fresh evidence can downshift or close exposure, but the surface cannot promote readiness, clear another Klang Valley venue, or represent indoor air
+- `snapshots/air_quality_current.json` / `snapshots/air_quality_ledger.json`
+  - public TTDI station observation and bounded fetch history with station-timestamp freshness, strict semantic validation, selected-field privacy, last-known-good retention, and separate latest-attempt status
+  - `pm02` is stored as raw `ug/m3`, never relabeled as AQI; live sync refreshes it once and rebuild-only commands do not use the network
 - `snapshots/garmin_surface_manifest.json`
   - endpoint-by-endpoint collection state, raw/normalized field coverage, contiguous data eras and gaps, units, lineage, privacy verification, and downstream coaching use
 - `snapshots/last_live_sync_status.json` / `snapshots/sync_run_ledger.json`
