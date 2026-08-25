@@ -83,45 +83,18 @@
           "distance_priority": "Nearest of Clayton's three main KL MTB venues.",
           "training_role": "Default weekly anchor for climb-loop fitness, enduro repeatability, and controlled trail exposure."
         },
-        "air_quality_proxy": {
-          "provider": "AirGradient",
-          "endpoint": "https://api.airgradient.com/public/api/v1/world/locations/86311/measures/current",
-          "location_id": 86311,
-          "location_name": "Taman Tun Dr. Ismail",
-          "station_timezone": "Asia/Kuala_Lumpur",
-          "fresh_max_age_minutes": 10,
-          "usable_max_age_minutes": 60,
-          "future_timestamp_tolerance_minutes": 2,
-          "timeout_seconds": 8,
-          "spatial_scope": "Hyperlocal outdoor PM2.5 proxy for TTDI and Bukit Kiara; a high reading is a conservative caution signal for nearby Klang Valley activity.",
-          "spatial_guardrail": "This single TTDI station cannot positively clear the whole Klang Valley or another venue. Check a venue-local source when TTDI is low but training is elsewhere.",
-          "automatic_gate_venue_keys": [
-            "bukit_kiara"
+        "preferred_environment_report": {
+          "location": "Taman Tun Dr. Ismail / Bukit Kiara",
+          "url": "https://www.iqair.com/as/air-quality/malaysia/selangor/petaling-jaya/taman-tun-dr-ismail",
+          "fields_of_interest": [
+            "current weather and rain or thunderstorm context",
+            "temperature or feels-like and humidity",
+            "displayed AQI system and value",
+            "PM2.5 value, unit and observation time"
           ],
-          "automatic_gate_venue_aliases": [
-            "Bukit Kiara",
-            "Kiara",
-            "Taman Tun Dr. Ismail",
-            "TTDI"
-          ],
-          "measurement_rule": "Use AirGradient pm02 as raw current PM2.5 mass concentration in ug/m3. Do not label a single current observation as AQI or a 24-hour average, and do not silently substitute pm02_corrected if it later appears.",
-          "measurement_guardrail": "The public AirGradient raw sensor observation may differ from corrected dashboard or regulatory-reference data. Use it conservatively for exposure downshift, never as a precise medical measurement or low-value clearance.",
-          "decision_use": "Outdoor exposure modifier: combine the fresh raw point, a sufficiently dense recent window when available, current symptoms, planned ventilation, and duration. A point or window may downshift or close exposure but can never promote readiness, CNS consequence, intensity or outdoor training.",
-          "indoor_separation_rule": "Home indoor PM2.5 remains a separately sourced athlete/local-monitor surface; the TTDI outdoor station cannot verify indoor air.",
-          "sports_exercise_bands_ug_m3": {
-            "good_below": 25,
-            "moderate_from": 25,
-            "poor_from": 51,
-            "hazardous_above": 150,
-            "basis": "Direct PM2.5 exercise bands from the Australian Institute of Sport high-performance-athlete smoke guidance: below 25 normal; 25-50 moderate caution; 51-150 poor conditions; above 150 likely hazardous outdoors. These are coaching exposure bands, not AQI."
-          },
-          "trend_requirements": {
-            "window_minutes": 60,
-            "minimum_samples": 6,
-            "minimum_span_minutes": 25,
-            "maximum_gap_minutes": 10,
-            "guardrail": "Sparse on-demand current samples cannot represent a rolling exposure window. Do not infer persistence, clearance or an AQI-equivalent category unless density and span requirements are satisfied."
-          }
+          "decision_use": "Fresh direct coaching context before weather- or haze-sensitive outdoor calls; do not persist it as a stack state, infer a trend, or let software automatically substitute the session.",
+          "access_rule": "Read the current report directly through model web perception. Do not scrape the webpage. Use IQAir's official API only if a user-provided API key is configured outside the repository.",
+          "guardrail": "Keep AQI and PM2.5 concentration distinct. Combine the report with current symptoms, trail conditions, expected duration and ventilation; it cannot promote readiness or establish indoor air quality."
         },
         "twin_peak_stage_network": {
           "start_hub": {
@@ -744,6 +717,11 @@
       "note": "Air-quality coaching semantics corrected after comparing the AirGradient raw point with Clayton's same-period dashboard: use direct sport-exercise PM2.5 bands, treat 25-50 ug/m3 as moderate caution rather than automatic closure, and require a density-qualified ledger window before inferring persistence or clearance. Digital-twin learning was also split so a stop-rule override rejects nominal-contract validation without discarding delivered-action, execution-boundary, or safety-adherence evidence.",
       "timestamp": "2026-08-25T16:21:03+08:00",
       "type": "air_quality_and_predictive_learning_semantics_corrected"
+    },
+    {
+      "note": "Clayton judged the engineered AirGradient ledger and automatic planner gate disproportionate. The active integration was retired in favor of reading the IQAir TTDI weather and air-quality report directly as fresh same-day coaching context. IQAir webpage scraping is not permitted; any future automation must use the official API with credentials outside the repository.",
+      "timestamp": "2026-08-25T16:38:32+08:00",
+      "type": "automated_air_quality_stack_retired"
     }
   ],
   "medical": {
@@ -1071,5 +1049,5 @@
       }
     ]
   },
-  "updated_at": "2026-08-25T16:21:03+08:00"
+  "updated_at": "2026-08-25T16:38:32+08:00"
 }

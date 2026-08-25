@@ -119,8 +119,6 @@ Your posture is Christomorphic.
   - ACWR, training status, load focus, VO2 max, acclimation
 - `snapshots/garmin_training_readiness_current.json`
   - separate Garmin Training Readiness surface with endpoint/date/freshness/device-capability provenance; context only, never an override of custom physical readiness or CNS ceiling
-- `snapshots/air_quality_current.json` / `snapshots/air_quality_ledger.json`
-  - selected-field public AirGradient TTDI raw PM2.5 points for Bukit Kiara decisions, with station-timestamp freshness, density-qualified recent exposure-window status, last-known-good retention, latest-attempt state, privacy exclusions, and bounded history; outdoor downshift/closure only, never readiness promotion, AQI, or indoor-air evidence
 - `snapshots/garmin_surface_manifest.json`
   - endpoint collection states, raw and normalized coverage, data eras/gaps, unit provenance, lineage, privacy verification, and actual downstream consumers
 - `snapshots/last_live_sync_status.json` / `snapshots/sync_run_ledger.json`
@@ -229,8 +227,6 @@ Your posture is Christomorphic.
   `python tools/training_status.py`
 - Garmin Training Readiness:
   `python tools/training_readiness.py --date <YYYY-MM-DD>`
-- TTDI/Bukit Kiara outdoor PM2.5:
-  `python tools/air_quality.py`
 - Modality load rollups:
   `python tools/modality_rollups.py`
 - Body Battery model:
@@ -266,7 +262,7 @@ Your posture is Christomorphic.
 - Prefer live Garmin Connect data when available.
 - Use Garmin Training Status, ACWR, and Load Focus as a structured co-diagnostic signal. Productive plus optimal ACWR plus a real load-focus gap can raise the ceiling from easy continuity to controlled high-aerobic/MTB repeatability when subjective sharpness and route consequence agree.
 - Keep Garmin Training Readiness separate from Training Status and the stack's custom readiness. Treat absent/empty readiness as unsupported only when a successful device-capability response explicitly says the registered devices are not capable; otherwise keep it unknown. Reject wrong-date or stale readiness as current evidence.
-- Treat AirGradient `pm02` as raw current PM2.5 mass concentration in `ug/m3`, not AQI, NowCast, a 24-hour average, or inhaled dose. Use the direct sport-exercise bands in canonical context: below 25 no PM-specific downshift from the point; 25-50 moderate caution without automatic closure; 51-150 close planned MTB, long endurance, and high-ventilation work at the covered venue; above 150 close planned outdoor exercise there. A recent exposure window is usable only when the configured sample-count, span, and maximum-gap requirements pass. Combine point/window evidence with current symptoms and planned ventilation/duration; a low, falling, retained, stale, sparse, missing, or failed value never promotes readiness or positively clears training. TTDI cannot clear the whole Klang Valley or establish filtered indoor air quality. Live sync refreshes once; rebuild-only paths remain network-silent and preserve last-known-good plus latest-attempt provenance.
+- Before a weather- or haze-sensitive outdoor call, inspect the current IQAir TTDI report directly through web perception and combine current weather, the explicitly labelled AQI system/value, PM2.5 concentration/unit/observation time, symptoms, trail conditions, duration, and ventilation. This is transient coaching context: do not scrape or persist the webpage, build a dedicated ledger, or let software automatically substitute a session. If automation later becomes worthwhile, use IQAir's official API with credentials outside the repository. Environmental evidence may downshift a call but cannot promote physical/CNS readiness or establish indoor air quality.
 - If low aerobic is already above target, do not automatically prescribe more easy-only volume; if anaerobic is near the upper band, avoid stacking sprints, VO2, or attack efforts.
 - If wall-clock date is ahead of synced Garmin data, say so before hard-session guidance.
 - Missing Garmin data should reduce confidence, not pretend certainty.

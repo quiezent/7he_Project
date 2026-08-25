@@ -590,6 +590,22 @@ def test_trainable_today_plan_sessions_include_schema_v3_contract(tmp_path):
         _assert_schema_v3_contract(plan["session"])
 
 
+def test_legacy_air_quality_state_no_longer_changes_planner(tmp_path):
+    load_context(tmp_path)
+    target = "2026-04-30"
+    baseline = build_today_plan(tmp_path, target, state=_green_state(target))
+    legacy_state = _green_state(target)
+    legacy_state["air_quality"] = {
+        "decision_status": "close_outdoor_high_ventilation",
+        "pm2_5_ug_m3": 999.0,
+    }
+
+    with_legacy_field = build_today_plan(tmp_path, target, state=legacy_state)
+
+    assert with_legacy_field["session"] == baseline["session"]
+    assert "air_quality" not in with_legacy_field["decision_inputs"]
+
+
 def test_garmin_productive_status_can_upgrade_yellow_day_to_controlled_repeatability(tmp_path):
     load_context(tmp_path)
     state = _with_training_status(_yellow_state("2026-04-29"))

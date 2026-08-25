@@ -30,6 +30,18 @@ def _context():
     return {
         "athlete": {
             "name": "Clayton",
+            "venue_profiles": {
+                "bukit_kiara": {
+                    "preferred_environment_report": {
+                        "location": "Taman Tun Dr. Ismail / Bukit Kiara",
+                        "url": "https://www.iqair.com/as/air-quality/malaysia/selangor/petaling-jaya/taman-tun-dr-ismail",
+                        "fields_of_interest": ["weather", "AQI", "PM2.5"],
+                        "decision_use": "Direct same-day coaching context only.",
+                        "access_rule": "Read directly; do not scrape.",
+                        "guardrail": "Cannot promote readiness.",
+                    }
+                }
+            },
             "event_focus": {
                 "upcoming_events": [
                     {
@@ -121,6 +133,11 @@ def test_training_architecture_builds_config_and_snapshot(tmp_path):
     assert artifact["architecture_type"] == "clayton_specific_enduro_training_architecture"
     assert artifact["schema_version"] == 3
     assert artifact["integrated_coaching_model"]["purpose"].startswith("Combine directive")
+    environment = artifact["integrated_coaching_model"]["same_day_environment_context"]
+    assert environment["location"] == "Taman Tun Dr. Ismail / Bukit Kiara"
+    assert environment["decision_role"] == "Direct same-day coaching context only."
+    assert "outdoor_air_quality_model" not in artifact["integrated_coaching_model"]
+    assert "outdoor_air_quality" not in artifact["artifact_contract"]
     assert artifact["session_contract"]["required_fields"][0] == "purpose"
     assert "stop_rule_outcome" in artifact["session_contract"]["post_session_review"]
     assert artifact["athlete_model"]["highest_return_sequence"][0] == "bike-specific continuity"

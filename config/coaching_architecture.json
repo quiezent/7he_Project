@@ -9,7 +9,6 @@
     "garmin_training_readiness": "snapshots/garmin_training_readiness_current.json is a separate context-only Garmin feed with source date, age, endpoint health, and tri-state device-capability provenance; it cannot replace physical readiness or the CNS ceiling.",
     "latest_session_evidence": "snapshots/current_state.json latest_session_evidence is the bounded raw-session interpretation block; every joined field must retain source, unit, and confidence limits.",
     "live_sync_provenance": "snapshots/last_live_sync_status.json and snapshots/sync_run_ledger.json preserve live-contact truth across later rebuild-only runs.",
-    "outdoor_air_quality": "snapshots/air_quality_current.json and snapshots/air_quality_ledger.json preserve selected-field AirGradient TTDI raw PM2.5 points, station-timestamp freshness, a density-qualified recent exposure window, last-known-good data, latest-attempt state, privacy exclusions, spatial limits, and sport-specific outdoor-only downshift gates. Rebuilds do not fetch it; the surface never promotes training, computes AQI, or represents indoor air.",
     "oxygenation_respiration": "Dedicated Garmin Pulse Ox and respiration endpoints retain attempt state, coverage, valid samples, and negative sentinels. Daily or sleep values are contextual only and never imputed into an activity interval or used as medical diagnosis or training clearance.",
     "raw_key_session_detail": "activities/details and activities/fit preserve bounded rich Garmin API detail and original FIT/ZIP evidence; nested detail is private raw evidence, is excluded from longitudinal activity counts, and is never derived-cache cleanup material.",
     "rest_recharge_window": "snapshots/rest_recharge_window.json joins athlete-confirmed nap/rest timing to the retained Garmin all-day stress and Body Battery series, recharge latency, primary-sleep shortfall, illness, preceding 48-hour load, inertia, and clarity. It is upward-inert intraday context; poor cognition or illness may only lower the CNS ceiling.",
@@ -25,7 +24,7 @@
       "Do not count elliptical load as bike-specific maintenance.",
       "Do not treat Garmin readiness as direct trail-skill readiness without subjective notes.",
       "Do not infer exercise-time oxygenation or respiration from daily or sleep Garmin summaries.",
-      "Do not use one low TTDI PM2.5 point observation to clear the whole Klang Valley, infer indoor air, or promote training readiness.",
+      "Do not treat a displayed AQI or PM2.5 concentration as readiness clearance, and do not conflate AQI with concentration units.",
       "Do not treat low training load as permission for high-consequence MTB when CNS readiness is impaired or compromised.",
       "Do not use historical finger injury as a current training gate.",
       "Do not copy a full ideal week when life load, sleep, HRV, arm pump, or back-to-back trail plans require density control."
@@ -114,7 +113,7 @@
     "Sabbath hard rest and current readiness.",
     "CNS readiness: cap technical consequence, novelty, speed, jumps, enduro simulation, and setup testing when nervous-system processing is not restored.",
     "Garmin freshness: wellness, activity, and training status must be current for hard guidance; Garmin Training Readiness is separately dated context only.",
-    "Outdoor exposure: use the fresh TTDI raw PM2.5 point, a sufficiently dense recent exposure window when available, planned ventilation/duration, and current airway symptoms to close or downshift Kiara training; environmental evidence can never promote readiness or positively clear another venue.",
+    "Same-day environment: before a weather- or haze-sensitive outdoor call, inspect the current IQAir TTDI weather and air-quality report directly and combine it with symptoms, trail conditions, duration and ventilation; this is transient coaching context, not a persistent software gate.",
     "Garmin diagnosis arbitration: use Training Status, ACWR, and Load Focus to decide whether the session ceiling should downshift, hold, or allow a controlled upgrade.",
     "Current phase and recent load: avoid spikes while rebuilding.",
     "Bike-specific continuity: protect the weekly minimum before adding non-bike work.",
@@ -653,7 +652,7 @@
     "heat_rule": "In Kuala Lumpur, treat fuel/hydration as skill protection: sloppy braking, weak pumping, timid jumps, or poor line choice late can be carb/sodium/heat failure.",
     "range_selection_rule": "Choose within the canonical band from same-day heat/humidity, actual sweat response, session consequence, and gut tolerance. Previous-session weather is not a forecast, and Garmin heat acclimation never reduces the target by itself."
   },
-  "generated_at": "2026-08-25T16:23:08+08:00",
+  "generated_at": "2026-08-25T16:44:52+08:00",
   "integrated_coaching_model": {
     "cns_readiness_model": {
       "decision_role": "Use CNS readiness as a technical-consequence ceiling after Sabbath and physical readiness, not as a replacement for Garmin readiness.",
@@ -745,58 +744,21 @@
       "After sync, compare expected versus actual load, CNS readiness, self-evaluation, skill notes, and next-day response.",
       "Update the next prescription and the athlete model only when the evidence changes the coaching call."
     ],
-    "outdoor_air_quality_model": {
-      "automatic_gate_venue_aliases": [
-        "Bukit Kiara",
-        "Kiara",
-        "Taman Tun Dr. Ismail",
-        "TTDI"
-      ],
-      "automatic_gate_venue_keys": [
-        "bukit_kiara"
-      ],
-      "decision_role": "Outdoor exposure modifier: combine the fresh raw point, a sufficiently dense recent window when available, current symptoms, planned ventilation, and duration. A point or window may downshift or close exposure but can never promote readiness, CNS consequence, intensity or outdoor training.",
-      "freshness": {
-        "age_basis": "station measurement timestamp, not fetch time",
-        "fresh_max_age_minutes": 10,
-        "usable_max_age_minutes": 60
-      },
-      "hard_guards": [
-        "Preserve AirGradient pm02 as raw PM2.5 mass concentration in ug/m3; do not call one current sample AQI or a 24-hour average.",
-        "Use direct sport-exercise PM2.5 bands rather than applying regulatory 24-hour AQI concentration breakpoints to a single raw observation.",
-        "A fresh point from 25 to 50 ug/m3 is moderate caution, not automatic outdoor closure. From 51 to 150 ug/m3, close planned MTB, long endurance, and other high-ventilation work at the covered venue; above 150 ug/m3, close planned outdoor exercise there.",
-        "Only call ledger evidence an exposure window when the configured sample-count, span, and maximum-gap requirements pass; otherwise expose it as insufficient and do not infer persistence, clearance, AQI, NowCast, or inhaled dose.",
-        "Treat the public raw sensor reading as an exposure-caution proxy that may differ from corrected dashboard or regulatory-reference data; never use a low point value as precise medical clearance.",
-        "A fresh point or sufficiently dense recent window may close or downshift outdoor training; a low, falling, retained, stale, sparse, or failed value never promotes readiness or opens training.",
-        "The TTDI station is a Kiara/TTDI proxy, not positive clearance for the whole Klang Valley or a different venue.",
-        "The outdoor station cannot establish home indoor air quality; use the athlete's separate indoor monitor and airway symptoms.",
-        "Fresh explicitly current airway or smoke-exposure symptoms are a separate head-coach gate and may override a lower station value; the PM module never infers current symptoms from free text or historical notes.",
-        "Automatic modality substitution requires a structured session venue matching the configured TTDI/Bukit Kiara coverage keys; unknown or different venues receive caution pending venue-local evidence.",
-        "An environmental block on an authorized Sunday race returns to Sabbath rest and never creates substitute exercise; a stricter CNS or readiness replacement remains authoritative.",
-        "Live sync may refresh this public surface once; rebuild-only paths remain network-silent and retain last-known-good plus latest-attempt provenance."
-      ],
-      "location_id": 86311,
-      "location_name": "Taman Tun Dr. Ismail",
-      "measurement_guardrail": "The public AirGradient raw sensor observation may differ from corrected dashboard or regulatory-reference data. Use it conservatively for exposure downshift, never as a precise medical measurement or low-value clearance.",
-      "measurement_rule": "Use AirGradient pm02 as raw current PM2.5 mass concentration in ug/m3. Do not label a single current observation as AQI or a 24-hour average, and do not silently substitute pm02_corrected if it later appears.",
-      "provider": "AirGradient",
-      "purpose": "Use a fresh hyperlocal outdoor particulate observation to close or downshift Kiara exposure without confusing environmental safety with athlete readiness.",
-      "sports_exercise_bands_ug_m3": {
-        "basis": "Direct PM2.5 exercise bands from the Australian Institute of Sport high-performance-athlete smoke guidance: below 25 normal; 25-50 moderate caution; 51-150 poor conditions; above 150 likely hazardous outdoors. These are coaching exposure bands, not AQI.",
-        "good_below": 25,
-        "hazardous_above": 150,
-        "moderate_from": 25,
-        "poor_from": 51
-      },
-      "trend_requirements": {
-        "guardrail": "Sparse on-demand current samples cannot represent a rolling exposure window. Do not infer persistence, clearance or an AQI-equivalent category unless density and span requirements are satisfied.",
-        "maximum_gap_minutes": 10,
-        "minimum_samples": 6,
-        "minimum_span_minutes": 25,
-        "window_minutes": 60
-      }
-    },
     "purpose": "Combine directive enduro-specific coaching with Garmin-backed N-of-1 verification.",
+    "same_day_environment_context": {
+      "access_rule": "Read the current report directly through model web perception. Do not scrape the webpage. Use IQAir's official API only if a user-provided API key is configured outside the repository.",
+      "decision_role": "Fresh direct coaching context before weather- or haze-sensitive outdoor calls; do not persist it as a stack state, infer a trend, or let software automatically substitute the session.",
+      "fields_of_interest": [
+        "current weather and rain or thunderstorm context",
+        "temperature or feels-like and humidity",
+        "displayed AQI system and value",
+        "PM2.5 value, unit and observation time"
+      ],
+      "guardrail": "Keep AQI and PM2.5 concentration distinct. Combine the report with current symptoms, trail conditions, expected duration and ventilation; it cannot promote readiness or establish indoor air quality.",
+      "location": "Taman Tun Dr. Ismail / Bukit Kiara",
+      "preferred_report_url": "https://www.iqair.com/as/air-quality/malaysia/selangor/petaling-jaya/taman-tun-dr-ismail",
+      "purpose": "Use current weather and displayed air-quality context before a weather- or haze-sensitive outdoor call without making it a persistent stack subsystem."
+    },
     "sleep_work_timing_governor": {
       "acute_short_sleep_field_gate": {
         "admission": "Use only for an isolated 5-to-under-6-hour night with no brain fog, illness, coordination complaint, recent neural-density warning, or adverse HRV/RHR pattern.",
@@ -1201,7 +1163,7 @@
       "End DH/jump quality if arm pump changes grip, brake modulation, or body position.",
       "End intensity if HR drift or RPE turns a controlled session into survival.",
       "Downshift immediately if rain or wet roots/rocks raise consequence beyond the session purpose.",
-      "Stop or move indoors if particulate exposure or airway symptoms breach the written environmental gate.",
+      "Stop or move indoors when current environmental conditions or symptoms make the planned outdoor exposure inappropriate.",
       "Downshift technical consequence if brain fog, visual processing, braking timing, or line choice gets slower than the first quality rep."
     ]
   },

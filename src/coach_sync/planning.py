@@ -26,7 +26,6 @@ SESSION_CONTRACT_FIELDS = [
 ]
 
 TRAINABLE_SESSION_TYPES = {
-    "air_quality_indoor_substitute",
     "bike_quality",
     "cns_recovery",
     "endurance_data_limited",
@@ -106,19 +105,6 @@ def _is_mtb_session(session: dict) -> bool:
         or "mtb" in session_type
         or "enduro" in session_type
         or session_type == "endurance_skills"
-    )
-
-
-def _is_outdoor_session(session: dict) -> bool:
-    if _is_mtb_session(session):
-        return True
-    modality = str(session.get("modality") or "").lower()
-    session_type = str(session.get("type") or "").lower()
-    title = str(session.get("title") or "").lower()
-    return bool(
-        "outdoor" in modality
-        or "outdoor" in session_type
-        or "outdoor" in title
     )
 
 
@@ -349,42 +335,6 @@ def _contract_for_session(session: dict) -> dict:
     duration = int(session.get("duration_min") or 0)
     intensity = session.get("intensity") or "easy"
 
-    if session_type == "air_quality_indoor_substitute":
-        return {
-            "purpose": (
-                "Preserve a low-cost bike-specific touch indoors while avoiding elevated outdoor "
-                "particulate exposure."
-            ),
-            "dose": {
-                "duration_min": duration,
-                "intensity": intensity,
-                "completion": "Indoor spin completed within the cap with breathing and symptoms stable.",
-                "cap": "Indoor only, RPE 2-4; no interval substitution or duration extension.",
-            },
-            "adaptation_hypothesis": (
-                "A short easy indoor bike touch should maintain continuity without adding the "
-                "ventilatory dose or recovery cost of the displaced outdoor session."
-            ),
-            "execution_rules": [
-                "Use the indoor trainer with doors and windows closed when the separate indoor monitor is acceptable.",
-                "Keep breathing conversational and cadence comfortable.",
-                "Do not treat the modality change as permission to add intervals or extra volume.",
-            ],
-            "expected_result": {
-                "garmin_load": "low",
-                "rpe": "easy",
-                "next_day": "outdoor-session capacity preserved pending fresh air-quality and readiness evidence",
-            },
-            "stop_rules": [
-                (
-                    "Stop for worsening runny nose, sore throat, cough, wheeze, chest tightness, "
-                    "unusual shortness of breath, eye irritation, dizziness, or headache."
-                ),
-                "Stop if indoor PM2.5 is not acceptable on the athlete's separate indoor monitor.",
-                "Stop if RPE rises above 4 at easy power or the session begins creating recovery debt.",
-            ],
-            "post_session_review_fields": _review_fields(),
-        }
     if session_type == "bike_quality":
         return {
             "purpose": "Rebuild bike-specific engine quality using the current dated Garmin FTP with RPE/HR validation.",
@@ -588,98 +538,6 @@ def _garmin_aerobic_continuity_plan(arbitration: dict) -> dict:
             f"Garmin ceiling: {arbitration.get('ceiling') or 'aerobic continuity'}.",
         ],
     }
-
-
-def _air_quality_indoor_plan(original_session: dict, air_quality: dict) -> dict:
-    original_duration = int(original_session.get("duration_min") or 45)
-    duration = max(20, min(original_duration, 45))
-    reading = ((air_quality.get("current") or {}).get("pm2_5") or {}).get("value")
-    observed = (air_quality.get("current") or {}).get("observed_at_local")
-    return {
-        "title": "Indoor continuity; outdoor particulate exposure closed",
-        "type": "air_quality_indoor_substitute",
-        "modality": "bike_indoor",
-        "duration_min": duration,
-        "intensity": "easy",
-        "details": [
-            "Use the Suito indoors at RPE 2-4; do not replace the displaced outdoor dose with intervals.",
-            "Keep the home indoor monitor as a separate gate; the TTDI station cannot verify indoor air.",
-            (
-                f"TTDI raw PM2.5 was {reading} ug/m3 at {observed}."
-                if reading is not None
-                else "No fresh usable TTDI raw PM2.5 value is available."
-            ),
-        ],
-    }
-
-
-def _air_quality_venue_scope(
-    session: dict,
-    air_decision: dict,
-    sabbath_exception: dict | None = None,
-) -> str:
-    identity = session.get("action_identity") or {}
-    event = (sabbath_exception or {}).get("event") or {}
-    candidates = [
-        session.get("venue_key"),
-        session.get("venue"),
-        identity.get("venue_key") if isinstance(identity, dict) else None,
-        event.get("venue_key") if isinstance(event, dict) else None,
-        event.get("venue") if isinstance(event, dict) else None,
-    ]
-    candidates = [str(value).strip().lower() for value in candidates if value]
-    if not candidates:
-        return "unknown"
-    accepted = {
-        str(value).strip().lower()
-        for value in [
-            *(air_decision.get("automatic_gate_venue_keys") or []),
-            *(air_decision.get("automatic_gate_venue_aliases") or []),
-        ]
-        if value
-    }
-    if any(
-        candidate == value or value in candidate
-        for candidate in candidates
-        for value in accepted
-    ):
-        return "matched"
-    return "outside_automatic_scope"
-
-
-def _air_quality_blocks_session(
-    session: dict,
-    air_decision: dict,
-    sabbath_exception: dict | None = None,
-) -> bool:
-    if not _is_outdoor_session(session):
-        return False
-    if (
-        _air_quality_venue_scope(session, air_decision, sabbath_exception)
-        != "matched"
-    ):
-        return False
-    gate = air_decision.get("gate")
-    if gate in {
-        "outdoor_training_closed",
-        "retained_outdoor_training_closed_pending_refresh",
-    }:
-        return True
-    if gate not in {
-        "outdoor_mtb_endurance_high_ventilation_closed",
-        "retained_outdoor_mtb_endurance_high_ventilation_closed_pending_refresh",
-    }:
-        return False
-    intensity = str(session.get("intensity") or "").lower()
-    try:
-        duration_min = int(session.get("duration_min") or 0)
-    except (TypeError, ValueError):
-        duration_min = 0
-    return bool(
-        _is_mtb_session(session)
-        or duration_min >= 60
-        or intensity not in {"easy", "recovery"}
-    )
 
 
 def _session_is_already_low_consequence(session: dict) -> bool:
@@ -934,74 +792,6 @@ def _apply_session_constraints(
         )
         effective = replacement
 
-    air_quality = state.get("air_quality") or {}
-    air_decision = air_quality.get("decision") or {}
-    air_gate = air_decision.get("gate")
-    effective_air_blocked = _air_quality_blocks_session(
-        effective,
-        air_decision,
-        sabbath_exception,
-    )
-    original_air_blocked = _air_quality_blocks_session(
-        original,
-        air_decision,
-        sabbath_exception,
-    )
-    if effective_air_blocked:
-        if sabbath_exception:
-            replacement = _scheduled_rest_plan(
-                recurring_scheduled_rest
-                or {
-                    "label": "Sunday Sabbath",
-                    "reason": (
-                        "The exact named event exception cannot be used for substitute training."
-                    ),
-                }
-            )
-            resolution = "event_blocked_so_recurring_sabbath_rest_no_substitute_training"
-        else:
-            replacement = _air_quality_indoor_plan(effective, air_quality)
-            resolution = "outdoor_session_replaced_with_low_cost_indoor_continuity"
-        constraints.append(
-            {
-                "source": "air_quality",
-                "reason": air_decision.get("reason")
-                or "Fresh outdoor particulate evidence closes the written outdoor dose.",
-                "gate": air_gate,
-                "original_session": _session_summary(effective),
-                "effective_session": _session_summary(replacement),
-                "decision_role": "outdoor_downshift_only_never_readiness_promotion",
-                "venue_scope": _air_quality_venue_scope(
-                    effective,
-                    air_decision,
-                    sabbath_exception,
-                ),
-                "resolution": resolution,
-            }
-        )
-        effective = replacement
-    elif original_air_blocked:
-        constraints.append(
-            {
-                "source": "air_quality",
-                "reason": (
-                    (air_decision.get("reason") or "Outdoor particulate caution is active.")
-                    + " A stricter non-outdoor safety constraint already replaced the written "
-                    "session and remains authoritative."
-                ),
-                "gate": air_gate,
-                "original_session": _session_summary(original),
-                "effective_session": _session_summary(effective),
-                "decision_role": "caution_retained_without_overriding_stricter_constraint",
-                "venue_scope": _air_quality_venue_scope(
-                    original,
-                    air_decision,
-                    sabbath_exception,
-                ),
-                "resolution": "stricter_existing_non_outdoor_constraint_preserved",
-            }
-        )
-
     return effective, constraints
 
 
@@ -1237,12 +1027,6 @@ def build_today_plan(
         for limiter in state.get("data_freshness", {}).get("hard_session_limiters", []):
             if limiter and limiter not in guardrails:
                 guardrails.append(limiter)
-    air_quality = state.get("air_quality") or {}
-    air_decision = air_quality.get("decision") or {}
-    if air_decision.get("gate") not in {None, "no_pm25_downshift_from_current_sample"}:
-        air_reason = air_decision.get("reason")
-        if air_reason and air_reason not in guardrails:
-            guardrails.insert(0, air_reason)
     for constraint in applied_constraints:
         reason = constraint.get("reason")
         if reason and reason not in guardrails:
@@ -1280,15 +1064,6 @@ def build_today_plan(
             "readiness_accuracy": readiness.get("readiness_accuracy"),
             "hard_session_guidance": hard_guidance,
             "data_freshness": state.get("data_freshness"),
-            "air_quality": {
-                "status": air_quality.get("status"),
-                "provider": air_quality.get("provider"),
-                "location": air_quality.get("location"),
-                "current": air_quality.get("current"),
-                "freshness": air_quality.get("freshness"),
-                "decision": air_quality.get("decision"),
-                "latest_attempt": air_quality.get("latest_attempt"),
-            },
             "scheduled_rest": scheduled_rest,
             "replacement_sabbath": replacement_sabbath,
             "sabbath_exception": sabbath_exception,
