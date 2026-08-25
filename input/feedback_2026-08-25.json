@@ -1,0 +1,116 @@
+{
+  "date": "2026-08-25",
+  "entries": [
+    {
+      "timestamp_local": "2026-08-25T14:00:00+08:00",
+      "source": "athlete_post_session_report_with_garmin_activity_and_fit_interval_audit",
+      "activity_id": "24105394715",
+      "reported_context": {
+        "session_intent": "Complete the coach-authored 3x8-minute indoor Suito tempo/torque session while outdoor haze prevented riding.",
+        "warmup_rpe_0_to_10": 3,
+        "main_set_rpe_0_to_10": 8,
+        "rep_by_rep_rpe_status": "Athlete reported the eight-minute repetitions collectively as exceeding RPE 6 and feeling approximately RPE 8; separate ratings for repetitions one, two and three were not reported.",
+        "continuation_reason": "Athlete continued after the written RPE ceiling was exceeded because he believed completing the exercise was necessary to increase VO2max.",
+        "rpe_scale_guardrail": "Athlete report uses a conventional 0-10 scale. Garmin post-activity directWorkoutRpe was 80/100 and directWorkoutFeel was 50/100; preserve the two source scales separately.",
+        "air_quality": {
+          "outdoor_pm2_5_ug_m3": 91.2,
+          "indoor_pm2_5_ug_m3_reported_upper_bound": 30.0,
+          "indoor_controls": "Doors and windows closed with air filters operating.",
+          "measurement_source": "athlete_reported_local_monitors",
+          "guardrail": "The indoor value is exposure context, not proof of zero respiratory risk."
+        }
+      },
+      "session_contract_review": {
+        "actual_duration_min": 55.5,
+        "actual_training_load": 75.0,
+        "actual_rpe_0_to_10": 8,
+        "workout_feel_garmin_0_to_100": 50,
+        "clean_air_controls_and_indoor_pm2_5": "Athlete reports outdoor PM2.5 91.2 ug/m3, indoor PM2.5 below 30 ug/m3, doors and windows closed, and air filters operating.",
+        "repetition_average_power_hr_cadence_and_rpe": "Garmin repetitions were 169 W / 140 bpm / 70 rpm, 168 W / 145 bpm / 68 rpm, and 168 W / 150 bpm / 70 rpm. Athlete reported the repetitions collectively at approximately RPE 8/10; separate rep-by-rep RPE values were not supplied.",
+        "technical_quality_notes": "Indoor seated tempo/torque execution. Power and cadence were objectively captured; posture, fit symptoms and local-leg versus breathing limitation were not yet reported.",
+        "late_session_skill_fade": "not_applicable_indoor_cycling",
+        "stop_rule_outcome": null,
+        "stop_rule_outcome_status": "pending_explicit_athlete_label",
+        "coach_contract_mapping": "The athlete explicitly reported exceeding the repetition-two RPE ceiling and continuing. This maps to triggered_but_continued under the written contract, but the canonical stop_rule_outcome remains unset until Clayton explicitly confirms the structured label.",
+        "airway_symptom_status_before_during_and_after": null,
+        "legs_start_to_finish": null,
+        "body_or_fit_symptoms": null,
+        "fueling_carbs_g_per_hour": null,
+        "fluid_ml_per_hour": null,
+        "sodium_mg_per_hour": null,
+        "cooling": "not_reported"
+      },
+      "objective_interval_evidence": {
+        "source": "Garmin activity 24105394715 standard activity, split and FIT surfaces",
+        "warmup": {
+          "duration_min": 13.0,
+          "average_power_w": 124.7,
+          "average_hr_bpm": 117,
+          "average_cadence_rpm": 71
+        },
+        "repetitions": [
+          {
+            "number": 1,
+            "duration_min": 8.0,
+            "average_power_w": 169,
+            "normalized_power_w": 168,
+            "average_hr_bpm": 140,
+            "max_hr_bpm": 150,
+            "average_cadence_rpm": 70
+          },
+          {
+            "number": 2,
+            "duration_min": 8.0,
+            "average_power_w": 168,
+            "normalized_power_w": 166,
+            "average_hr_bpm": 145,
+            "max_hr_bpm": 151,
+            "average_cadence_rpm": 68
+          },
+          {
+            "number": 3,
+            "duration_min": 8.0,
+            "average_power_w": 168,
+            "normalized_power_w": 167,
+            "average_hr_bpm": 150,
+            "max_hr_bpm": 156,
+            "average_cadence_rpm": 70
+          }
+        ],
+        "recoveries": {
+          "count": 3,
+          "duration_min_each": 4.0,
+          "average_power_w": [
+            117,
+            116,
+            117
+          ],
+          "average_hr_bpm": [
+            134,
+            136,
+            142
+          ]
+        },
+        "cooldown_duration_min": 6.5,
+        "session_average_power_w": 141,
+        "session_normalized_power_w": 147,
+        "session_average_hr_bpm": 136,
+        "session_max_hr_bpm": 156,
+        "garmin_aerobic_training_effect": 3.0,
+        "garmin_anaerobic_training_effect": 0.0,
+        "garmin_training_effect_label": "AEROBIC_BASE",
+        "power_zone_context": "Approximately 21.2 minutes in Garmin power zone 3, 27 seconds in zone 4 and 4 seconds in zone 5; this was not a conventional VO2max interval dose.",
+        "interpretation": "External work matched the written power dose closely, while HR rose progressively at near-identical power. The elevated perceived effort therefore requires separation of local muscular torque strain, breathing strain and global RPE rather than reclassifying the session as VO2max work."
+      },
+      "coach_contract_audit": {
+        "written_action": "Three seated eight-minute repetitions at 165-168 W, 70-75 rpm and RPE 5-6 with four-minute recoveries; end the structured set if repetition two already exceeded RPE 6.",
+        "executed_action": "Three complete eight-minute repetitions at 169/168/168 W and 70/68/70 rpm with complete recoveries; athlete reported approximately RPE 8 and continued after the RPE ceiling was exceeded.",
+        "load_alignment": "Garmin load 75.0 matched the written expected range of 40-90.",
+        "action_alignment": "matched_modality_session_count_duration_and_power_dose",
+        "adaptation_alignment": "tempo_torque_external_dose_matched_but_internal_cost_exceeded_target",
+        "calibration_disposition": "Not eligible for true digital-twin calibration unless an explicit valid stop outcome is supplied; if confirmed as triggered_but_continued, the nominal prescription remains ineligible despite matched external dose and Garmin load.",
+        "next_constraint": "No VO2, threshold, Twin Peaks or other meaningful-cost session on 2026-08-26. Use rest or genuinely easy continuity only, then reassess absorption before the protected Friday Enduro exposure."
+      }
+    }
+  ]
+}
