@@ -201,6 +201,19 @@ def _evidence_summary(profile: dict, hypotheses: dict, audit: dict) -> dict:
 def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, target: date) -> dict:
     evidence = _evidence_summary(profile, hypotheses, audit)
     current_phase = (context.get("goal_progression") or {}).get("current_phase", "base_rebuild")
+    continuity = (
+        (context.get("training_rules") or {}).get("bike_specific_continuity")
+        or {}
+    )
+    endurance_anchors = continuity.get("indoor_endurance_dose_anchors") or {}
+    routine_continuity_contract = endurance_anchors.get(
+        "routine_low_cost_continuity_contract"
+    ) or {
+        "total_duration_min": 60,
+        "main_power_w_range": [120, 130],
+        "global_rpe_range": [2, 3],
+        "density_cost": "low",
+    }
     environment_report = (
         (((context.get("athlete") or {}).get("venue_profiles") or {}).get("bukit_kiara") or {}).get(
             "preferred_environment_report"
@@ -486,6 +499,78 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             ],
             "coaching_standard": "More is not better; more specific, better absorbed, and more repeatable is better.",
         },
+        "adaptive_programming": {
+            "purpose": (
+                "Turn persistent Garmin evidence, structured athlete feedback, canonical strategy and the dated roadmap "
+                "into an inspectable training direction, progression rung, weekly role budget and promotion/hold decision."
+            ),
+            "boundary": {
+                "garmin_mcp": "Direct live perception for model cognition; never a generic ingestion bridge or silent stack refresh.",
+                "stack": "Persistent deterministic programming, normalization, provenance, contracts, progression and audit.",
+                "head_coach": "Final interpreter and same-day prescription owner after MCP and stack evidence are reconciled.",
+            },
+            "decision_order": [
+                "Exact Sunday or replacement-Sabbath enforcement and validated named-race exception.",
+                "Red physical readiness, illness, focal/asymmetric/mechanics-altering symptoms.",
+                "CNS technical-consequence ceiling.",
+                "Data freshness and current environmental/trail consequence.",
+                "Dated roadmap block and absorption state.",
+                "Current-week meaningful-cost, MTB, Enduro and bike-frequency budget.",
+                "One trainable limiter and one progression lever.",
+                "Garmin status/ACWR/load-focus arbitration inside the selected role.",
+                "Head-coach schema-v3 contract and execution review.",
+            ],
+            "progression_ladders": {
+                "endurance_duration": [
+                    "60_min_120_130_w",
+                    "75_min_near_125_w",
+                    "90_min_near_125_w",
+                ],
+                "tempo_torque": ["3x8_min", "3x10_min", "3x12_min", "raise_watts"],
+                "vo2": ["not_admitted", "4x3_min", "5x3_min"],
+                "enduro_complete_cycles": [
+                    "three_complete_twin_peaks_cycles",
+                    "four_complete_twin_peaks_cycles",
+                    "repeat_four_cycle_proof_on_separate_day",
+                ],
+                "expert_skill": {
+                    "cornering": "At least 5/6 clean; braking before turn-in; intended exit; no rescue; final two equal first two.",
+                    "jump_scrub": "At least 5/6 clean on two days with matched entry speed, lower trajectory and unchanged landing/exit quality.",
+                    "sliding": ["controlled_rear_yaw", "neutral_two_wheel_drift", "incidental_front_micro_slip_recovery"],
+                    "technical_terrain": ["sight_60_70_pct", "confirm_markers", "progress_80_85_pct_one_variable_only"],
+                },
+            },
+            "promotion_logic": {
+                "promote": "Only after the written rung is executed inside its stop, form, technical and next-day absorption gates.",
+                "hold": "Use when response is pending, review fields are incomplete, a trigger was obeyed, or a technical dimension exceeds its fatigue/error ceiling.",
+                "deload": "Use for dated taper/consolidation, repeated abnormal next-day response, repeated technical degradation, density breach, impaired/compromised CNS, or persistent/focal/asymmetric/mechanics-altering symptoms.",
+                "unsafe_override": "A triggered_but_continued outcome never promotes the nominal rung; retain delivered-action, execution-boundary and safety-adherence learning separately.",
+                "one_lever_rule": "Progress only one of frequency, duration, engine dose, complete-cycle count, technical consequence or strength at a time.",
+            },
+            "block_calendar": [
+                {"start": "2026-08-26", "end": "2026-08-30", "mode": "absorption", "label": "Absorption and conference entry"},
+                {"start": "2026-08-31", "end": "2026-09-06", "mode": "reentry", "label": "Re-entry and course preparation"},
+                {"start": "2026-09-07", "end": "2026-09-13", "mode": "race_specific", "label": "Race-specific build and Denai recce"},
+                {"start": "2026-09-14", "end": "2026-09-18", "mode": "taper", "label": "Taper and sharpening"},
+                {"start": "2026-09-19", "end": "2026-09-19", "mode": "event_practice", "label": "PDR26 official practice"},
+                {"start": "2026-09-20", "end": "2026-09-20", "mode": "event_race", "label": "PDR26 race"},
+                {"start": "2026-09-21", "end": "2026-09-21", "mode": "replacement_sabbath", "label": "PDR26 replacement Sabbath"},
+                {"start": "2026-09-22", "end": "2026-09-27", "mode": "race_recovery_transition", "label": "PDR26 race-recovery transition"},
+                {"start": "2026-09-28", "end": "2026-10-18", "mode": "build", "label": "Foundation build"},
+                {"start": "2026-10-19", "end": "2026-10-25", "mode": "consolidation", "label": "Consolidation 1"},
+                {"start": "2026-10-26", "end": "2026-11-15", "mode": "build", "label": "Performance build"},
+                {"start": "2026-11-16", "end": "2026-11-22", "mode": "consolidation", "label": "Consolidation 2"},
+                {"start": "2026-11-23", "end": "2026-12-13", "mode": "build", "label": "Expert integration"},
+                {"start": "2026-12-14", "end": "2026-12-20", "mode": "benchmark", "label": "Benchmark and absorption"},
+            ],
+            "artifacts": {
+                "state": "snapshots/adaptive_training.json",
+                "text": "snapshots/adaptive_training.txt",
+                "current_state_field": "adaptive_training",
+                "weekly_plan_field": "adaptive_programming",
+                "coach_packet_signal": "Adaptive training controller",
+            },
+        },
         "athlete_model": {
             "current_phase": current_phase,
             "current_category": ((context.get("athlete") or {}).get("rider_category") or {}).get("current"),
@@ -619,7 +704,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                     "maximum_normal_build_bike_touches_per_week": 6,
                     "meaningful_cost_sessions_per_week_max": 3,
                     "low_cost_bike_touches_per_week": [2, 3],
-                    "preferred_bike_load_per_week": [250, 400],
+                    "preferred_bike_load_per_week": [350, 500],
                     "mtb_exposures_per_week": [1, 2],
                 },
                 "key_sessions": [
@@ -681,11 +766,11 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
         ],
         "weekly_architecture": {
             "default_week": {
-                "monday": "Preferred conversational run with Clayton's wife; optional short easy bike touch only if the run stays easy and recovery is clean.",
+                "monday": "Preferred conversational run with Clayton's wife. If the run does not happen, use the standard 60-minute low-aerobic bike dose rather than defaulting to rest; if the run happens, count its cost honestly and place the long bike dose elsewhere.",
                 "tuesday": "Protected MTB quality/engine exposure.",
                 "wednesday": "Indoor low-aerobic bike continuity.",
                 "thursday": "Protected MTB durability or technical-quality exposure.",
-                "friday": "Indoor low-aerobic continuity or primer; shorten after a harder-than-written Thursday.",
+                "friday": "Indoor low-aerobic continuity at the standard 60-minute dose when Saturday is not already the week's third meaningful cost; use a shorter primer only when fresh evidence shows it protects a specific Saturday objective.",
                 "saturday": "Optional third MTB skill-transfer/Enduro-bike exposure; skip for church/family obligations or density.",
                 "sunday": "Sabbath hard rest.",
             },
@@ -711,6 +796,9 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             },
             "density_governor": [
                 "Build toward 5-6 bike touches through 2-3 low-cost Z1/Z2 or primer days; do not manufacture frequency with split files or unnecessary doubles.",
+                "The two-touch minimum is an emergency maintenance floor, not a successful build target. A normal trainable week below five unique bike days is underdosed unless a named hard constraint removed the opportunity.",
+                "Do not repeatedly protect the next key ride by shrinking ordinary low-cost continuity. Sixty minutes at 120-130 W is Clayton's default low-cost Suito dose when global RPE is 2-3 and there is no persistent or mechanically altering symptom.",
+                "Every normal build week needs one explicit progressive-overload target: steady-endurance duration, structured-engine dose, or MTB repeatability. A week made entirely of primers, recovery rides and capped skill sessions is not a fitness-development week.",
                 "Keep only 2-3 sessions meaningfully costly, and count a hard run toward that cap.",
                 "If Friday and Saturday are both trail days, Thursday becomes primer or recovery, not repeatability intervals.",
                 "If a Tuesday or Wednesday MTB ride creates arm pump or high load, remove lower-body strength and indoor intensity until the key trail days are protected.",
@@ -727,6 +815,17 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             },
         },
         "session_library": {
+            "indoor_steady_endurance": {
+                "purpose": "Rebuild the bike-specific mitochondrial, peripheral and seated muscular durability that supported Clayton's strongest continuity blocks without making every bike day costly.",
+                "routine_low_cost_dose": "60 minutes total with approximately 40 minutes at 120-130 W, global RPE 2-3 and normal ceiling-fan cooling. This is the default continuity dose, not a dose that must be repeatedly shortened merely because another key session exists.",
+                "routine_low_cost_contract": routine_continuity_contract,
+                "routine_low_cost_contract_source": "config/athlete_context.json:training_rules.bike_specific_continuity.indoor_endurance_dose_anchors.routine_low_cost_continuity_contract",
+                "duration_development_dose": "Progress one weekly exposure through 75 minutes toward 90 minutes near 125 W. Treat it as moderate or meaningful cost until 90 minutes is absorbed with global RPE no higher than 4, controlled mechanics and normal next-day function.",
+                "high_end_benchmark": "Sixty minutes near 145 W is high-end endurance for Clayton and counts as the week's structured engine exposure. Use it every two to four weeks as a benchmark or development session, not in addition to torque or VO2 work.",
+                "back_to_back_rule": "Back-to-back 60-minute low-cost doses are allowed when global RPE remains 2-3, mechanics are stable, the muscular response is diffuse and bilateral, symptoms resolve promptly, and the following protected session is not compromised.",
+                "symptom_interpretation": "A familiar diffuse bilateral glute or hamstring burn limited to the final minutes and resolving to 0/10 is an adaptation marker. Track later onset and lower intensity as progress. Downshift or stop for focal or asymmetric pain, altered pedalling or posture, neurological symptoms, persistence beyond approximately 30 minutes, or next-day functional impairment.",
+                "progression_gate": "Progress duration after two absorbed standard doses or one clean duration-development confirmation. Do not require an absence of all terminal muscular sensation before training endurance; require stable execution and recovery.",
+            },
             "indoor_tempo_torque": {
                 "purpose": "Rebuild bike force and threshold durability using the current Garmin operational FTP, RPE, and HR without turning every bike touch into intensity.",
                 "progression": ["3x8 min", "3x10 min", "3x12 min", "raise watts only after repeatability is easy"],
@@ -866,6 +965,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             "rest_recharge_window": "snapshots/rest_recharge_window.json joins athlete-confirmed nap/rest timing to the retained Garmin all-day stress and Body Battery series, recharge latency, primary-sleep shortfall, illness, preceding 48-hour load, inertia, and clarity. It is upward-inert intraday context; poor cognition or illness may only lower the CNS ceiling.",
             "wearable_coverage": "snapshots/wearable_coverage.json separates endpoint health, optical-HR measurement availability, physical wear state, and cause attribution; joins only strict target-date athlete confirmation; withholds optimistic low-stress use across material gaps; and never imputes physiology or promotes training.",
             "weekly_plan": "snapshots/weekly_plan.json is the weekly intent layer; a matching session feeds today_plan unless an explicit coach-authored plan overrides it, and all sources still pass through freshness, Garmin, CNS, and Sabbath constraints.",
+            "adaptive_training": "snapshots/adaptive_training.json is the persistent programming state: dated roadmap block, current-week role/cost budget, separate endurance/engine/technical progression ladders, one selected progression lever, and promotion/hold evidence. It cannot override same-day safety constraints.",
         },
         "caveats": [
             "This architecture is observational and personal to Clayton's Garmin record.",

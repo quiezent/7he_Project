@@ -4,7 +4,11 @@ from datetime import datetime, timedelta, timezone
 from coach_sync.activity_profile import build_activity_profile
 from coach_sync.evidence import load_latest_training_status, load_latest_wellness
 from coach_sync.io import write_json
-from coach_sync.load_model import build_activity_summary_index, build_modality_load_rollups
+from coach_sync.load_model import (
+    build_activity_summary_index,
+    build_bike_continuity_accountability,
+    build_modality_load_rollups,
+)
 from coach_sync.readiness import build_readiness
 from coach_sync.training_status import build_training_status_current
 from coach_sync.wellness import build_wellness_trends, normalize_wellness_payload
@@ -854,6 +858,81 @@ def test_activity_load_uses_activity_training_load_and_excludes_motorsport(tmp_p
     assert profile["categories"]["motorsport"] == 1
     assert rollups["windows"]["last_7_days"]["bike_indoor"]["training_load"] == 75.5
     assert rollups["windows"]["last_7_days"]["motorsport"]["excluded_sessions"] == 1
+
+
+def test_bike_continuity_accountability_counts_unique_days_and_reads_dose_contract(tmp_path):
+    activities = [
+        {
+            "date": "2026-08-24",
+            "category": "mtb",
+            "counts_for_training_load": True,
+            "duration_min": 60,
+            "training_load": 80,
+        },
+        {
+            "date": "2026-08-24",
+            "category": "mtb",
+            "counts_for_training_load": True,
+            "duration_min": 30,
+            "training_load": 30,
+        },
+        {
+            "date": "2026-08-25",
+            "category": "bike_indoor",
+            "counts_for_training_load": True,
+            "duration_min": 60,
+            "training_load": 50,
+        },
+        {
+            "date": "2026-08-26",
+            "category": "bike_indoor",
+            "counts_for_training_load": True,
+            "duration_min": 60,
+            "training_load": 50,
+        },
+        {
+            "date": "2026-08-27",
+            "category": "bike_indoor",
+            "counts_for_training_load": True,
+            "duration_min": 60,
+            "training_load": 55,
+        },
+    ]
+    context = {
+        "training_rules": {
+            "bike_specific_continuity": {
+                "minimum_bike_touches_per_week": 2,
+                "preferred_rebuild_bike_touches_per_week": 5,
+                "maximum_normal_build_bike_touches_per_week": 6,
+                "protect_mtb_exposures_per_week": 2,
+                "indoor_endurance_dose_anchors": {
+                    "routine_low_cost_continuity_contract": {
+                        "total_duration_min": 75,
+                        "main_power_w_range": [118, 128],
+                        "global_rpe_range": [2, 3],
+                    }
+                },
+            },
+            "weekly_rest_days": [{"weekday": 6, "label": "Sabbath"}],
+        }
+    }
+
+    artifact = build_bike_continuity_accountability(
+        tmp_path,
+        "2026-08-27",
+        activities=activities,
+        context=context,
+    )
+
+    assert artifact["current_calendar_week"]["unique_bike_days"] == 4
+    assert artifact["current_calendar_week"]["bike_activity_files"] == 5
+    assert artifact["current_calendar_week"]["mtb_unique_days"] == 1
+    assert artifact["preferred_gap_unique_days"] == 1
+    assert artifact["remaining_non_rest_calendar_dates"] == [
+        "2026-08-28",
+        "2026-08-29",
+    ]
+    assert artifact["routine_low_cost_continuity_contract"]["total_duration_min"] == 75
 
 
 def test_activity_summary_index_surfaces_redacted_local_timing_without_gmt_guessing(tmp_path):

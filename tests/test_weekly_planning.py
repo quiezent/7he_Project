@@ -1,7 +1,7 @@
 from coach_sync.context import load_context, save_context
 from coach_sync.io import write_json
 from coach_sync.planning import SESSION_CONTRACT_FIELDS
-from coach_sync.weekly_planning import build_weekly_plan
+from coach_sync.weekly_planning import _apply_adaptive_programming, build_weekly_plan
 
 
 def _state(
@@ -321,6 +321,67 @@ def test_weekly_plan_uses_low_cost_touches_to_reach_frequency_target(tmp_path):
     assert by_day["Sunday"]["type"] == "scheduled_rest"
 
 
+def test_weekly_plan_consumes_configured_indoor_continuity_contract(tmp_path):
+    context = load_context(tmp_path)
+    continuity = context.setdefault("training_rules", {}).setdefault(
+        "bike_specific_continuity", {}
+    )
+    continuity["indoor_endurance_dose_anchors"] = {
+        "routine_low_cost_continuity_contract": {
+            "total_duration_min": 70,
+            "main_power_w_range": [128, 138],
+            "global_rpe_range": [2, 4],
+        }
+    }
+    save_context(context, tmp_path)
+
+    plan = build_weekly_plan(tmp_path, "2026-06-22", state=_state())
+
+    by_day = {session["day_name"]: session for session in plan["sessions"]}
+    monday = by_day["Monday"]
+    assert monday["duration_min"] == 70
+    assert "70 min Suito at 128-138 W / RPE 2-4" in monday["dose"]["if_run_skipped"]
+
+    wednesday = by_day["Wednesday"]
+    assert wednesday["duration_min"] == 70
+    assert wednesday["dose"]["duration_min"] == 70
+    assert wednesday["dose"]["power_anchor_w_range"] == [128, 138]
+    assert wednesday["dose"]["intensity"] == "RPE 2-4, conversational, seated."
+
+    friday = by_day["Friday"]
+    assert friday["duration_min"] == 70
+    assert friday["dose"]["green_duration_min"] == 70
+    assert friday["dose"]["green_power_w_range"] == [128, 138]
+    assert friday["dose"]["green"] == "70 min at 128-138 W / RPE 2-4."
+
+
+def test_weekly_plan_falls_back_to_standard_continuity_dose_for_invalid_contract(
+    tmp_path,
+):
+    context = load_context(tmp_path)
+    continuity = context.setdefault("training_rules", {}).setdefault(
+        "bike_specific_continuity", {}
+    )
+    continuity["indoor_endurance_dose_anchors"] = {
+        "routine_low_cost_continuity_contract": {
+            "total_duration_min": 0,
+            "main_power_w_range": [140, 120],
+            "global_rpe_range": [8, 2],
+        }
+    }
+    save_context(context, tmp_path)
+
+    plan = build_weekly_plan(tmp_path, "2026-06-22", state=_state())
+
+    by_day = {session["day_name"]: session for session in plan["sessions"]}
+    assert by_day["Wednesday"]["duration_min"] == 60
+    assert by_day["Wednesday"]["dose"]["power_anchor_w_range"] == [120, 130]
+    assert by_day["Friday"]["dose"]["green"] == "60 min at 120-130 W / RPE 2-3."
+    assert "60 min Suito at 120-130 W / RPE 2-3" in by_day["Monday"]["dose"][
+        "if_run_skipped"
+    ]
+
+
 def test_weekly_plan_applies_explicit_church_rest_and_recomputes_touch_counts(tmp_path):
     load_context(tmp_path)
     write_json(
@@ -399,3 +460,68 @@ def test_weekly_plan_counts_mutually_exclusive_fallback_days_as_one_touch(tmp_pa
             "counts_as_at_most": 1,
         }
     ]
+
+
+def test_adaptive_reflow_changes_only_future_discretionary_cost() -> None:
+    state = {
+        "date": "2026-08-27",
+        "adaptive_training": {
+            "date": "2026-08-27",
+            "roadmap_block": {"program_mode": "absorption"},
+            "target_shape": {"duration_multiplier": 0.85},
+            "weekly_budget": {"meaningful_cost_days_remaining": 0},
+            "progression_decision": {"active_lever": "bike_specific_continuity"},
+        },
+    }
+    sessions = [
+        {
+            "date": "2026-08-28",
+            "title": "Future hard MTB",
+            "type": "mtb_quality_engine",
+            "modality": "mtb",
+            "duration_min": 90,
+            "intensity": "moderate_hard",
+            "density_cost": "meaningful",
+            "mtb_exposure": True,
+            "execution_rules": [],
+        }
+    ]
+
+    adjusted, conflicts = _apply_adaptive_programming(sessions, state)
+
+    assert conflicts == []
+    assert adjusted[0]["density_cost"] == "low"
+    assert adjusted[0]["intensity"] == "easy"
+    assert adjusted[0]["optional"] is True
+    assert adjusted[0]["duration_min"] == 75
+
+
+def test_adaptive_reflow_preserves_explicit_contract_and_surfaces_conflict() -> None:
+    state = {
+        "date": "2026-08-27",
+        "adaptive_training": {
+            "date": "2026-08-27",
+            "roadmap_block": {"program_mode": "absorption"},
+            "target_shape": {"duration_multiplier": 0.85},
+            "weekly_budget": {"meaningful_cost_days_remaining": 0},
+            "progression_decision": {"active_lever": "bike_specific_continuity"},
+        },
+    }
+    session = {
+        "date": "2026-08-28",
+        "title": "Explicit Enduro",
+        "type": "mtb_durability_quality",
+        "modality": "mtb",
+        "duration_min": 120,
+        "intensity": "moderate_hard",
+        "density_cost": "meaningful",
+        "mtb_exposure": True,
+        "weekly_intent_override": {"source": "input/planned_session_2026-08-28.json"},
+    }
+
+    adjusted, conflicts = _apply_adaptive_programming([session], state)
+
+    assert adjusted[0]["duration_min"] == 120
+    assert adjusted[0]["density_cost"] == "meaningful"
+    assert adjusted[0]["adaptive_programming"]["budget_disposition"] == "explicit_conflict_preserved"
+    assert conflicts[0]["resolution"] == "preserved_for_head_coach_review_not_silently_rewritten"

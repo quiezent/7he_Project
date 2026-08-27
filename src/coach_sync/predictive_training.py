@@ -1512,6 +1512,23 @@ def _session_expectation(plan: dict) -> dict:
         expected["schema_version"] = session.get("schema_version")
     if session.get("contract_fields"):
         expected["contract_fields"] = session.get("contract_fields")
+    adaptive_identity = session.get("adaptive_programming") or {}
+    if isinstance(adaptive_identity, dict):
+        allowed_adaptive_fields = (
+            "progression_track",
+            "from_step",
+            "planned_step",
+            "progression_lever",
+            "adaptive_state_basis_date",
+            "roadmap_block_id",
+        )
+        compact_identity = {
+            field: adaptive_identity.get(field)
+            for field in allowed_adaptive_fields
+            if adaptive_identity.get(field) not in (None, "")
+        }
+        if compact_identity:
+            expected["adaptive_progression_identity"] = compact_identity
     if generic_intensity != intensity:
         expected["generic_intensity_alias"] = {
             "raw": intensity,

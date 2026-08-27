@@ -32,7 +32,7 @@ def _day_name(day: date) -> str:
     return day.strftime("%A")
 
 
-def _training_rules(context: dict[str, Any]) -> dict[str, int]:
+def _training_rules(context: dict[str, Any]) -> dict[str, Any]:
     continuity = (
         context.get("training_rules", {})
         .get("bike_specific_continuity", {})
@@ -46,6 +46,40 @@ def _training_rules(context: dict[str, Any]) -> dict[str, int]:
     meaningful_cost_max = int(continuity.get("meaningful_cost_sessions_per_week_max") or 3)
     protect_mtb = int(continuity.get("protect_mtb_exposures_per_week") or 2)
     max_mtb = int(continuity.get("maximum_mtb_exposures_per_week") or 3)
+    dose_anchors = continuity.get("indoor_endurance_dose_anchors") or {}
+    routine_contract = dose_anchors.get(
+        "routine_low_cost_continuity_contract"
+    ) or {}
+    configured_duration = as_number(routine_contract.get("total_duration_min"))
+    continuity_duration_min = (
+        int(configured_duration)
+        if configured_duration is not None and configured_duration > 0
+        else 60
+    )
+
+    configured_power = routine_contract.get("main_power_w_range")
+    continuity_power_w_range = [120, 130]
+    if isinstance(configured_power, (list, tuple)) and len(configured_power) == 2:
+        power_low = as_number(configured_power[0])
+        power_high = as_number(configured_power[1])
+        if (
+            power_low is not None
+            and power_high is not None
+            and 0 < power_low <= power_high
+        ):
+            continuity_power_w_range = [int(power_low), int(power_high)]
+
+    configured_rpe = routine_contract.get("global_rpe_range")
+    continuity_rpe_range = [2, 3]
+    if isinstance(configured_rpe, (list, tuple)) and len(configured_rpe) == 2:
+        rpe_low = as_number(configured_rpe[0])
+        rpe_high = as_number(configured_rpe[1])
+        if (
+            rpe_low is not None
+            and rpe_high is not None
+            and 0 <= rpe_low <= rpe_high <= 10
+        ):
+            continuity_rpe_range = [int(rpe_low), int(rpe_high)]
     return {
         "minimum_bike_touches": minimum_bike,
         "preferred_bike_touches": max(preferred_bike, minimum_bike),
@@ -53,6 +87,9 @@ def _training_rules(context: dict[str, Any]) -> dict[str, int]:
         "meaningful_cost_sessions_max": max(1, meaningful_cost_max),
         "protect_mtb_exposures": protect_mtb,
         "maximum_mtb_exposures": max(max_mtb, protect_mtb),
+        "continuity_duration_min": continuity_duration_min,
+        "continuity_power_w_range": continuity_power_w_range,
+        "continuity_rpe_range": continuity_rpe_range,
     }
 
 
@@ -388,7 +425,7 @@ def _quality_gate() -> dict[str, Any]:
 def _build_sessions(
     week_start: date,
     state: dict[str, Any],
-    rules: dict[str, int],
+    rules: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     sessions: list[dict[str, Any]] = []
     monday = week_start
@@ -398,20 +435,29 @@ def _build_sessions(
     friday = week_start + timedelta(days=4)
     saturday = week_start + timedelta(days=5)
     sunday = week_start + timedelta(days=6)
+    continuity_duration = rules["continuity_duration_min"]
+    continuity_power = rules["continuity_power_w_range"]
+    continuity_rpe = rules["continuity_rpe_range"]
+    continuity_power_text = f"{continuity_power[0]}-{continuity_power[1]} W"
+    continuity_rpe_text = f"RPE {continuity_rpe[0]}-{continuity_rpe[1]}"
 
     sessions.append(
         _session(
             monday,
-            title="Conversational run with optional recovery spin",
+            title="Conversational run or indoor continuity",
             session_type="social_run_optional_bike",
             modality="run_with_optional_bike",
             priority="support",
-            duration_min=60,
+            duration_min=continuity_duration,
             intensity="easy",
             load_target="low",
-            purpose="Preserve the preferred social run with Clayton's wife while allowing a sixth low-cost bike day only when the run and recovery stay genuinely easy.",
+            purpose="Preserve the preferred social run with Clayton's wife; when the run does not happen, use the established full indoor continuity dose instead of losing the bike-specific day.",
             dose={
                 "run": "30-50 min conversational / RPE 2-3.",
+                "if_run_skipped": (
+                    f"{continuity_duration} min Suito at {continuity_power_text} / "
+                    f"{continuity_rpe_text}, seated with normal cooling."
+                ),
                 "optional_bike": "20-30 min easy Suito at RPE 2 later in the day only if the run stays conversational and legs feel normal.",
                 "cap": "If the run becomes moderate or hard, omit the bike and count the run toward the meaningful-cost cap.",
             },
@@ -420,6 +466,7 @@ def _build_sessions(
             ),
             execution_rules=[
                 "No pace target, hills, strides, or finish surge.",
+                "If the social run does not happen, execute the standard indoor continuity dose; do not shorten it into a primer without a named readiness or calendar constraint.",
                 "The optional bike is circulation only, not a second workout.",
                 "Do not use a double to manufacture the weekly touch count.",
             ],
@@ -475,14 +522,15 @@ def _build_sessions(
             session_type="indoor_low_aerobic",
             modality="bike_indoor",
             priority="aerobic_support",
-            duration_min=60,
+            duration_min=continuity_duration,
             intensity="easy",
             load_target="low aerobic",
             purpose="Add bike-specific aerobic volume without carrying high-aerobic or neural debt into Thursday.",
             dose={
-                "duration_min": "45-60",
-                "power_anchor": "Approximately 55-65% of current Garmin FTP; with 211 W, about 116-137 W. Clayton's validated easy anchor is near 125 W.",
-                "intensity": "RPE 2-3, conversational, seated.",
+                "duration_min": continuity_duration,
+                "power_anchor_w_range": continuity_power,
+                "power_anchor": f"{continuity_power_text}, Clayton's validated routine continuity range.",
+                "intensity": f"{continuity_rpe_text}, conversational, seated.",
                 "cap": "No tempo, torque blocks, standing surges, or sprint finish.",
             },
             adaptation_hypothesis=(
@@ -552,12 +600,14 @@ def _build_sessions(
             session_type="indoor_low_aerobic",
             modality="bike_indoor",
             priority="aerobic_support",
-            duration_min=50,
+            duration_min=continuity_duration,
             intensity="easy",
             load_target="low aerobic",
             purpose="Accumulate bike-specific aerobic time while absorbing Thursday and preserving Saturday optionality.",
             dose={
-                "green": "45-60 min near 120-125 W / RPE 2-3.",
+                "green_duration_min": continuity_duration,
+                "green_power_w_range": continuity_power,
+                "green": f"{continuity_duration} min at {continuity_power_text} / {continuity_rpe_text}.",
                 "after_harder_than_written_thursday": "30-45 min recovery at 100-115 W or skip.",
                 "cap": "No intensity added to repair load or frequency.",
             },
@@ -565,7 +615,8 @@ def _build_sessions(
                 "A low-aerobic touch should support cycling durability and speed recovery from the key MTB dose without adding high-aerobic debt."
             ),
             execution_rules=[
-                "Let Thursday's actual cost choose the duration.",
+                "On a green gate after an absorbed Thursday, execute the standard continuity dose.",
+                "Shorten only when Thursday was harder than written or a named readiness constraint is present.",
                 "Keep the entire session conversational and seated.",
                 "If the spin does not improve the legs by 15 minutes, stop.",
             ],
@@ -622,6 +673,100 @@ def _build_sessions(
     sessions.append(_scheduled_rest(sunday))
 
     return sessions, _summarize_session_plan(sessions, rules)
+
+
+def _adaptive_role(session: dict[str, Any]) -> str:
+    session_type = str(session.get("type") or "").lower()
+    modality = str(session.get("modality") or "").lower()
+    if session_type in {"scheduled_rest", "scheduled_recovery"} or modality == "rest":
+        return "rest_or_recovery"
+    if "tempo" in session_type or "torque" in session_type or "vo2" in session_type:
+        return "structured_engine"
+    if session.get("mtb_exposure"):
+        title = str(session.get("title") or "").lower()
+        if any(token in f"{session_type} {title}" for token in ("durability", "enduro", "race_bike", "race-bike")):
+            return "protected_enduro_durability_or_race_transfer"
+        if "skill" in session_type:
+            return "mtb_skill_transfer"
+        return "protected_stumpjumper_quality_fitness"
+    if "run" in modality or "run" in session_type:
+        return "social_run_or_bike_continuity"
+    if "bike" in modality or "cycling" in modality:
+        return "low_cost_bike_continuity"
+    return "support"
+
+
+def _apply_adaptive_programming(
+    sessions: list[dict[str, Any]],
+    state: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Reflow future discretionary intent without rewriting explicit contracts.
+
+    The programming controller is upstream of the same-day safety resolver. It may
+    lower future discretionary density, but explicit coach-authored contracts stay
+    immutable and receive a visible conflict instead of being silently changed.
+    """
+
+    adaptive = state.get("adaptive_training") or {}
+    shape = adaptive.get("target_shape") or {}
+    budget = adaptive.get("weekly_budget") or {}
+    target = parse_date(state.get("date"))
+    if not adaptive or target is None:
+        return sessions, []
+
+    meaningful_remaining = int(budget.get("meaningful_cost_days_remaining") or 0)
+    duration_multiplier = as_number(shape.get("duration_multiplier")) or 1.0
+    conflicts: list[dict[str, Any]] = []
+    result: list[dict[str, Any]] = []
+    for raw in sessions:
+        session = dict(raw)
+        day = parse_date(session.get("date"))
+        explicit = isinstance(session.get("weekly_intent_override"), dict)
+        future = day is not None and day > target
+        meaningful = session.get("density_cost") == "meaningful"
+        session["adaptive_programming"] = {
+            "state_basis_date": adaptive.get("date"),
+            "roadmap_mode": (adaptive.get("roadmap_block") or {}).get("program_mode"),
+            "role": _adaptive_role(session),
+            "progression_lever": (adaptive.get("progression_decision") or {}).get("active_lever"),
+        }
+
+        if future and meaningful:
+            if meaningful_remaining > 0:
+                meaningful_remaining -= 1
+                session["adaptive_programming"]["budget_disposition"] = "uses_remaining_meaningful_slot"
+            elif explicit:
+                conflict = {
+                    "date": session.get("date"),
+                    "type": "explicit_contract_exceeds_remaining_meaningful_budget",
+                    "source": (session.get("weekly_intent_override") or {}).get("source"),
+                    "resolution": "preserved_for_head_coach_review_not_silently_rewritten",
+                }
+                conflicts.append(conflict)
+                session["adaptive_programming"]["budget_disposition"] = "explicit_conflict_preserved"
+                session["adaptive_programming"]["conflict"] = conflict
+            else:
+                session["density_cost"] = "low"
+                session["intensity"] = "easy"
+                session["optional"] = True
+                session["title"] = f"Adaptive low-cost replacement: {session.get('title') or 'bike continuity'}"
+                session["adaptive_programming"]["budget_disposition"] = "reflowed_to_low_cost"
+                session.setdefault("execution_rules", []).append(
+                    "The weekly meaningful-cost budget is spent; keep this genuinely low-cost or omit it."
+                )
+
+        if future and not explicit and duration_multiplier < 1.0:
+            duration = as_number(session.get("duration_min"))
+            if duration and duration > 0:
+                scaled = max(15, int(round(duration * duration_multiplier / 5.0) * 5))
+                if scaled < duration:
+                    session["adaptive_programming"]["original_duration_min"] = duration
+                    session["duration_min"] = scaled
+                    session["adaptive_programming"]["duration_disposition"] = (
+                        f"scaled_by_{duration_multiplier:.2f}_roadmap_multiplier"
+                    )
+        result.append(session)
+    return result, conflicts
 
 
 def _summarize_session_plan(
@@ -776,6 +921,9 @@ def _first_items(items: Any, limit: int = 3) -> list[str]:
 
 
 def _text_summary(plan: dict[str, Any]) -> str:
+    adaptive = plan.get("adaptive_programming") or {}
+    roadmap = adaptive.get("roadmap_block") or {}
+    decision = adaptive.get("progression_decision") or {}
     lines = [
         f"Weekly Plan - {plan['week_key']}",
         f"Week: {plan['week_start']} to {plan['week_end']}",
@@ -784,6 +932,8 @@ def _text_summary(plan: dict[str, Any]) -> str:
         f"Objective: {plan['weekly_objective']['primary']}",
         f"Physiology: {plan['weekly_objective']['physiological_target']}",
         f"Technical: {plan['weekly_objective']['technical_target']}",
+        f"Roadmap block: {roadmap.get('label') or 'unavailable'} ({roadmap.get('program_mode') or 'unknown'})",
+        f"Adaptive action: {decision.get('program_action') or 'unavailable'}; lever: {decision.get('active_lever') or 'unavailable'}",
         "",
         "Targets:",
         f"- Load range: {plan['targets']['training_load_range'][0]}-{plan['targets']['training_load_range'][1]}",
@@ -847,6 +997,7 @@ def build_weekly_plan(
     load_target = _weekly_load_target(state)
     sessions, exposure_summary = _build_sessions(start, state, rules)
     sessions = _apply_explicit_session_overrides(root, sessions, context)
+    sessions, adaptive_conflicts = _apply_adaptive_programming(sessions, state)
     exposure_summary = _summarize_session_plan(sessions, rules)
     freshness = state.get("data_freshness") or {}
     readiness = state.get("readiness") or {}
@@ -863,6 +1014,18 @@ def build_weekly_plan(
 
     dated_json = f"snapshots/weekly_plan_{week_key}.json"
     dated_text = f"snapshots/weekly_plan_{week_key}.txt"
+    adaptive = state.get("adaptive_training") or {}
+    adaptive_shape = adaptive.get("target_shape") or {}
+    adaptive_decision = adaptive.get("progression_decision") or {}
+    weekly_objective = _weekly_objective(state, load_focus)
+    if adaptive:
+        weekly_objective = {
+            **weekly_objective,
+            "primary": adaptive_decision.get("primary_adaptation_target") or weekly_objective["primary"],
+            "active_progression_lever": adaptive_decision.get("active_lever"),
+            "program_action": adaptive_decision.get("program_action"),
+            "roadmap_block": (adaptive.get("roadmap_block") or {}).get("label"),
+        }
     plan = {
         "artifact_type": "weekly_training_plan",
         "date": target.isoformat(),
@@ -888,18 +1051,39 @@ def build_weekly_plan(
             "recent_training": state.get("training_load"),
             "garmin_arbitration": arbitration,
         },
-        "weekly_objective": _weekly_objective(state, load_focus),
+        "weekly_objective": weekly_objective,
+        "adaptive_programming": {
+            "state_basis_date": adaptive.get("date"),
+            "roadmap_block": adaptive.get("roadmap_block"),
+            "progression_decision": adaptive_decision,
+            "target_shape": adaptive_shape,
+            "weekly_budget": adaptive.get("weekly_budget"),
+            "recommended_week_roles": adaptive.get("recommended_week_roles"),
+            "trainable_limiter_ranking": adaptive.get("trainable_limiter_ranking"),
+            "programming_audit": adaptive.get("programming_audit"),
+            "explicit_contract_conflicts": adaptive_conflicts,
+            "guardrail": (
+                "Adaptive programming selects the training direction and reflows only future discretionary intent. "
+                "Same-day Sabbath, physical readiness, CNS, freshness, symptoms, environment and consequence still resolve the executable dose."
+            ),
+        },
         "targets": {
             **load_target,
             "bike_touches": {
                 "minimum": rules["minimum_bike_touches"],
-                "preferred": rules["preferred_bike_touches"],
-                "maximum_normal_build": rules["maximum_bike_touches"],
-                "meaningful_cost_sessions_max": rules["meaningful_cost_sessions_max"],
+                "preferred": adaptive_shape.get("preferred_unique_bike_days", rules["preferred_bike_touches"]),
+                "maximum_normal_build": adaptive_shape.get("maximum_unique_bike_days", rules["maximum_bike_touches"]),
+                "meaningful_cost_sessions_max": adaptive_shape.get("meaningful_cost_days_max", rules["meaningful_cost_sessions_max"]),
                 **exposure_summary["bike_touch_plan"],
                 "note": "Bike-specific continuity is the durable fitness currency; elliptical/gym do not replace this, and low-cost touches carry the frequency target.",
             },
-            "mtb_exposures": exposure_summary,
+            "mtb_exposures": {
+                **exposure_summary,
+                "protected_mtb_exposures": adaptive_shape.get(
+                    "protected_mtb_days", exposure_summary.get("protected_mtb_exposures")
+                ),
+                "adaptive_program_mode": (adaptive.get("roadmap_block") or {}).get("program_mode"),
+            },
             "strength_sessions": {
                 "range": [0, 2],
                 "rule": "Use strength as support only; remove it if it compromises key trail quality.",

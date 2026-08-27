@@ -778,6 +778,39 @@ def test_session_expectation_preserves_explicit_optionality_and_skip_branch():
     )
 
 
+def test_session_expectation_preserves_compact_adaptive_progression_identity():
+    expected = _session_expectation(
+        {
+            "session": {
+                "title": "Adaptive endurance duration",
+                "type": "outdoor_bike_optional",
+                "modality": "bike_indoor",
+                "duration_min": 60,
+                "intensity": "easy",
+                "adaptive_programming": {
+                    "progression_track": "endurance",
+                    "from_step": "60_min_120_130_w",
+                    "planned_step": "75_min_near_125_w",
+                    "progression_lever": "endurance_duration",
+                    "adaptive_state_basis_date": "2026-09-28",
+                    "roadmap_block_id": "2026-09-28:build",
+                    "weekly_budget": {"large_payload_must_not_copy": True},
+                },
+            }
+        }
+    )
+
+    assert expected["adaptive_progression_identity"] == {
+        "progression_track": "endurance",
+        "from_step": "60_min_120_130_w",
+        "planned_step": "75_min_near_125_w",
+        "progression_lever": "endurance_duration",
+        "adaptive_state_basis_date": "2026-09-28",
+        "roadmap_block_id": "2026-09-28:build",
+    }
+    assert "weekly_budget" not in expected["adaptive_progression_identity"]
+
+
 def test_weekly_session_types_are_classified_as_mtb_or_indoor_bike_actions():
     mtb = _session_expectation(
         {

@@ -16,6 +16,7 @@ from .cns_readiness import build_cns_readiness
 from .activity_profile import build_activity_profile
 from .athlete_questions import build_athlete_question_audit
 from .adaptation_profile import build_adaptation_profile
+from .adaptive_training import build_adaptive_training_state
 from .data_quality import build_data_quality_report
 from .data_inventory import build_data_inventory
 from .device_audit import build_device_audit
@@ -129,6 +130,7 @@ def build_parser() -> argparse.ArgumentParser:
         ("predictive-review", "Compare a dated predictive prescription with actual Garmin response."),
         ("predictive-backtest", "Replay predictive prescriptions on historical dates and verify outcomes."),
         ("weekly-plan", "Build Monday weekly intent plan with daily readiness gates."),
+        ("adaptive-training", "Build adaptive progression, weekly budget, and roadmap programming state."),
     ):
         child = sub.add_parser(name, help=help_text)
         _add_root(child)
@@ -348,6 +350,8 @@ def run(args: argparse.Namespace) -> Any:
         return build_predictive_backtest(args.root, dates)
     if args.command == "weekly-plan":
         return build_weekly_plan(args.root, args.date)
+    if args.command == "adaptive-training":
+        return build_adaptive_training_state(args.root, args.date)
     if args.command == "log":
         return import_checkin(args.from_md, args.root)
     if args.command in {"report", "weekly-report"}:

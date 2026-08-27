@@ -1,6 +1,163 @@
 {
+  "adaptive_programming": {
+    "artifacts": {
+      "coach_packet_signal": "Adaptive training controller",
+      "current_state_field": "adaptive_training",
+      "state": "snapshots/adaptive_training.json",
+      "text": "snapshots/adaptive_training.txt",
+      "weekly_plan_field": "adaptive_programming"
+    },
+    "block_calendar": [
+      {
+        "end": "2026-08-30",
+        "label": "Absorption and conference entry",
+        "mode": "absorption",
+        "start": "2026-08-26"
+      },
+      {
+        "end": "2026-09-06",
+        "label": "Re-entry and course preparation",
+        "mode": "reentry",
+        "start": "2026-08-31"
+      },
+      {
+        "end": "2026-09-13",
+        "label": "Race-specific build and Denai recce",
+        "mode": "race_specific",
+        "start": "2026-09-07"
+      },
+      {
+        "end": "2026-09-18",
+        "label": "Taper and sharpening",
+        "mode": "taper",
+        "start": "2026-09-14"
+      },
+      {
+        "end": "2026-09-19",
+        "label": "PDR26 official practice",
+        "mode": "event_practice",
+        "start": "2026-09-19"
+      },
+      {
+        "end": "2026-09-20",
+        "label": "PDR26 race",
+        "mode": "event_race",
+        "start": "2026-09-20"
+      },
+      {
+        "end": "2026-09-21",
+        "label": "PDR26 replacement Sabbath",
+        "mode": "replacement_sabbath",
+        "start": "2026-09-21"
+      },
+      {
+        "end": "2026-09-27",
+        "label": "PDR26 race-recovery transition",
+        "mode": "race_recovery_transition",
+        "start": "2026-09-22"
+      },
+      {
+        "end": "2026-10-18",
+        "label": "Foundation build",
+        "mode": "build",
+        "start": "2026-09-28"
+      },
+      {
+        "end": "2026-10-25",
+        "label": "Consolidation 1",
+        "mode": "consolidation",
+        "start": "2026-10-19"
+      },
+      {
+        "end": "2026-11-15",
+        "label": "Performance build",
+        "mode": "build",
+        "start": "2026-10-26"
+      },
+      {
+        "end": "2026-11-22",
+        "label": "Consolidation 2",
+        "mode": "consolidation",
+        "start": "2026-11-16"
+      },
+      {
+        "end": "2026-12-13",
+        "label": "Expert integration",
+        "mode": "build",
+        "start": "2026-11-23"
+      },
+      {
+        "end": "2026-12-20",
+        "label": "Benchmark and absorption",
+        "mode": "benchmark",
+        "start": "2026-12-14"
+      }
+    ],
+    "boundary": {
+      "garmin_mcp": "Direct live perception for model cognition; never a generic ingestion bridge or silent stack refresh.",
+      "head_coach": "Final interpreter and same-day prescription owner after MCP and stack evidence are reconciled.",
+      "stack": "Persistent deterministic programming, normalization, provenance, contracts, progression and audit."
+    },
+    "decision_order": [
+      "Exact Sunday or replacement-Sabbath enforcement and validated named-race exception.",
+      "Red physical readiness, illness, focal/asymmetric/mechanics-altering symptoms.",
+      "CNS technical-consequence ceiling.",
+      "Data freshness and current environmental/trail consequence.",
+      "Dated roadmap block and absorption state.",
+      "Current-week meaningful-cost, MTB, Enduro and bike-frequency budget.",
+      "One trainable limiter and one progression lever.",
+      "Garmin status/ACWR/load-focus arbitration inside the selected role.",
+      "Head-coach schema-v3 contract and execution review."
+    ],
+    "progression_ladders": {
+      "endurance_duration": [
+        "60_min_120_130_w",
+        "75_min_near_125_w",
+        "90_min_near_125_w"
+      ],
+      "enduro_complete_cycles": [
+        "three_complete_twin_peaks_cycles",
+        "four_complete_twin_peaks_cycles",
+        "repeat_four_cycle_proof_on_separate_day"
+      ],
+      "expert_skill": {
+        "cornering": "At least 5/6 clean; braking before turn-in; intended exit; no rescue; final two equal first two.",
+        "jump_scrub": "At least 5/6 clean on two days with matched entry speed, lower trajectory and unchanged landing/exit quality.",
+        "sliding": [
+          "controlled_rear_yaw",
+          "neutral_two_wheel_drift",
+          "incidental_front_micro_slip_recovery"
+        ],
+        "technical_terrain": [
+          "sight_60_70_pct",
+          "confirm_markers",
+          "progress_80_85_pct_one_variable_only"
+        ]
+      },
+      "tempo_torque": [
+        "3x8_min",
+        "3x10_min",
+        "3x12_min",
+        "raise_watts"
+      ],
+      "vo2": [
+        "not_admitted",
+        "4x3_min",
+        "5x3_min"
+      ]
+    },
+    "promotion_logic": {
+      "deload": "Use for dated taper/consolidation, repeated abnormal next-day response, repeated technical degradation, density breach, impaired/compromised CNS, or persistent/focal/asymmetric/mechanics-altering symptoms.",
+      "hold": "Use when response is pending, review fields are incomplete, a trigger was obeyed, or a technical dimension exceeds its fatigue/error ceiling.",
+      "one_lever_rule": "Progress only one of frequency, duration, engine dose, complete-cycle count, technical consequence or strength at a time.",
+      "promote": "Only after the written rung is executed inside its stop, form, technical and next-day absorption gates.",
+      "unsafe_override": "A triggered_but_continued outcome never promotes the nominal rung; retain delivered-action, execution-boundary and safety-adherence learning separately."
+    },
+    "purpose": "Turn persistent Garmin evidence, structured athlete feedback, canonical strategy and the dated roadmap into an inspectable training direction, progression rung, weekly role budget and promotion/hold decision."
+  },
   "architecture_type": "clayton_specific_enduro_training_architecture",
   "artifact_contract": {
+    "adaptive_training": "snapshots/adaptive_training.json is the persistent programming state: dated roadmap block, current-week role/cost budget, separate endurance/engine/technical progression ladders, one selected progression lever, and promotion/hold evidence. It cannot override same-day safety constraints.",
     "cns_readiness": "snapshots/cns_readiness.json is the current technical-consequence ceiling after current_state rebuild.",
     "coaching_architecture": "config/coaching_architecture.json is the durable training architecture for future agents.",
     "config_context": "config/athlete_context.json remains the canonical athlete strategy store.",
@@ -85,11 +242,13 @@
   "cycling_vo2_rebuild": {
     "conference_week_2026_W35": "If Monday is absorbed cleanly, Wednesday becomes 3x8 minutes of controlled tempo/torque at 165-170 W rather than another recovery-only session; Tuesday and Thursday remain low-cost touches and Friday remains the sole Enduro training exposure.",
     "current_anchor": {
-      "date": "2026-08-24",
-      "garmin_chronic_load": 377,
-      "garmin_cycling_vo2max_precise": 47.6,
+      "date": "2026-08-27",
+      "garmin_chronic_load": 402,
+      "garmin_cycling_vo2max_precise": 47.2,
       "weight_kg": 77.64
     },
+    "dose_progression_rule": "Treat 60 minutes at 120-130 W as the normal low-cost continuity anchor. Build one weekly duration exposure toward 75-90 minutes near 125 W and use exactly one structured engine exposure such as tempo/torque, VO2 intervals or the 60-minute 145 W benchmark. Do not stack all three structured variants in one week.",
+    "initial_post_conference_weekly_bike_load_band": "Approximately 400-500 Garmin bike load as a secondary audit range, not a quota. Unique bike days, meaningful-cost count, absorption and technical-final-run quality remain primary.",
     "interpretation": "The gap is partly genuine deconditioning and partly relative-mass and Garmin-observability effects. At current mass, unchanged historical absolute oxygen-use proxy would read about 49.8; the remaining gap is consistent with lower chronic bike load and reduced sustained aerobic continuity. MTB stochastic power, powerless Enduro rides and heat can reduce clean Garmin cycling-VO2 observation.",
     "post_conference_progression": "Introduce one true VO2 session per week starting with 4x3 minutes at 225-235 W with 3 minutes easy, then progress to 5x3 before increasing interval duration. Keep only three weekly meaningful costs and protect Enduro or Denai course quality.",
     "pre_injury_reference": {
@@ -108,7 +267,7 @@
     ],
     "weight_rule": "Do not aggressively cut body mass before PDR26; fuel training and use post-race body-composition work only if it preserves power, recovery and technical quality."
   },
-  "date": "2026-08-25",
+  "date": "2026-08-27",
   "decision_hierarchy": [
     "Sabbath hard rest and current readiness.",
     "CNS readiness: cap technical consequence, novelty, speed, jumps, enduro simulation, and setup testing when nervous-system processing is not restored.",
@@ -448,7 +607,7 @@
       },
       "latest_garmin_detected_ftp": {
         "activity_id": "23723839107",
-        "age_days": 31,
+        "age_days": 33,
         "category": "mtb",
         "date": "2026-07-25",
         "ftp_w": 211.0,
@@ -475,7 +634,7 @@
       "recent_60d_garmin_detected_ftp": [
         {
           "activity_id": "23590320093",
-          "age_days": 42,
+          "age_days": 44,
           "category": "mtb",
           "date": "2026-07-14",
           "ftp_w": 209.0,
@@ -484,7 +643,7 @@
         },
         {
           "activity_id": "23614632613",
-          "age_days": 40,
+          "age_days": 42,
           "category": "mtb",
           "date": "2026-07-16",
           "ftp_w": 214.0,
@@ -493,7 +652,7 @@
         },
         {
           "activity_id": "23723839107",
-          "age_days": 31,
+          "age_days": 33,
           "category": "mtb",
           "date": "2026-07-25",
           "ftp_w": 211.0,
@@ -503,28 +662,28 @@
       ]
     },
     "full_range": {
-      "activity_end": "2026-08-25",
+      "activity_end": "2026-08-27",
       "activity_start": "2021-06-18",
-      "counted_sessions": 1394,
-      "duration_min": 106384.5,
+      "counted_sessions": 1396,
+      "duration_min": 106504.5,
       "elliptical_load": 7241.4,
       "elliptical_sessions": 71,
-      "indoor_bike_load": 38540.7,
-      "indoor_bike_sessions": 604,
+      "indoor_bike_load": 38643.4,
+      "indoor_bike_sessions": 606,
       "mtb_load": 99547.7,
       "mtb_sessions": 493,
-      "training_load": 161034.4
+      "training_load": 161137.1
     },
     "hypothesis_support": {
       "bike_specificity": "weak",
       "consistency_detraining": "strong",
       "nonbike_substitution": "moderate",
       "recent_365_bike_specific_corr_to_p20": null,
-      "recent_365_elliptical_corr_to_p20": 0.111,
-      "recent_365_indoor_bike_corr_to_p20": 0.452
+      "recent_365_elliptical_corr_to_p20": 0.123,
+      "recent_365_indoor_bike_corr_to_p20": 0.433
     },
     "nutrition_targets": {
-      "latest_weight_date": "2026-08-23",
+      "latest_weight_date": "2026-08-25",
       "latest_weight_kg": 77.64,
       "mtb_90_to_150_min": {
         "carbs_g_per_hour": [
@@ -557,19 +716,19 @@
       "note": "Use the upper end in Kuala Lumpur heat or when skill quality drops late; gut-train before race day."
     },
     "recent_28d": {
-      "bike_specific_load": 1470.2,
-      "bike_specific_ratio": 0.939,
+      "bike_specific_load": 1390.8,
+      "bike_specific_ratio": 0.964,
       "elliptical_ratio": 0.0,
-      "indoor_bike_sessions": 5,
-      "mtb_sessions": 9,
-      "training_load": 1565.1
+      "indoor_bike_sessions": 7,
+      "mtb_sessions": 8,
+      "training_load": 1442.0
     },
     "recent_7d": {
-      "bike_specific_load": 437.7,
+      "bike_specific_load": 366.2,
       "bike_specific_ratio": 1.0,
-      "indoor_bike_sessions": 2,
-      "mtb_sessions": 4,
-      "training_load": 437.7
+      "indoor_bike_sessions": 4,
+      "mtb_sessions": 3,
+      "training_load": 366.2
     },
     "weekly_continuity_blocks": {
       "current_rebuild_apr_to_may_2026": {
@@ -652,7 +811,7 @@
     "heat_rule": "In Kuala Lumpur, treat fuel/hydration as skill protection: sloppy braking, weak pumping, timid jumps, or poor line choice late can be carb/sodium/heat failure.",
     "range_selection_rule": "Choose within the canonical band from same-day heat/humidity, actual sweat response, session consequence, and gut tolerance. Previous-session weather is not a forecast, and Garmin heat acclimation never reduces the target by itself."
   },
-  "generated_at": "2026-08-25T16:44:52+08:00",
+  "generated_at": "2026-08-27T17:19:47+08:00",
   "integrated_coaching_model": {
     "cns_readiness_model": {
       "decision_role": "Use CNS readiness as a technical-consequence ceiling after Sabbath and physical readiness, not as a replacement for Garmin readiness.",
@@ -996,8 +1155,8 @@
           2
         ],
         "preferred_bike_load_per_week": [
-          250,
-          400
+          350,
+          500
         ],
         "preferred_bike_touches_per_week": 5
       },
@@ -1197,6 +1356,29 @@
       "purpose": "Train repeated hard efforts after descents and repeated 2-5 min punch without turning every week into VO2 survival.",
       "starter_dose": "2 sets of 5x30 sec hard / 90 sec easy, 6 min easy between sets."
     },
+    "indoor_steady_endurance": {
+      "back_to_back_rule": "Back-to-back 60-minute low-cost doses are allowed when global RPE remains 2-3, mechanics are stable, the muscular response is diffuse and bilateral, symptoms resolve promptly, and the following protected session is not compromised.",
+      "duration_development_dose": "Progress one weekly exposure through 75 minutes toward 90 minutes near 125 W. Treat it as moderate or meaningful cost until 90 minutes is absorbed with global RPE no higher than 4, controlled mechanics and normal next-day function.",
+      "high_end_benchmark": "Sixty minutes near 145 W is high-end endurance for Clayton and counts as the week's structured engine exposure. Use it every two to four weeks as a benchmark or development session, not in addition to torque or VO2 work.",
+      "progression_gate": "Progress duration after two absorbed standard doses or one clean duration-development confirmation. Do not require an absence of all terminal muscular sensation before training endurance; require stable execution and recovery.",
+      "purpose": "Rebuild the bike-specific mitochondrial, peripheral and seated muscular durability that supported Clayton's strongest continuity blocks without making every bike day costly.",
+      "routine_low_cost_contract": {
+        "cooling": "ceiling_fan_max",
+        "density_cost": "low",
+        "global_rpe_range": [
+          2,
+          3
+        ],
+        "main_power_w_range": [
+          120,
+          130
+        ],
+        "total_duration_min": 60
+      },
+      "routine_low_cost_contract_source": "config/athlete_context.json:training_rules.bike_specific_continuity.indoor_endurance_dose_anchors.routine_low_cost_continuity_contract",
+      "routine_low_cost_dose": "60 minutes total with approximately 40 minutes at 120-130 W, global RPE 2-3 and normal ceiling-fan cooling. This is the default continuity dose, not a dose that must be repeatedly shortened merely because another key session exists.",
+      "symptom_interpretation": "A familiar diffuse bilateral glute or hamstring burn limited to the final minutes and resolving to 0/10 is an adaptation marker. Track later onset and lower intensity as progress. Downshift or stop for focal or asymmetric pain, altered pedalling or posture, neurological symptoms, persistence beyond approximately 30 minutes, or next-day functional impairment."
+    },
     "indoor_tempo_torque": {
       "cadence_bias": "65-75 rpm unless knee/hip comfort says otherwise.",
       "power_guidance": "Use the latest dated Garmin operational FTP for relative targets and validate against RPE/HR; do not substitute historical 222 W P20 or treat Garmin estimation as a clean-test guarantee.",
@@ -1272,8 +1454,8 @@
   "weekly_architecture": {
     "back_to_back_proxy": "Use Friday practice-style exposure plus Saturday attack-style effort to train race weekend demands while preserving Sunday Sabbath.",
     "default_week": {
-      "friday": "Indoor low-aerobic continuity or primer; shorten after a harder-than-written Thursday.",
-      "monday": "Preferred conversational run with Clayton's wife; optional short easy bike touch only if the run stays easy and recovery is clean.",
+      "friday": "Indoor low-aerobic continuity at the standard 60-minute dose when Saturday is not already the week's third meaningful cost; use a shorter primer only when fresh evidence shows it protects a specific Saturday objective.",
+      "monday": "Preferred conversational run with Clayton's wife. If the run does not happen, use the standard 60-minute low-aerobic bike dose rather than defaulting to rest; if the run happens, count its cost honestly and place the long bike dose elsewhere.",
       "saturday": "Optional third MTB skill-transfer/Enduro-bike exposure; skip for church/family obligations or density.",
       "sunday": "Sabbath hard rest.",
       "thursday": "Protected MTB durability or technical-quality exposure.",
@@ -1282,6 +1464,9 @@
     },
     "density_governor": [
       "Build toward 5-6 bike touches through 2-3 low-cost Z1/Z2 or primer days; do not manufacture frequency with split files or unnecessary doubles.",
+      "The two-touch minimum is an emergency maintenance floor, not a successful build target. A normal trainable week below five unique bike days is underdosed unless a named hard constraint removed the opportunity.",
+      "Do not repeatedly protect the next key ride by shrinking ordinary low-cost continuity. Sixty minutes at 120-130 W is Clayton's default low-cost Suito dose when global RPE is 2-3 and there is no persistent or mechanically altering symptom.",
+      "Every normal build week needs one explicit progressive-overload target: steady-endurance duration, structured-engine dose, or MTB repeatability. A week made entirely of primers, recovery rides and capped skill sessions is not a fitness-development week.",
       "Keep only 2-3 sessions meaningfully costly, and count a hard run toward that cap.",
       "If Friday and Saturday are both trail days, Thursday becomes primer or recovery, not repeatability intervals.",
       "If a Tuesday or Wednesday MTB ride creates arm pump or high load, remove lower-body strength and indoor intensity until the key trail days are protected.",

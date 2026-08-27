@@ -92,6 +92,77 @@ def test_coach_packet_writes_decision_surface_and_triages_models(tmp_path):
     assert (tmp_path / "snapshots" / "coach_packet.txt").exists()
 
 
+def test_coach_packet_surfaces_weekly_accountability_and_flags_unnamed_short_dose(tmp_path):
+    state = {
+        "date": "2026-08-27",
+        "readiness": {
+            "readiness_level": "yellow",
+            "readiness_score": 65,
+            "confidence": "medium",
+            "reasons": [],
+        },
+        "data_freshness": {
+            "status": "current",
+            "activity_data": {"status": "current"},
+            "hard_session_limiters": [],
+        },
+        "phase": {"name": "base_rebuild"},
+        "cns_readiness": {},
+        "training_status_current": {},
+        "bike_continuity_accountability": {
+            "status": "building_toward_preferred",
+            "targets": {"preferred_unique_bike_days": 5},
+            "current_calendar_week": {"unique_bike_days": 4},
+            "rolling_last_7_days": {"unique_bike_days": 5},
+            "previous_7_days": {"unique_bike_days": 3},
+            "preferred_gap_unique_days": 1,
+            "remaining_non_rest_calendar_dates": ["2026-08-28", "2026-08-29"],
+            "routine_low_cost_continuity_contract": {
+                "total_duration_min": 60,
+                "main_power_w_range": [120, 130],
+                "global_rpe_range": [2, 3],
+            },
+            "decision_use": "Accountability only; never training clearance.",
+            "provenance": {"targets": "config/athlete_context.json"},
+        },
+    }
+    plan = {
+        "date": "2026-08-27",
+        "plan_source": {
+            "type": "input_planned_session",
+            "path": "input/planned_session_2026-08-27.json",
+        },
+        "constraint_resolution": {"applied": []},
+        "decision_inputs": {},
+        "session": {
+            "title": "Short primer",
+            "type": "bike_recovery_primer",
+            "modality": "indoor_cycling",
+            "duration_min": 20,
+            "intensity": "recovery",
+            "density_cost": "low",
+        },
+    }
+
+    packet = build_coach_packet(tmp_path, "2026-08-27", state=state, plan=plan)
+
+    accountability = next(
+        item
+        for item in packet["evidence"]["trusted"]
+        if item["name"] == "Build accountability"
+    )
+    assert accountability["value"]["current_calendar_week"]["unique_bike_days"] == 4
+    assert (
+        accountability["value"]["policy_alignment"]["status"]
+        == "below_anchor_without_named_constraint"
+    )
+    assert any(
+        item["type"]
+        == "low_cost_dose_below_established_anchor_without_named_constraint"
+        for item in packet["evidence"]["cautions"]
+    )
+
+
 def test_coach_packet_cli_command(tmp_path, capsys):
     load_context(tmp_path)
     _write_green_wellness(tmp_path, "2026-04-29")
@@ -775,3 +846,40 @@ def test_coach_packet_stance_shows_adaptive_upgrade_option(tmp_path):
     packet = build_coach_packet(tmp_path, "2026-06-08", state=state, plan=plan)
 
     assert packet["today_call"]["stance"] == "controlled_upgrade_option"
+
+
+def test_coach_packet_surfaces_adaptive_programming_controller(tmp_path):
+    load_context(tmp_path)
+    adaptive = {
+        "status": "ready",
+        "date": "2026-08-27",
+        "roadmap_block": {"label": "Absorption", "program_mode": "absorption"},
+        "progression_decision": {
+            "program_action": "absorb_and_hold",
+            "active_lever": "bike_specific_continuity",
+        },
+        "weekly_budget": {"meaningful_cost_days_remaining": 0},
+        "progression_tracks": {"engine": {"torque": {"decision": "hold_no_promotion"}}},
+        "recommended_week_roles": [],
+        "programming_audit": {"status": "on_track", "items": []},
+    }
+    state = {
+        "date": "2026-08-27",
+        "readiness": {"readiness_level": "yellow", "readiness_score": 60, "reasons": []},
+        "data_freshness": {"status": "current", "activity_data": {"status": "current"}},
+        "phase": {"name": "base_rebuild"},
+        "training_status_current": {},
+        "adaptive_training": adaptive,
+    }
+    plan = {
+        "date": "2026-08-27",
+        "session": {"title": "Easy continuity", "type": "outdoor_bike_optional", "duration_min": 60, "intensity": "easy"},
+        "decision_inputs": {"garmin_arbitration": {}},
+    }
+
+    packet = build_coach_packet(tmp_path, "2026-08-27", state=state, plan=plan)
+
+    signal = next(item for item in packet["evidence"]["trusted"] if item["name"] == "Adaptive training controller")
+    assert signal["status"] == "ready"
+    assert signal["value"]["progression_decision"]["active_lever"] == "bike_specific_continuity"
+    assert packet["today_call"]["adaptive_programming"]["progression_decision"]["program_action"] == "absorb_and_hold"

@@ -1,0 +1,99 @@
+{
+  "date": "2026-08-26",
+  "entries": [
+    {
+      "timestamp_local": "2026-08-27T10:24:08+08:00",
+      "source": "athlete_post_session_report_with_garmin_trace_audit",
+      "activity_id": "24121900953",
+      "reported_context": {
+        "session_intent": "Complete the indoor low-aerobic equivalent after outdoor riding was rejected on logistics and air-quality grounds.",
+        "self_gate": {
+          "mental_clarity_0_to_10": 8,
+          "legs": "normal",
+          "respiratory_or_eye_symptoms": "No runny nose, sore throat, cough, wheeze, chest tightness or eye irritation."
+        },
+        "pre_session_food": "One scone with cream and one banana; timing before the 18:16 local start was not supplied.",
+        "fluid_ml": 700,
+        "athlete_interpretation": "The session felt cardiovascularly easy but exposed reduced leg strength or endurance, with severe local burning late in the main block and again during cooldown."
+      },
+      "session_contract_review": {
+        "actual_duration_min": 60.0,
+        "global_session_rpe_0_to_10": 3,
+        "local_leg_rpe_0_to_10": 9,
+        "local_leg_symptom": "Bilateral muscular burning, mainly in the glutes and hamstrings.",
+        "local_leg_onset": "Approximately 35 minutes into the 40-minute main block.",
+        "cooldown_response": "Bilateral glute and hamstring burning was felt again approximately seven minutes into the 10-minute cooldown.",
+        "cardiorespiratory_feel": "No subjective cardio limitation.",
+        "technical_quality_notes": "Indoor seated low-aerobic session; MTB technical fields are not applicable.",
+        "late_session_skill_fade": "not_applicable_indoor_cycling",
+        "stop_rule_outcome": "not_triggered",
+        "stop_rule_outcome_source": "athlete_explicit_report",
+        "stop_rule_interpretation": "The written RPE cap did not separately define global session RPE and local muscular RPE. Clayton reports global RPE 3 and explicitly classifies the stop rule as not triggered. Preserve that outcome; do not retroactively convert the local-leg RPE 9 into a stop-rule override.",
+        "contract_observability_gap": "Future steady endurance contracts must specify separate global-RPE and local-leg-RPE ceilings, plus the required action when either ceiling is crossed.",
+        "airway_symptom_status_before_during_and_after": "No runny nose, sore throat, cough, wheeze, chest tightness or eye irritation reported.",
+        "fluid_fuel_sodium_and_cooling": "700 ml water; one scone with cream and one banana before the session, with timing not yet reported; ceiling-fan cooling was previously prescribed but execution was not reconfirmed in this review.",
+        "fueling_carbs_g_per_hour": null,
+        "fluid_ml_per_hour": 700,
+        "sodium_mg_per_hour": null
+      },
+      "objective_session_evidence": {
+        "source": "Garmin activity 24121900953 standard activity, split and detailed trace surfaces",
+        "summary": {
+          "average_power_w": 119,
+          "normalized_power_w": 120,
+          "functional_threshold_power_w": 211,
+          "intensity_factor": 0.569,
+          "average_hr_bpm": 121,
+          "max_hr_bpm": 134,
+          "average_cadence_rpm": 75,
+          "garmin_training_load": 48.4,
+          "aerobic_training_effect": 2.5,
+          "anaerobic_training_effect": 0.0,
+          "training_effect_label": "AEROBIC_BASE"
+        },
+        "warmup": {
+          "duration_min": 10,
+          "average_power_w": 105,
+          "average_hr_bpm": 108,
+          "average_cadence_rpm": 68
+        },
+        "main_block": {
+          "duration_min": 40,
+          "average_power_w": 126,
+          "average_hr_bpm": 123,
+          "average_cadence_rpm": 76,
+          "first_20_min": {
+            "average_power_w": 124.4,
+            "average_hr_bpm": 119.4,
+            "average_cadence_rpm": 74.1
+          },
+          "second_20_min": {
+            "average_power_w": 125.2,
+            "average_hr_bpm": 126.9,
+            "average_cadence_rpm": 78.5
+          },
+          "power_hr_decoupling_pct": 5.3,
+          "interpretation_guardrail": "The active HR source was not resolved by Garmin standard metadata, so decoupling is supportive rather than definitive evidence."
+        },
+        "cooldown": {
+          "duration_min": 10,
+          "average_power_w": 102,
+          "average_hr_bpm": 125,
+          "average_cadence_rpm": 79
+        },
+        "environment_and_hydration": {
+          "device_temperature_c": "30-33",
+          "garmin_estimated_water_loss_ml": 576,
+          "reported_fluid_ml": 700,
+          "guardrail": "Garmin water loss is modeled rather than measured."
+        }
+      },
+      "coach_contract_audit": {
+        "dose_alignment": "Duration and power matched the written indoor equivalent. Main-block cadence averaged below the prescribed 80-90 rpm range, although cadence rose toward approximately 80 rpm late in the block.",
+        "stop_rule_alignment": "Athlete explicitly reports not_triggered. The original contract did not define a separate local-muscle RPE ceiling, so the local posterior-chain RPE 9 is an execution-boundary observation, not a retroactive safety-adherence failure.",
+        "physiology_interpretation": "The bilateral glute and hamstring response is most consistent with acute posterior-chain muscular-endurance or force-durability limitation, plausibly amplified by residual fatigue from the prior day's seated low-cadence torque session. It does not establish loss of maximal strength and is not explained by retained lactate.",
+        "next_constraint": "Use normally fed, cadence-controlled endurance work with global and local RPE scored separately. Progress duration only after two clean sessions without late posterior-chain burning or cooldown recurrence."
+      }
+    }
+  ]
+}

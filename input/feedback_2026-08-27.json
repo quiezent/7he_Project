@@ -1,0 +1,100 @@
+{
+  "date": "2026-08-27",
+  "entries": [
+    {
+      "timestamp_local": "2026-08-27T13:20:15+08:00",
+      "source": "athlete_post_session_report_with_matched_garmin_trace_audit",
+      "activity_id": "24131659432",
+      "reported_context": {
+        "session_intent": "Repeat the prior day's 10-minute warmup, 40-minute steady main block and 10-minute cooldown for a back-to-back comparison.",
+        "athlete_response": "The session felt easier. The same diffuse bilateral muscular burning as the prior day appeared only during the final five minutes of cooldown, reached 8/10 at the final minute and resolved fully after the ride.",
+        "symptom_classification": "Transient bilateral exertional muscular burning in the glutes, matching the 2026-08-26 symptom; not sharp or focal pain. Athlete reported 0/10 at approximately 14:45 local after the session."
+      },
+      "session_contract_review": {
+        "actual_duration_min": 60.0,
+        "global_session_rpe_0_to_10": 3,
+        "local_leg_rpe_0_to_10": 8,
+        "local_leg_symptom": "The same diffuse bilateral glute muscular burning as 2026-08-26, occurring only in the final five minutes of cooldown and resolving to 0/10 after the session.",
+        "local_leg_onset": "Approximately 55 minutes after session start.",
+        "cardiorespiratory_feel": "The session was subjectively easier overall at global RPE 3.",
+        "technical_quality_notes": "Indoor seated low-aerobic session; MTB technical fields are not applicable.",
+        "late_session_skill_fade": "not_applicable_indoor_cycling",
+        "stop_rule_outcome": "not_triggered",
+        "stop_rule_outcome_source": "athlete_explicit_report",
+        "stop_rule_interpretation": "Preserve the athlete's explicit not-triggered outcome. The symptom was familiar diffuse muscular burning, not sharp or focal pain, appeared only in the final five minutes of cooldown and resolved completely after the ride.",
+        "fluid_fuel_sodium_and_cooling": "700 ml water and ceiling fan at maximum; pre-session or during-session carbohydrate and sodium were not reported.",
+        "fueling_carbs_g_per_hour": null,
+        "fluid_ml_per_hour": 700,
+        "sodium_mg_per_hour": null
+      },
+      "objective_session_evidence": {
+        "source": "Garmin activity 24131659432 standard activity, split and detailed trace surfaces",
+        "summary": {
+          "average_power_w": 119,
+          "normalized_power_w": 120,
+          "functional_threshold_power_w": 211,
+          "intensity_factor": 0.569,
+          "average_hr_bpm": 126,
+          "max_hr_bpm": 141,
+          "average_cadence_rpm": 80,
+          "garmin_training_load": 54.3,
+          "aerobic_training_effect": 2.7,
+          "anaerobic_training_effect": 0.0
+        },
+        "warmup": {
+          "duration_min": 10,
+          "average_power_w": 105,
+          "average_hr_bpm": 111,
+          "average_cadence_rpm": 73
+        },
+        "main_block": {
+          "duration_min": 40,
+          "average_power_w": 126,
+          "average_hr_bpm": 130,
+          "average_cadence_rpm": 84,
+          "first_20_min": {
+            "average_power_w": 125.4,
+            "average_hr_bpm": 127.7,
+            "average_cadence_rpm": 82.0
+          },
+          "second_20_min": {
+            "average_power_w": 126.2,
+            "average_hr_bpm": 133.0,
+            "average_cadence_rpm": 87.5
+          },
+          "power_hr_decoupling_pct": 3.5,
+          "interpretation_guardrail": "The active HR source was not resolved by Garmin standard metadata, so decoupling is supportive rather than definitive evidence."
+        },
+        "cooldown": {
+          "duration_min": 10,
+          "average_power_w": 102,
+          "average_hr_bpm": 127,
+          "average_cadence_rpm": 78,
+          "last_5_min": {
+            "average_power_w": 101.1,
+            "average_hr_bpm": 126.5,
+            "average_cadence_rpm": 77.7
+          }
+        },
+        "environment_and_hydration": {
+          "device_temperature_c": "30-32",
+          "garmin_estimated_water_loss_ml": 569,
+          "reported_fluid_ml": 700,
+          "guardrail": "Garmin water loss is modeled rather than measured."
+        }
+      },
+      "matched_comparison_to_2026_08_26": {
+        "external_power_dose": "Matched: both rides were 60 minutes, 119 W average, 120 W normalized power and IF 0.569; both main blocks averaged 126 W.",
+        "cadence_and_torque": "Today's main cadence was 84 versus 76 rpm. At the same 126 W this lowered mean crank-torque demand from approximately 15.8 to 14.3 Nm, about 9.5 percent, shifting work away from force per pedal stroke.",
+        "cardiovascular_cost": "Today's average HR was 126 versus 121 bpm, Garmin load 54.3 versus 48.4 and aerobic TE 2.7 versus 2.5. Main-block HR was 130 versus 123 bpm.",
+        "decoupling": "Trace-derived main-block HR-per-watt drift improved from approximately 5.6 percent to 3.5 percent, with unresolved HR-source provenance.",
+        "symptom_timing": "The posterior-chain symptom was delayed from approximately minute 45 overall on 2026-08-26 to approximately minute 55 on 2026-08-27.",
+        "interpretation": "The local improvement is consistent with greater recovery from the 2026-08-25 torque session plus today's higher-cadence, lower-force execution. It is not yet evidence of a 24-hour fitness adaptation, and the higher HR/load means the whole-body cost was not lower."
+      },
+      "coach_contract_audit": {
+        "dose_alignment": "The athlete repeated the prior day's external workout but exceeded the current day's planned 20-30 minute 105-120 W recovery primer. This is execution drift relative to the 2026-08-27 written contract.",
+        "next_constraint": "No additional training today. The resolved bilateral muscular burn does not independently close the next training day; use fresh next-day Garmin and subjective evidence to select the next dose."
+      }
+    }
+  ]
+}

@@ -487,7 +487,7 @@ def _yellow_base_plan(state: dict) -> dict:
     return {
         "title": "Easy bike continuity",
         "type": "outdoor_bike_optional",
-        "duration_min": 45,
+        "duration_min": 60,
         "intensity": "easy",
         "details": [
             "Ride easy Z1-Z2 / RPE 2-4.",
@@ -529,7 +529,7 @@ def _garmin_aerobic_continuity_plan(arbitration: dict) -> dict:
     return {
         "title": "Garmin-capped aerobic continuity",
         "type": "garmin_aerobic_continuity",
-        "duration_min": 45,
+        "duration_min": 60,
         "intensity": "easy",
         "details": [
             "Keep the work conversational and bounded; preserve the next quality opportunity.",
@@ -856,6 +856,88 @@ def _with_adaptive_upgrade_option(session: dict, arbitration: dict) -> dict:
     return upgraded
 
 
+def _apply_adaptive_programming_intent(
+    session: dict,
+    state: dict,
+    plan_source: dict,
+) -> tuple[dict, dict | None]:
+    """Attach the persistent progression decision before hard safety constraints.
+
+    Explicit coach-authored contracts are never rewritten here. A non-explicit
+    meaningful candidate is converted to the established low-cost continuity dose
+    when the adaptive weekly cost budget is already spent.
+    """
+
+    adaptive = state.get("adaptive_training") or {}
+    if not adaptive:
+        return session, None
+    decision = adaptive.get("progression_decision") or {}
+    block = adaptive.get("roadmap_block") or {}
+    budget = adaptive.get("weekly_budget") or {}
+    progression_tracks = adaptive.get("progression_tracks") or {}
+    explicit = plan_source.get("type") == "input_planned_session"
+    effective = dict(session)
+    metadata = {
+        "adaptive_state_basis_date": adaptive.get("date"),
+        "roadmap_block_id": f"{block.get('start_date') or 'unknown'}:{block.get('program_mode') or 'unknown'}",
+        "roadmap_block": block.get("label"),
+        "program_action": decision.get("program_action"),
+        "progression_lever": decision.get("active_lever"),
+        "progression_track": (
+            "endurance"
+            if decision.get("active_lever") in {"bike_specific_continuity", "endurance_duration", "frequency"}
+            else decision.get("active_lever")
+        ),
+        "planned_step": (
+            (progression_tracks.get("endurance") or {}).get("current_rung")
+            if decision.get("active_lever") in {"bike_specific_continuity", "endurance_duration", "frequency"}
+            else None
+        ),
+    }
+    effective["adaptive_programming"] = {
+        **(effective.get("adaptive_programming") or {}),
+        **metadata,
+        "explicit_contract_preserved": explicit,
+    }
+
+    remaining = int(budget.get("meaningful_cost_days_remaining") or 0)
+    meaningful = effective.get("density_cost") == "meaningful" or str(
+        effective.get("intensity") or ""
+    ).lower() in {"hard", "moderate_hard"}
+    event = str(effective.get("type") or "").lower() in {"race", "event_race", "official_practice"}
+    if meaningful and remaining <= 0 and not explicit and not event:
+        effective = {
+            "title": "Adaptive low-cost bike continuity",
+            "type": "outdoor_bike_optional",
+            "modality": "bike_indoor_or_low_consequence_outdoor",
+            "duration_min": 60,
+            "intensity": "easy",
+            "density_cost": "low",
+            "bike_touch_status": "normal",
+            "details": [
+                "Use the established 60-minute 120-130 W / global RPE 2-3 indoor anchor, or an equivalent low-consequence easy ride.",
+                "The weekly meaningful-cost budget is spent; do not hide tempo, torque, speed, or a technical stress test inside this touch.",
+            ],
+            "adaptive_programming": {
+                **metadata,
+                "budget_disposition": "meaningful_candidate_reflowed_to_low_cost",
+                "explicit_contract_preserved": False,
+            },
+        }
+        return effective, {
+            "source": "adaptive_training",
+            "reason": "meaningful_cost_budget_spent",
+            "action": "reflowed_non_explicit_candidate_to_low_cost_continuity",
+        }
+    if meaningful and remaining <= 0 and explicit:
+        return effective, {
+            "source": "adaptive_training",
+            "reason": "explicit_contract_exceeds_remaining_meaningful_budget",
+            "action": "preserved_for_head_coach_resolution",
+        }
+    return effective, None
+
+
 def _gym_block(
     state: dict,
     scheduled_rest: dict | None = None,
@@ -878,6 +960,16 @@ def _gym_block(
     level = state.get("readiness", {}).get("readiness_level")
     if level == "red":
         return {"status": "skip", "details": ["Skip gym loading today; keep mobility only."]}
+    adaptive = state.get("adaptive_training") or {}
+    mode = (adaptive.get("roadmap_block") or {}).get("program_mode")
+    meaningful_remaining = ((adaptive.get("weekly_budget") or {}).get("meaningful_cost_days_remaining"))
+    if mode in {"absorption", "taper", "race_recovery_transition", "event_practice", "event_race"} or meaningful_remaining == 0:
+        return {
+            "status": "skip_loading",
+            "details": [
+                "Do not add gym loading to the current adaptive density budget; mobility is optional and must not create fatigue."
+            ],
+        }
     return {
         "status": "available",
         "details": [
@@ -953,6 +1045,13 @@ def build_today_plan(
             and garmin_arbitration.get("recommended_action") in {"downshift", "no_hard_guidance"}
         ):
             session = _yellow_base_plan(state)
+    adaptive_resolution = None
+    if not post_session_review and not enforce_scheduled_rest:
+        session, adaptive_resolution = _apply_adaptive_programming_intent(
+            session,
+            state,
+            plan_source,
+        )
     if post_session_review:
         applied_constraints = []
     else:
@@ -964,6 +1063,8 @@ def build_today_plan(
             sabbath_exception=sabbath_exception,
             recurring_scheduled_rest=recurring_scheduled_rest,
         )
+        if adaptive_resolution:
+            applied_constraints.insert(0, adaptive_resolution)
     session = _with_session_contract(session)
 
     nutrition_context = {
@@ -1031,6 +1132,13 @@ def build_today_plan(
         reason = constraint.get("reason")
         if reason and reason not in guardrails:
             guardrails.insert(0, reason)
+    adaptive_decision = (state.get("adaptive_training") or {}).get("progression_decision") or {}
+    if adaptive_decision:
+        guardrails.append(
+            "Adaptive programming: "
+            f"{adaptive_decision.get('program_action')} with lever {adaptive_decision.get('active_lever')}; "
+            f"next constraint: {adaptive_decision.get('next_constraint')}"
+        )
     if post_session_review:
         guardrails.insert(0, session_lifecycle["rule"])
     if (
@@ -1073,6 +1181,12 @@ def build_today_plan(
                 "session_ceiling": (state.get("cns_readiness") or {}).get("session_ceiling"),
             },
             "session_lifecycle": session_lifecycle,
+            "adaptive_training": {
+                "state_basis_date": (state.get("adaptive_training") or {}).get("date"),
+                "roadmap_block": (state.get("adaptive_training") or {}).get("roadmap_block"),
+                "progression_decision": adaptive_decision,
+                "weekly_budget": (state.get("adaptive_training") or {}).get("weekly_budget"),
+            },
         },
         "constraint_resolution": {
             "applied": applied_constraints,

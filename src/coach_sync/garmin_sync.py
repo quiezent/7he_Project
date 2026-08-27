@@ -1378,11 +1378,9 @@ def sync_connect(
     state = build_current_state(root, refresh_models=not decision_only)
     state_date = parse_date(state.get("date"))
     weekly_session = load_weekly_session(root, state_date) if state_date else None
-    weekly_plan = (
-        build_weekly_plan(root, state=state)
-        if state_date and (state_date.weekday() == 0 or weekly_session is None)
-        else None
-    )
+    # Rebuild the execution-aware weekly layer after every sync. Dated explicit
+    # contracts remain immutable; only future discretionary roles may be reflowed.
+    weekly_plan = build_weekly_plan(root, state=state) if state_date else None
     weekly_plan_available = weekly_plan is not None or weekly_session is not None
     plan = build_today_plan(root, state=state)
     predictive = build_predictive_training(root, state=state, plan=plan)

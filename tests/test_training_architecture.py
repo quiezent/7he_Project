@@ -132,6 +132,24 @@ def test_training_architecture_builds_config_and_snapshot(tmp_path):
 
     assert artifact["architecture_type"] == "clayton_specific_enduro_training_architecture"
     assert artifact["schema_version"] == 3
+    adaptive = artifact["adaptive_programming"]
+    assert adaptive["boundary"]["garmin_mcp"].startswith("Direct live perception")
+    assert adaptive["progression_ladders"]["tempo_torque"][:3] == [
+        "3x8_min",
+        "3x10_min",
+        "3x12_min",
+    ]
+    assert adaptive["progression_ladders"]["endurance_duration"] == [
+        "60_min_120_130_w",
+        "75_min_near_125_w",
+        "90_min_near_125_w",
+    ]
+    assert next(
+        block for block in adaptive["block_calendar"] if block["start"] == "2026-09-20"
+    )["mode"] == "event_race"
+    assert adaptive["promotion_logic"]["unsafe_override"].startswith(
+        "A triggered_but_continued outcome never promotes"
+    )
     assert artifact["integrated_coaching_model"]["purpose"].startswith("Combine directive")
     environment = artifact["integrated_coaching_model"]["same_day_environment_context"]
     assert environment["location"] == "Taman Tun Dr. Ismail / Bukit Kiara"
@@ -176,7 +194,29 @@ def test_training_architecture_builds_config_and_snapshot(tmp_path):
         "garmin_cycling_vo2max_precise"
     ] == 51.1
     assert artifact["macrocycle"][0]["phase"] == "base_rebuild"
+    assert artifact["macrocycle"][0]["minimums"][
+        "preferred_bike_load_per_week"
+    ] == [350, 500]
     assert "density_governor" in artifact["weekly_architecture"]
+    assert any(
+        "below five unique bike days is underdosed" in rule
+        for rule in artifact["weekly_architecture"]["density_governor"]
+    )
+    assert "standard 60-minute low-aerobic bike dose" in artifact[
+        "weekly_architecture"
+    ]["default_week"]["monday"]
+    steady_endurance = artifact["session_library"]["indoor_steady_endurance"]
+    assert "60 minutes" in steady_endurance["routine_low_cost_dose"]
+    assert steady_endurance["routine_low_cost_contract"] == {
+        "total_duration_min": 60,
+        "main_power_w_range": [120, 130],
+        "global_rpe_range": [2, 3],
+        "density_cost": "low",
+    }
+    assert "75 minutes toward 90 minutes" in steady_endurance[
+        "duration_development_dose"
+    ]
+    assert "diffuse bilateral" in steady_endurance["symptom_interpretation"]
     assert "weekly_plan" in artifact["artifact_contract"]
     assert "rest_recharge_window" in artifact["artifact_contract"]
     assert "wearable_coverage" in artifact["artifact_contract"]

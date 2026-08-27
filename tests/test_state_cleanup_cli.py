@@ -23,8 +23,14 @@ def test_current_state_writes_training_snapshots(tmp_path):
     state = build_current_state(tmp_path, "2026-04-29")
 
     assert state["phase"]["name"] == "base_rebuild"
+    assert state["bike_continuity_accountability"]["targets"][
+        "preferred_unique_bike_days"
+    ] == 5
+    assert state["latest_session_response"]["status"] == "feedback_missing"
+    assert state["adaptive_training"]["artifact_type"] == "adaptive_training_programming_state"
     assert (tmp_path / "snapshots" / "training_load.json").exists()
     assert (tmp_path / "snapshots" / "current_state.json").exists()
+    assert (tmp_path / "snapshots" / "adaptive_training.json").exists()
 
 
 def test_exact_date_all_day_rest_surfaces_without_refreshing_core_readiness(tmp_path):
@@ -218,3 +224,4 @@ def test_cli_rebuild_creates_valid_json(tmp_path, capsys):
     assert (tmp_path / "snapshots" / "current_state.json").exists()
     assert (tmp_path / "snapshots" / "daily_brief.txt").exists()
     assert (tmp_path / "snapshots" / "coach_packet.txt").exists()
+    assert (tmp_path / "snapshots" / "adaptive_training.txt").exists()

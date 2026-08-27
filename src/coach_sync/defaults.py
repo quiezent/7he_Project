@@ -88,6 +88,30 @@ def default_athlete_context() -> dict:
                 "protect_mtb_exposures_per_week": 2,
                 "maximum_mtb_exposures_per_week": 3,
                 "downshift_warning": "Do not allow high elliptical/non-bike load to hide a bike-specific drought.",
+                "counting_rule": "Count unique bike days, not split activity files. Any hard run counts toward the meaningful-cost cap.",
+                "indoor_endurance_dose_anchors": {
+                    "routine_low_cost_continuity": (
+                        "60 minutes at 120-130 W and global RPE 2-3 with normal cooling. "
+                        "Back-to-back use is allowed when symptoms are diffuse, bilateral, "
+                        "mechanically stable and fully resolving, and no protected session is compromised."
+                    ),
+                    "routine_low_cost_continuity_contract": {
+                        "total_duration_min": 60,
+                        "main_power_w_range": [120, 130],
+                        "global_rpe_range": [2, 3],
+                        "cooling": "ceiling_fan_max",
+                        "density_cost": "low",
+                    },
+                },
+                "progressive_overload_guardrail": (
+                    "Every normal trainable week must contain a named progression target in "
+                    "steady-endurance duration, structured-engine dose or MTB repeatability."
+                ),
+                "weekly_frequency_audit": (
+                    "The two-touch minimum is an emergency maintenance floor, not a successful "
+                    "build week. A normal trainable week below five unique bike days is underdosed "
+                    "unless a named hard constraint removed the opportunity."
+                ),
             },
             "weekly_rest_days": [
                 {

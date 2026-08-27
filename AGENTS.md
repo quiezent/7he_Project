@@ -23,6 +23,7 @@ Your posture is Christomorphic.
 - Do not use finger history, clearance status, pain, swelling, or grip tolerance as a current training gate.
 - Clayton treats Sunday as Sabbath; this is a hard no-exercise day unless he explicitly authorizes a named, exact-date race-event exception and an exact replacement Sabbath. Never infer an exception from weekend race scheduling. The replacement day becomes hard no-exercise, and the recurring Sunday rule remains unchanged.
 - `config/coaching_architecture.json` is schema v3: use the integrated coaching model, session contract, and density governor for major prescriptions.
+- `input/expert_enduro_roadmap.md` is the active dated macrocycle intent from 2026-08-26 through 2026-12-20. Use its current calendar block and promotion gates when generating or reviewing weekly plans, but never let it override canonical config, fresh readiness, CNS ceilings, Sabbath, or a schema-v3 session contract.
 
 ## Rider Goal
 - Current category: experienced MTB rider.
@@ -36,6 +37,10 @@ Your posture is Christomorphic.
 - Garmin N-of-1 review shows bike-specific continuity is the strongest durable fitness currency for Clayton; total load alone is misleading.
 - Maintenance floor is about 2 bike-specific touches/week; the active rebuild target is 5-6 unique bike days/week when recovery and calendar allow.
 - Five to six touches does not mean five to six costly workouts: keep only 2-3 sessions meaningfully costly and use 2-3 low-cost Z1/Z2 or primer touches. Count a hard run toward the meaningful-cost cap and do not game frequency with split files or unnecessary doubles.
+- Treat 60 minutes at 120-130 W and global RPE 2-3 as Clayton's established low-cost Suito continuity dose. It may be used on back-to-back days when mechanics remain stable, any muscular response is diffuse/bilateral and promptly resolving, and the next protected session is not compromised. Do not repeatedly shrink it merely to protect a hypothetical future ride.
+- Treat 75-90 minutes near 125 W as endurance-duration development and 60 minutes near 145 W as a meaningful high-end-endurance session. The latter replaces the week's structured engine slot rather than stacking with torque or VO2 work.
+- A familiar terminal bilateral glute/hamstring burn that resolves promptly is a local-endurance marker, not automatically pain, CNS compromise, or a future load-reduction trigger. Stop/downshift for focal or asymmetric pain, altered mechanics, neurological symptoms, persistence, or next-day functional impairment.
+- Audit weekly execution against the actual build target: the two-touch minimum is an emergency maintenance floor. A normal trainable week below five unique bike days is underdosed unless a named hard constraint removed the opportunity, and every normal build week needs a named progression target rather than only recovery/primer/capped sessions.
 - Protect 2 MTB exposures/week when life allows: one quality/skill day and one durability/enduro-volume day.
 - Allow up to 3 MTB exposures/week when readiness, logistics, and load density support it; the third exposure is normally capped skill-transfer, not another hidden hard day.
 - Every major prescription should state purpose, dose, adaptation hypothesis, execution rules, expected result, stop rules, and post-session review fields.
@@ -58,6 +63,7 @@ Your posture is Christomorphic.
 - Treat Garmin MCP as the model's direct Garmin perception/action interface: use its read tools as live, on-demand evidence in coaching cognition, and use its write tools only when Clayton explicitly requests the external change.
 - Do not build or imply a generic MCP-to-stack ingestion bridge. MCP evidence may be reasoned over directly without being copied into repository artifacts, and an MCP read does not silently refresh or overwrite stack state.
 - Treat the coaching stack as the deliberately engineered, persistent and testable coaching architecture: it selects useful evidence, preserves provenance, applies normalization and safety rules, materializes coaching memory and contracts, and supports calibration and auditability.
+- The stack is also Clayton's deterministic adaptive programming tool. `snapshots/adaptive_training.json` must select the dated roadmap block, current progression rungs, one active progression lever, weekly bike/MTB/meaningful-cost budget, and promotion/hold evidence. It does not replace head-coach judgment or same-day safety resolution.
 - Use MCP and stack evidence as complementary surfaces. When they disagree, investigate date, cutoff, endpoint semantics, coverage and provenance; do not silently make either overwrite the other.
 - If a recurring MCP-only surface proves coaching-relevant, decide separately whether it deserves native stack support. Add it because it improves decisions with explicit provenance and tests, not because every directly sensed field should be ingested.
 
@@ -149,8 +155,15 @@ Your posture is Christomorphic.
   - interpretable small-data model for wake Body Battery
 - `snapshots/coach_packet.json`
   - coach-facing evidence triage and today's decision surface
+- `snapshots/adaptive_training.json` / `snapshots/adaptive_training.txt`
+  - persistent adaptive programming state: dated roadmap block, current-week execution and cost budget, endurance/engine/technical progression ladders, one selected progression lever, promotion/hold gates, and programming-accountability audit
+  - Garmin MCP remains direct model perception and is never copied here through a generic ingestion bridge
 - `snapshots/current_state.json:latest_session_evidence`
   - bounded raw-session block joining timing, terrain, workload, power, environment, Gear, HR source, self-evaluation, Garmin gym set/rep/rest detail, and loop context with provenance/confidence
+- `snapshots/current_state.json:latest_session_response`
+  - target-date, activity-matched structured feedback surface for explicit stop outcome, global/local RPE, symptom distribution and character, mechanics, onset and resolution; unknown fields remain unknown and the block never promotes training by itself
+- `snapshots/current_state.json:bike_continuity_accountability`
+  - live Monday-to-target and rolling-seven-day unique bike days, MTB days, duration/load, preferred-target gap, remaining non-rest dates and the configured routine indoor dose; this exposes underdosing but never overrides readiness, CNS, Sabbath, symptoms, environment or named calendar constraints
 - `snapshots/predictive_session_plan.json`
   - pre-session digital-twin expectation for planned duration, load, RPE, next-day Garmin response, execution-risk drift, and coaching-adjusted strain response
 - `snapshots/predictive_session_review.json`
@@ -191,6 +204,8 @@ Your posture is Christomorphic.
   `python tools/daily_brief.py`
 - Coach packet:
   `python tools/coach_packet.py`
+- Adaptive training controller:
+  `python tools/adaptive_training.py --date <YYYY-MM-DD>`
 - CNS readiness:
   `python tools/cns_readiness.py --date <YYYY-MM-DD>`
 - Adaptation profile:
@@ -250,7 +265,8 @@ Your posture is Christomorphic.
 
 ## Key Coaching Rules
 - Always read latest readiness/current-state artifacts before recommending a same-day workout.
-- On Monday, generate/use `snapshots/weekly_plan.json` after live sync; if the current-week plan is missing on another day, sync creates it. `today_plan` consumes the matching weekly intent, but `snapshots/coach_packet.json` / `.txt` remains the same-day decision surface.
+- Generate the dated weekly intent on Monday, then rebuild its execution-aware view after every sync so completed actions, execution drift, remaining cost, and future discretionary roles stay current. Explicit dated contracts remain immutable; conflicts are surfaced rather than silently rewritten. `today_plan` consumes the matching weekly intent, while `snapshots/coach_packet.json` / `.txt` remains the same-day decision surface.
+- Build and read `snapshots/adaptive_training.json` before weekly or major same-day programming. Its progression direction is upstream of session safety: Sabbath, physical readiness, CNS, freshness, symptoms, environment, and consequence can still cap or replace the candidate.
 - Prefer `snapshots/coach_packet.json` / `.txt` as the final decision surface after rebuild.
 - Use `snapshots/cns_readiness.json` as the technical-consequence ceiling. If CNS status is `impaired` or `compromised`, the planner must replace technical, structured, and high-consequence work with low-consequence recovery; do not merely label the warning.
 - Read `config/athlete_context.json` training_strategy before block planning or major training recommendations.
@@ -276,6 +292,8 @@ Your posture is Christomorphic.
 - Treat intentional off-wrist time as coverage provenance only. A direct wrist-HR gap confirms optical-HR measurement unavailability at sample-transition resolution, but never proves physical watch removal or assigns dress-watch use, a loose strap, showering, charging, or another cause. Keep measurement availability, physical wear state, and cause as separate axes. A recurring wearable habit cannot instantiate a dated interval; require strict target-date start/end confirmation for physical-removal or cause attribution. Attribute each material run independently, leaving every unmatched run or remainder unexplained without softening caution. Positive low-stress use requires dense valid target-date samples from near midnight through a declared cutoff at or after 18:00, credible Garmin cadence, and no uncovered tail; high observed stress may still downshift when that positive-use gate fails. Never impute stress, Body Battery, sleep, HRV, steps, freshness, or readiness across a gap, and never let wear-state context reclassify endpoint failure.
 - Subjective check-ins are optional and should cover what Garmin cannot see.
 - For expert-enduro coaching, subjective notes must cover what Garmin cannot see: ride purpose, trail condition, wet roots/rocks, braking fatigue, upper-body fatigue, jump confidence, late-ride skill fade, fuel/hydration, and actual aggression.
+- Read `bike_continuity_accountability` in every weekly review and same-day coach packet. A normal trainable week below five unique bike days is an underdose signal, while a rolling-seven-day count must not hide a weak current calendar week. A routine low-cost indoor prescription below the configured 60-minute anchor requires a named readiness, CNS, symptom, environmental or calendar constraint.
+- Use `latest_session_response` to distinguish a familiar terminal bilateral muscular burn that resolves promptly from sharp/focal, asymmetric, mechanically altering or persistent symptoms. Preserve the athlete's explicit stop outcome and never infer one from symptom prose.
 - For CNS readiness, subjective notes should explicitly label brain fog, vision narrowing, delayed line choice, braking timing, unclipping delay, confidence covering sloppy timing, and whether the final descent decision speed matched the first.
 - Poor next-morning response can downshift the next recommendation; historical finger notes must not.
 - Do not chase historical P20 or treat Garmin estimation as a laboratory truth. Use the current dated Garmin FTP together with controlled power, RPE, HR, and session response; a clean P20/FTP test is validation, not a prerequisite for all FTP-relative work.

@@ -7,7 +7,8 @@
       "current_milestone": {
         "name": "four_twin_peaks_enduro_reacquisition",
         "status": "active",
-        "plan_artifact": "snapshots/enduro_reacquisition_plan_2026-08-10_2026-09-12.json",
+        "plan_artifact": "input/expert_enduro_roadmap.md",
+        "superseded_historical_plan_artifact": "snapshots/enduro_reacquisition_plan_2026-08-10_2026-09-12.json",
         "target_window": {
           "first_controlled_proof": "2026-08-24 to 2026-08-30",
           "confirmation": "2026-09-07 to 2026-09-12"
@@ -722,6 +723,16 @@
       "note": "Clayton judged the engineered AirGradient ledger and automatic planner gate disproportionate. The active integration was retired in favor of reading the IQAir TTDI weather and air-quality report directly as fresh same-day coaching context. IQAir webpage scraping is not permitted; any future automation must use the official API with credentials outside the repository.",
       "timestamp": "2026-08-25T16:38:32+08:00",
       "type": "automated_air_quality_stack_retired"
+    },
+    {
+      "note": "Head-coach performance audit from 2026-07-10 through 2026-08-27 found only 20 unique bike days in 49 days, flat Garmin chronic load near 400 and no cycling-VO2 improvement despite clear MTB technical gains. Daily prescriptions over-protected the next key ride and under-delivered the canonical 5-6-day bike-continuity target. Clayton's proven dose anchors are now explicit: 60 minutes at 120-130 W is normally low-cost continuity; 75-90 minutes near 125 W is endurance-duration development; 60 minutes near 145 W is a meaningful high-end-endurance session. A familiar diffuse bilateral terminal muscular burn that resolves promptly is an adaptation marker, not by itself a reason to reduce future load.",
+      "timestamp": "2026-08-27T14:45:00+08:00",
+      "type": "coach_performance_and_load_strategy_corrected"
+    },
+    {
+      "note": "The coaching stack was promoted from an evidence-fetch and safety surface into a deterministic adaptive programming tool. Garmin MCP remains direct live model perception. The stack now persists the dated roadmap block, current-week bike/MTB/meaningful-cost budget, separate endurance/engine/technical progression rungs, one active progression lever, promotion/hold evidence, and explicit programming-accountability conflicts without overriding same-day safety or silently rewriting dated contracts.",
+      "timestamp": "2026-08-27T16:55:00+08:00",
+      "type": "adaptive_training_programming_controller_added"
     }
   ],
   "medical": {
@@ -920,6 +931,7 @@
         "rank": 8
       }
     ],
+    "limiter_ranking_policy": "This canonical list is a provisional coaching hypothesis, not a permanently fixed ordering. Use snapshots/adaptive_training.json:trainable_limiter_ranking as the current evidence-based programming order; revise the canonical hypothesis only after repeated delivered-session evidence changes the durable model.",
     "north_star_metric": "Can Clayton ride the final descent of the day with the same aggression, braking precision, and corner-exit speed as the first one?",
     "weekly_architecture": {
       "highest_return_shape": [
@@ -930,8 +942,8 @@
         "No more than three meaningful-cost sessions across bike and hard running."
       ],
       "preferred_days": {
-        "friday": "Indoor low-aerobic continuity or primer; shorten after a harder-than-written Thursday.",
-        "monday": "Preferred social run with Clayton's wife; optional short easy bike touch only when the run remains conversational and recovery is clean.",
+        "friday": "Indoor low-aerobic continuity at the standard 60-minute dose when Saturday is not already the week's third meaningful cost; use a shorter primer only when fresh evidence shows it protects a specific Saturday objective.",
+        "monday": "Preferred social run with Clayton's wife. If the run does not happen, use the standard 60-minute low-aerobic bike dose rather than defaulting to rest; if it happens, count its cost honestly and place the long bike dose elsewhere.",
         "saturday": "Optional third MTB skill-transfer or Enduro-bike exposure; reduce ambition or skip for church/family obligations.",
         "sunday": "Sabbath hard rest.",
         "thursday": "Protected MTB durability or technical-quality exposure.",
@@ -945,7 +957,33 @@
     "coach_role": "interpret evidence, resolve conflicts, and make the final coaching call",
     "nutrition_role": "fuel training, recovery, body composition, and adaptation",
     "predictive_loop": "Before training, store the expected session load/RPE, raw next-day response, coaching-adjusted strain response, execution-drift stress test, and schema v3 contract. After Garmin sync, compare action alignment, actual load, self-evaluation, technical outcome, explicit stop-rule outcome, review-field completion, and next-day response against the stored expectation. Keep physiology-only matches visible, but only complete contract-quality sessions calibrate the model; drifted or incomplete sessions update execution-risk and evidence-quality rules first.",
-    "software_role": "stage evidence, normalize data, apply repeatable safety rules"
+    "software_role": "Persist and normalize evidence, apply repeatable safety rules, maintain adaptive progression rungs and weekly role/cost budgets, select one trainable lever, and expose promotion/hold/accountability decisions for head-coach interpretation.",
+    "adaptive_programming": {
+      "artifact": "snapshots/adaptive_training.json",
+      "purpose": "Make the stack an inspectable training-programming tool rather than only a Garmin evidence fetcher.",
+      "direct_garmin_mcp_boundary": "Garmin MCP is live model perception and is never copied through a generic MCP-to-stack ingestion bridge.",
+      "one_lever_rule": "Progress only one of frequency, endurance duration, engine dose, complete-cycle count, technical consequence, or strength at a time.",
+      "progression_ladders": {
+        "endurance_duration": [
+          "60_min_120_130_w",
+          "75_min_near_125_w",
+          "90_min_near_125_w"
+        ],
+        "tempo_torque": [
+          "3x8_min",
+          "3x10_min",
+          "3x12_min",
+          "raise_watts"
+        ],
+        "vo2": [
+          "not_admitted",
+          "4x3_min",
+          "5x3_min"
+        ]
+      },
+      "promotion_guardrail": "A rung promotes only after explicit within-contract execution and clean absorption evidence. Triggered-but-continued never promotes the nominal rung.",
+      "safety_order": "Adaptive direction is upstream of the executable session; Sabbath, physical readiness, CNS ceiling, freshness, symptoms, environment, and consequence still win."
+    }
   },
   "schema_version": 1,
   "training_rules": {
@@ -965,13 +1003,34 @@
       "maximum_mtb_exposures_per_week": 3,
       "primary_outdoor_fitness_equipment_key": "specialized_stumpjumper",
       "enduro_training_max_exposures_per_week": 1,
-      "enduro_recce_consumes_training_cap": true
+      "enduro_recce_consumes_training_cap": true,
+      "indoor_endurance_dose_anchors": {
+        "routine_low_cost_continuity": "60 minutes at 120-130 W and global RPE 2-3 with normal cooling. Back-to-back use is allowed when symptoms are diffuse, bilateral, mechanically stable and fully resolving, and no protected session is compromised.",
+        "routine_low_cost_continuity_contract": {
+          "total_duration_min": 60,
+          "main_power_w_range": [
+            120,
+            130
+          ],
+          "global_rpe_range": [
+            2,
+            3
+          ],
+          "cooling": "ceiling_fan_max",
+          "density_cost": "low"
+        },
+        "duration_development": "75-90 minutes near 125 W. Treat as moderate or meaningful cost until 90 minutes is absorbed with controlled drift, global RPE no higher than 4 and normal next-day function.",
+        "high_end_endurance": "60 minutes near 145 W. Clayton experiences this as meaningfully hard; it replaces the week's structured engine slot rather than being added as easy volume.",
+        "terminal_burn_interpretation": "A familiar diffuse bilateral glute or hamstring burn confined to the final minutes, with stable mechanics and prompt resolution to 0/10, is a local-endurance marker. It does not independently trigger a future load reduction. Focal, asymmetric, mechanically altering or persistent pain remains a stop/downshift signal."
+      },
+      "progressive_overload_guardrail": "Every normal trainable week must contain a named progression target in steady-endurance duration, structured-engine dose or MTB repeatability. Do not let all sessions become recovery, primers or repeatedly reduced caps.",
+      "weekly_frequency_audit": "The two-touch minimum is an emergency maintenance floor, not a successful build week. If a normal trainable week finishes below five unique bike days without a hard calendar, illness, Sabbath or safety constraint, classify the plan as underdosed and correct the next week without compensatory intensity."
     },
     "cycling_vo2_rebuild": {
       "current_anchor": {
-        "date": "2026-08-24",
-        "garmin_cycling_vo2max_precise": 47.6,
-        "garmin_chronic_load": 377,
+        "date": "2026-08-27",
+        "garmin_cycling_vo2max_precise": 47.2,
+        "garmin_chronic_load": 402,
         "weight_kg": 77.64
       },
       "pre_injury_reference": {
@@ -982,6 +1041,8 @@
       },
       "interpretation": "The gap is partly genuine deconditioning and partly relative-mass and Garmin-observability effects. At current mass, unchanged historical absolute oxygen-use proxy would read about 49.8; the remaining gap is consistent with lower chronic bike load and reduced sustained aerobic continuity. MTB stochastic power, powerless Enduro rides and heat can reduce clean Garmin cycling-VO2 observation.",
       "recurring_build_rule": "Use 5-6 unique bike days when recovery and calendar allow: 2-3 meaningful sessions including one structured aerobic-development stimulus, 2 protected MTB exposures and 2-3 low-cost continuity or primer touches. Do not make two key rides plus three recovery-only rides the recurring VO2 rebuild template.",
+      "dose_progression_rule": "Treat 60 minutes at 120-130 W as the normal low-cost continuity anchor. Build one weekly duration exposure toward 75-90 minutes near 125 W and use exactly one structured engine exposure such as tempo/torque, VO2 intervals or the 60-minute 145 W benchmark. Do not stack all three structured variants in one week.",
+      "initial_post_conference_weekly_bike_load_band": "Approximately 400-500 Garmin bike load as a secondary audit range, not a quota. Unique bike days, meaningful-cost count, absorption and technical-final-run quality remain primary.",
       "conference_week_2026_W35": "If Monday is absorbed cleanly, Wednesday becomes 3x8 minutes of controlled tempo/torque at 165-170 W rather than another recovery-only session; Tuesday and Thursday remain low-cost touches and Friday remains the sole Enduro training exposure.",
       "post_conference_progression": "Introduce one true VO2 session per week starting with 4x3 minutes at 225-235 W with 3 minutes easy, then progress to 5x3 before increasing interval duration. Keep only three weekly meaningful costs and protect Enduro or Denai course quality.",
       "validation": [

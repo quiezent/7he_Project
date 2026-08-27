@@ -2,12 +2,14 @@
 
 ## What This Is
 - CLI-first Python stack for data-backed MTB coaching and sports nutrition.
-- The software stages evidence, constraints, readiness, load, and deterministic proposals.
+- The software stages evidence, constraints, readiness and load, then maintains a deterministic adaptive programming state: current roadmap block, weekly role/cost budget, separate progression ladders, one active lever, and promotion/hold evidence.
 - The model remains the coach: it interprets the evidence and makes the final call.
+- Garmin MCP is the coach model's direct live perception. It is complementary to the persistent stack and is not copied through a generic MCP-to-stack ingestion bridge.
 - This README is the human/operator guide. Do not store session-specific prescriptions, predictions, or coaching logs here.
 
 ## Current Status
 - Current phase is `base_rebuild`: the training focus is enduro repeatability.
+- The active dated PDR26 and post-race macrocycle is maintained in [`input/expert_enduro_roadmap.md`](input/expert_enduro_roadmap.md), covering 2026-08-26 through 2026-12-20. It is block intent; weekly and same-day artifacts remain the execution surfaces.
 - Historical context: Clayton broke his left pinky in Aug 2025; this is retained as history only and is not a current decision gate.
 - Progression depends on readiness, load response, bike specificity, Garmin freshness, and subjective session quality.
 - Technical progression also depends on CNS readiness: brain fog, decision speed, HRV/stress/RHR context, and weak-feel/low-RPE mismatches can cap trail consequence even when load is low.
@@ -39,7 +41,7 @@
 - Full sync preserves rich Garmin detail plus the original FIT/ZIP for up to three recent key MTB, indoor-bike, or gym sessions by default. Set the bound explicitly with `--key-detail-limit <N>`; the decision-only path skips this heavier collection.
 - Same-day decision sync:
   `python tools/sync_connect.py --wellness-days 3 --activity-limit 5 --decision-only`
-- Sync creates a current-week plan when one is missing; daily planning then uses that matching weekly intent unless `input/planned_session_YYYY-MM-DD.json` provides an explicit coach adjustment.
+- Sync rebuilds the execution-aware current-week view every time so delivered actions, execution drift, remaining density, and future discretionary roles stay current. Explicit dated contracts remain immutable and conflicts are surfaced instead of silently rewritten.
 - When dated coach adjustments are mutually exclusive fallback dates, give each session the same `bike_touch_counting: {"mode": "mutually_exclusive", "group": "<stable-group>"}` block so the weekly plan shows both candidates but counts at most one bike touch.
 - Wellness + rebuild only:
   `python tools/sync_connect.py --wellness-days 30 --activity-limit 0`
@@ -61,6 +63,7 @@ Preferred direct commands:
 - Daily plan: `python tools/today_plan.py`
 - Daily brief: `python tools/daily_brief.py`
 - Weekly plan: `python tools/weekly_plan.py`
+- Adaptive training controller: `python tools/adaptive_training.py --date <YYYY-MM-DD>`
 - Weekly report: `python tools/weekly_report.py --days 7`
 - Insight memo: `python tools/insight_memo.py --days 28`
 - Review block: `python tools/review_block.py`
@@ -212,6 +215,8 @@ Blank template fields are ignored.
 ## Main Artifacts
 - `config/athlete_context.json`
   - canonical athlete profile, historical context, goal, progression rules, nutrition rules
+- `input/expert_enduro_roadmap.md`
+  - Git-tracked living macrocycle intent with dated PDR26, transition, and post-race build blocks; weekly and same-day artifacts still control execution
 - `snapshots/current_state.json`
   - merged coaching state
 - `snapshots/readiness_YYYY-MM-DD.json`
@@ -288,10 +293,12 @@ Blank template fields are ignored.
   - targeted answers for bike floor, substitution blocks, FTP staleness, MTB labels, heat, gym, nutrition, and limiter ranking
 - `snapshots/training_architecture.json` / `snapshots/training_architecture.txt`
   - dated generated copy of the Clayton-specific training architecture
+- `snapshots/adaptive_training.json` / `snapshots/adaptive_training.txt`
+  - persistent training-programming state: dated roadmap block, current-week bike/MTB/meaningful-cost budget, endurance/engine/technical progression rungs, one active lever, promotion/hold gates, and programming audit
 - `snapshots/coach_packet.json` / `snapshots/coach_packet.txt`
   - coach-facing evidence triage: trusted signals, cautions, experimental models, ignored model output, and today's call
 - `snapshots/weekly_plan.json` / `snapshots/weekly_plan.txt`
-  - Monday weekly intent layer: objective, target load range, MTB exposure cap, daily gates, and schema v3 session contracts; the matching session becomes the daily template before same-day constraints are applied
+  - Monday intent plus an execution-aware view rebuilt after every sync; future discretionary roles may reflow, explicit contracts are preserved, and the matching session becomes the daily template before same-day constraints are applied
 - `config/coaching_architecture.json`
   - schema v3 machine-readable coaching objective, integrated coaching model, session contract, density governor, session library, evidence priorities, and phase plan
 - `snapshots/today_plan.json`
@@ -303,8 +310,9 @@ Blank template fields are ignored.
   - `activities/details/` retains bounded rich API detail and `activities/fit/` retains original Garmin FIT/ZIP downloads; neither is treated as another longitudinal activity row or removed by derived-cache cleanup
 
 ## Architecture Boundary
-- Code answers: what data exists, what changed, what is stale, what rules are triggered.
-- Coach answers: what Clayton should actually do today and why.
+- Garmin MCP gives the model live, on-demand Garmin perception; it does not silently mutate repository state.
+- The stack answers what data persists, what adaptation is currently targeted, which rung Clayton owns, what weekly roles/cost remain, what promotion gate is open or blocked, and what constraints are triggered.
+- The coach reconciles MCP and stack evidence, evaluates terrain and consequence, and owns the final same-day schema-v3 prescription.
 - CNS readiness answers: whether technical consequence, speed, jumps, enduro simulation, novelty, and setup testing should be capped even if physiological load looks manageable.
 - Constraint resolution answers: whether a weekly or explicit session must be replaced because Sabbath, physical readiness, data freshness, Garmin arbitration, or CNS readiness sets a lower ceiling.
 - Predictive loop answers: what response was expected from the prescribed session, what actually happened, and whether the miss was execution, external stress, or model error.

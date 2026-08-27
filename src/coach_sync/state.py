@@ -5,6 +5,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from .activity_profile import build_activity_profile
+from .adaptive_training import build_adaptive_training_state
 from .body_battery_model import build_body_battery_model
 from .context import load_context
 from .cns_readiness import build_cns_readiness
@@ -13,12 +14,16 @@ from .evidence import as_number, load_activities, load_latest_training_status, l
 from .gear_audit import build_gear_audit
 from .historical_baselines import build_historical_baselines
 from .io import read_json, write_json
-from .load_model import build_modality_load_rollups
+from .load_model import (
+    build_bike_continuity_accountability,
+    build_modality_load_rollups,
+)
 from .paths import snapshots_dir
 from .readiness import build_readiness
 from .rest_recharge import build_rest_recharge_window
 from .self_evaluation import build_self_evaluation_report
 from .session_evidence import build_latest_session_evidence
+from .session_response import build_latest_session_response
 from .training_status import build_training_status_current
 from .training_predictor import build_training_predictor
 from .training_readiness import build_training_readiness_current
@@ -296,6 +301,12 @@ def build_current_state(
         target_date,
         activities=activities,
     )
+    latest_session_activity = latest_session_evidence.get("activity") or {}
+    latest_session_response = build_latest_session_response(
+        root,
+        parse_date(latest_session_activity.get("date")) or target_date,
+        activity_id=latest_session_activity.get("activity_id"),
+    )
     phase = determine_phase(context, target_date)
     wellness_date, wellness = load_latest_wellness(root, target_date)
     training_status_date, training_status = load_latest_training_status(root, target_date)
@@ -322,6 +333,12 @@ def build_current_state(
     training_readiness_current = build_training_readiness_current(root, target_date)
     cycling_ftp_current = _cycling_ftp_current(root, target_date)
     modality_load_rollups = build_modality_load_rollups(root, target_date)
+    bike_continuity_accountability = build_bike_continuity_accountability(
+        root,
+        target_date,
+        activities=activities,
+        context=context,
+    )
     body_battery_model = _cached_or_build_report(
         root,
         "body_battery_model_report.json",
@@ -506,6 +523,16 @@ def build_current_state(
         "hard_session_limiters": [item for item in hard_limiters if item],
     }
 
+    adaptive_training = build_adaptive_training_state(
+        root,
+        target_date,
+        context=context,
+        activities=activities,
+        readiness=readiness,
+        cns_readiness=cns_readiness,
+        training_status=training_status_current,
+    )
+
     state = {
         "date": target_date.isoformat(),
         "generated_at": iso_now(tz),
@@ -528,6 +555,8 @@ def build_current_state(
         "cycling_ftp_current": cycling_ftp_current,
         "cns_readiness": cns_readiness,
         "modality_load_rollups": modality_load_rollups,
+        "bike_continuity_accountability": bike_continuity_accountability,
+        "adaptive_training": adaptive_training,
         "body_battery_model": {
             "samples": body_battery_model.get("samples"),
             "leave_one_out_accuracy": body_battery_model.get("leave_one_out_accuracy"),
@@ -552,6 +581,7 @@ def build_current_state(
         "device_audit": device_audit,
         "self_evaluation": self_evaluation,
         "latest_session_evidence": latest_session_evidence,
+        "latest_session_response": latest_session_response,
         "latest_activity": training_load.get("latest_activity"),
         "latest_training_activity": training_load.get("latest_training_activity"),
         "evidence_sources": {

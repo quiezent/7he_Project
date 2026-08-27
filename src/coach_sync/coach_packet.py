@@ -48,6 +48,60 @@ def _compact_modalities(windows: dict) -> dict:
     return compact
 
 
+def _continuity_policy_audit(state: dict, plan: dict) -> dict:
+    accountability = state.get("bike_continuity_accountability") or {}
+    contract = accountability.get("routine_low_cost_continuity_contract") or {}
+    anchor_duration = int(contract.get("total_duration_min") or 60)
+    session = plan.get("session") or {}
+    modality = str(session.get("modality") or "").lower()
+    intensity = str(session.get("intensity") or "").lower()
+    density_cost = str(session.get("density_cost") or "").lower()
+    is_low_cost_indoor_bike = modality in {"bike_indoor", "indoor_cycling"} and (
+        density_cost == "low" or intensity in {"easy", "recovery"}
+    )
+    planned_duration = as_number(session.get("duration_min"))
+    if planned_duration is None:
+        duration_range = session.get("duration_range_min") or []
+        if isinstance(duration_range, (list, tuple)) and duration_range:
+            planned_duration = as_number(max(duration_range))
+
+    applied = (plan.get("constraint_resolution") or {}).get("applied") or []
+    constraint_sources = sorted(
+        {
+            str(item.get("source"))
+            for item in applied
+            if isinstance(item, dict) and item.get("source")
+        }
+    )
+    named_exception = session.get("dose_exception_reason") or session.get(
+        "policy_exception"
+    )
+    if not is_low_cost_indoor_bike:
+        status = "not_applicable"
+    elif planned_duration is None:
+        status = "unknown_planned_duration"
+    elif planned_duration >= anchor_duration:
+        status = "aligned_with_established_anchor"
+    elif constraint_sources or named_exception:
+        status = "below_anchor_with_named_constraint"
+    else:
+        status = "below_anchor_without_named_constraint"
+    return {
+        "status": status,
+        "routine_anchor_duration_min": anchor_duration,
+        "planned_duration_min": planned_duration,
+        "planned_session_title": session.get("title"),
+        "plan_source": plan.get("plan_source"),
+        "named_constraint_sources": constraint_sources,
+        "named_exception": named_exception,
+        "rule": (
+            "A routine low-cost indoor bike dose below the established 60-minute anchor needs a "
+            "specific readiness, CNS, symptom, environmental or calendar reason. Protecting a "
+            "hypothetical later session is not sufficient by itself."
+        ),
+    }
+
+
 def _compact_loop_comparison(comparison: dict) -> dict:
     fields = ("loop", "moving_min", "rest_min", "average_hr", "estimated_load")
     return {
@@ -634,11 +688,14 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
     if not isinstance(garmin_arbitration, dict) or not garmin_arbitration:
         garmin_arbitration = build_garmin_arbitration(state)
     rollups = state.get("modality_load_rollups") or {}
+    continuity = state.get("bike_continuity_accountability") or {}
+    adaptive = state.get("adaptive_training") or {}
     baselines = state.get("historical_baselines") or {}
     gear_audit = state.get("gear_audit") or {}
     device_audit = state.get("device_audit") or {}
     self_evaluation = state.get("self_evaluation") or {}
     latest_session = state.get("latest_session_evidence") or {}
+    latest_response = state.get("latest_session_response") or {}
     gear_coverage = (gear_audit.get("coverage") or {}).get("status")
     device_coverage = (device_audit.get("coverage") or {}).get("status")
     gear_status = "flagged" if gear_audit.get("flags") else "clear" if gear_coverage == "complete" else gear_coverage or "unknown"
@@ -835,6 +892,58 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
             "Recent load distribution shows what the current fitness is actually built from.",
         ),
         _signal(
+            "Build accountability",
+            continuity.get("status") or "missing",
+            {
+                "targets": continuity.get("targets"),
+                "current_calendar_week": continuity.get("current_calendar_week"),
+                "rolling_last_7_days": continuity.get("rolling_last_7_days"),
+                "previous_7_days": continuity.get("previous_7_days"),
+                "preferred_gap_unique_days": continuity.get(
+                    "preferred_gap_unique_days"
+                ),
+                "remaining_non_rest_calendar_dates": continuity.get(
+                    "remaining_non_rest_calendar_dates"
+                ),
+                "routine_low_cost_continuity_contract": continuity.get(
+                    "routine_low_cost_continuity_contract"
+                ),
+                "progressive_overload_guardrail": continuity.get(
+                    "progressive_overload_guardrail"
+                ),
+                "weekly_frequency_audit_rule": continuity.get(
+                    "weekly_frequency_audit_rule"
+                ),
+                "policy_alignment": _continuity_policy_audit(state, plan),
+                "provenance": continuity.get("provenance"),
+            },
+            "weekly_frequency_and_dose_drift_audit_not_training_clearance",
+            continuity.get("decision_use")
+            or "No live bike-continuity accountability evidence is available.",
+        ),
+        _signal(
+            "Adaptive training controller",
+            adaptive.get("status") or "missing",
+            {
+                "roadmap_block": adaptive.get("roadmap_block"),
+                "progression_decision": adaptive.get("progression_decision"),
+                "weekly_budget": adaptive.get("weekly_budget"),
+                "progression_tracks": adaptive.get("progression_tracks"),
+                "trainable_limiter_ranking": adaptive.get("trainable_limiter_ranking"),
+                "recommended_week_roles": adaptive.get("recommended_week_roles"),
+                "programming_audit": adaptive.get("programming_audit"),
+            }
+            if adaptive
+            else None,
+            "persistent_adaptation_programming_not_same_day_clearance",
+            (
+                "Use this surface to select the adaptation, progression rung and remaining weekly role budget. "
+                "The same-day safety resolver and head-coach judgment still determine whether the candidate is executable."
+                if adaptive
+                else "No adaptive programming state is available; hold progression and use the canonical template."
+            ),
+        ),
+        _signal(
             "Historical MTB baseline",
             "available" if baselines.get("pre_injury_mtb_baseline") else "missing",
             baselines.get("pre_injury_mtb_baseline"),
@@ -891,6 +1000,14 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
             ),
         ),
         _signal(
+            "Structured latest-session response",
+            latest_response.get("status") or "missing",
+            latest_response,
+            "session_response_interpretation_not_automatic_clearance",
+            ((latest_response.get("decision_use") or {}).get("guardrail"))
+            or "No structured target-date session response is available.",
+        ),
+        _signal(
             "Predictive training twin",
             (
                 predictive.get("today_prescription", {})
@@ -925,8 +1042,65 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
     return trusted
 
 
-def _build_cautions(state: dict) -> list[dict]:
+def _build_cautions(state: dict, plan: dict | None = None) -> list[dict]:
     cautions = []
+    adaptive = state.get("adaptive_training") or {}
+    adaptive_audit = adaptive.get("programming_audit") or {}
+    adaptive_items = adaptive_audit.get("items") or []
+    if adaptive_items:
+        cautions.append(
+            {
+                "source": "adaptive_training",
+                "type": "adaptive_programming_attention",
+                "severity": "yellow",
+                "message": (
+                    "Adaptive programming needs attention: "
+                    + "; ".join(str(item.get("type") or "unknown") for item in adaptive_items)
+                    + ". Preserve justified constraints, but do not let them erase an underdose or density breach."
+                ),
+            }
+        )
+    torque = ((adaptive.get("progression_tracks") or {}).get("engine") or {}).get("torque") or {}
+    if torque.get("decision") == "hold_no_promotion":
+        cautions.append(
+            {
+                "source": "adaptive_training",
+                "type": "engine_progression_blocked_by_stop_override",
+                "severity": "yellow",
+                "message": torque.get("block_reason")
+                or "The latest structured-engine outcome blocks progression.",
+            }
+        )
+    if plan is not None:
+        adaptive_plan = plan.get("adaptive_programming") or {}
+        conflicts = adaptive_plan.get("explicit_contract_conflicts") or []
+        if conflicts:
+            cautions.append(
+                {
+                    "source": "adaptive_training",
+                    "type": "explicit_contract_budget_conflict",
+                    "severity": "yellow",
+                    "message": (
+                        f"{len(conflicts)} explicit future contract(s) exceed the remaining adaptive cost budget. "
+                        "They were preserved for head-coach resolution, not silently rewritten."
+                    ),
+                }
+            )
+        policy_audit = _continuity_policy_audit(state, plan)
+        if policy_audit.get("status") == "below_anchor_without_named_constraint":
+            cautions.append(
+                {
+                    "source": "build_accountability",
+                    "type": "low_cost_dose_below_established_anchor_without_named_constraint",
+                    "severity": "yellow",
+                    "message": (
+                        f"The written low-cost indoor dose is {policy_audit.get('planned_duration_min'):g} "
+                        f"minutes versus the established {policy_audit.get('routine_anchor_duration_min')} "
+                        "minute anchor, with no named hard constraint. Treat this as coaching-policy "
+                        "drift; preserve explicit-plan provenance but do not hide the divergence."
+                    ),
+                }
+            )
     readiness = state.get("readiness") or {}
     for reason in readiness.get("reasons") or []:
         cautions.append(
@@ -1017,6 +1191,36 @@ def _build_cautions(state: dict) -> list[dict]:
                 "type": flag.get("type"),
                 "severity": flag.get("severity") or "yellow",
                 "message": flag.get("message"),
+            }
+        )
+    latest_response = state.get("latest_session_response") or {}
+    response_decision = latest_response.get("decision_use") or {}
+    response_classification = response_decision.get("classification")
+    stop_outcome = latest_response.get("stop_rule_outcome")
+    if response_classification == "stop_or_downshift_signal":
+        cautions.append(
+            {
+                "source": "latest_session_response",
+                "type": "structured_symptom_stop_or_downshift_signal",
+                "severity": "yellow",
+                "message": (
+                    "Structured post-session feedback contains a sharp/focal, asymmetric, "
+                    "mechanically altering, or persistent symptom signal. Review it before the "
+                    "next dose; do not promote training from Garmin recovery alone."
+                ),
+            }
+        )
+    if stop_outcome == "triggered_but_continued":
+        cautions.append(
+            {
+                "source": "latest_session_response",
+                "type": "explicit_stop_rule_override",
+                "severity": "yellow",
+                "message": (
+                    "The latest structured review explicitly records triggered_but_continued. "
+                    "Nominal-contract validation is rejected and the next call must preserve "
+                    "execution-boundary and safety-adherence learning."
+                ),
             }
         )
     rest_recharge = state.get("rest_recharge_window") or {}
@@ -1218,6 +1422,13 @@ def _today_decision(state: dict, plan: dict, cautions: list[dict]) -> dict:
     cns = state.get("cns_readiness") or {}
     cns_status = cns.get("status")
     confidence = _coach_confidence(state)
+    continuity = state.get("bike_continuity_accountability") or {}
+    adaptive = state.get("adaptive_training") or {}
+    policy_audit = _continuity_policy_audit(state, plan)
+    latest_response = state.get("latest_session_response") or {}
+    response_classification = (latest_response.get("decision_use") or {}).get(
+        "classification"
+    )
     if (
         plan.get("coaching_status") == "post_session_review"
         or session_lifecycle.get("stance") == "post_session_review"
@@ -1267,6 +1478,37 @@ def _today_decision(state: dict, plan: dict, cautions: list[dict]) -> dict:
         "gym": plan.get("gym"),
         "nutrition": plan.get("nutrition"),
         "guardrails": plan.get("guardrails", []),
+        "build_accountability": {
+            "status": continuity.get("status"),
+            "current_week_unique_bike_days": (
+                continuity.get("current_calendar_week") or {}
+            ).get("unique_bike_days"),
+            "preferred_unique_bike_days": (continuity.get("targets") or {}).get(
+                "preferred_unique_bike_days"
+            ),
+            "preferred_gap_unique_days": continuity.get(
+                "preferred_gap_unique_days"
+            ),
+            "policy_alignment": policy_audit,
+        },
+        "adaptive_programming": {
+            "roadmap_block": adaptive.get("roadmap_block"),
+            "progression_decision": adaptive.get("progression_decision"),
+            "weekly_budget": adaptive.get("weekly_budget"),
+            "programming_audit": adaptive.get("programming_audit"),
+            "guardrail": "Programming direction is not same-day clearance; the resolved session and lowest safety ceiling still win.",
+        },
+        "latest_session_response": {
+            "status": latest_response.get("status"),
+            "classification": response_classification,
+            "global_rpe_0_to_10": latest_response.get("global_rpe_0_to_10"),
+            "local_rpe_0_to_10": latest_response.get("local_rpe_0_to_10"),
+            "stop_rule_outcome": latest_response.get("stop_rule_outcome"),
+            "stop_rule_outcome_explicit": latest_response.get(
+                "stop_rule_outcome_explicit"
+            ),
+            "symptom": latest_response.get("symptom"),
+        },
         "why": [
             f"Readiness is {_value(readiness.get('readiness_level'))} at {_value(readiness.get('readiness_score'))}/100.",
             f"Phase is {_value(phase)}.",
@@ -1275,6 +1517,12 @@ def _today_decision(state: dict, plan: dict, cautions: list[dict]) -> dict:
             f"CNS readiness is {_value(cns_status)} with ceiling {_value((cns.get('session_ceiling') or {}).get('level'))}.",
             f"{len(constraints)} session constraint(s) were applied.",
             f"{len(cautions)} caution item(s) are active.",
+            (
+                f"Bike continuity is {(continuity.get('current_calendar_week') or {}).get('unique_bike_days', 'unknown')} "
+                f"unique day(s) this calendar week against a preferred {(continuity.get('targets') or {}).get('preferred_unique_bike_days', 'unknown')}; "
+                f"written-dose policy is {policy_audit.get('status')}."
+            ),
+            f"Latest structured session response is {_value(response_classification)} with explicit stop outcome {_value(latest_response.get('stop_rule_outcome'))}.",
         ],
     }
 
@@ -1411,7 +1659,7 @@ def build_coach_packet(
             root, target, state=state
         )
 
-    cautions = _build_cautions(state)
+    cautions = _build_cautions(state, plan)
     experimental, ignored = _build_experimental_evidence(state)
     packet = {
         "date": target.isoformat(),
