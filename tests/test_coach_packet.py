@@ -68,6 +68,133 @@ def _write_activity(root, day: str) -> None:
     )
 
 
+def _environment_evidence(
+    *,
+    status: str = "current",
+    gate: str = "hold_and_recheck",
+    severity: str = "yellow",
+    forecast_confidence: str = "Low · limited local history",
+) -> dict:
+    return {
+        "artifact_type": "environment_evidence_current",
+        "version": "mtb_environment_evidence_adapter_v1",
+        "date": "2026-08-28",
+        "status": status,
+        "source": {
+            "name": "Clayton local Bukit Kiara environment evidence",
+            "endpoint": "http://192.168.80.147:8765/api/v1/mtb/environment-evidence",
+            "fallback": "none",
+        },
+        "latest_attempt": {
+            "attempted_at": "2026-08-28T09:30:00+08:00",
+            "status": "success",
+            "evidence_id": "env-20260828-0130",
+        },
+        "last_known_good": {
+            "identity": {
+                "schema_version": "1.0",
+                "evidence_id": "env-20260828-0130",
+            },
+            "location": {
+                "name": "Taman Tun Dr. Ismail / Bukit Kiara",
+                "timezone": "Asia/Kuala_Lumpur",
+            },
+            "observation": {
+                "observed_at_utc": "2026-08-28T01:29:00Z",
+                "pm2_5_ug_m3": 47.2,
+                "pm10_ug_m3": 58.0,
+                "temperature_c": 28.4,
+                "relative_humidity_pct": 56.0,
+                "heat_index_c": 33.0,
+            },
+            "particle_nowcast": {
+                "state": "rebound",
+                "change_30_min_ug_m3": 1.2,
+                "change_60_min_ug_m3": 10.2,
+                "recheck_minutes": 15,
+            },
+            "exposure_outlook": {
+                "arrival": {
+                    "confidence": forecast_confidence,
+                    "likely_range_pm2_5_ug_m3": {"low": 49.8, "high": 81.4},
+                },
+                "on_trail": {
+                    "confidence": forecast_confidence,
+                    "likely_mean_range_pm2_5_ug_m3": {"low": 47.2, "high": 85.0},
+                },
+            },
+            "weather": {
+                "trail_period": {
+                    "apparent_temperature_max_c": 37.4,
+                    "precipitation_probability_max_pct": 22,
+                }
+            },
+            "evidence_quality": {"state": "limited", "limitations": ["short_history"]},
+            "provenance": {
+                "sensor": {
+                    "provider": "AirGradient",
+                    "location_id": 86311,
+                    "observed_at_utc": "2026-08-28T01:29:00Z",
+                },
+                "weather_forecast": {"provider": "Open-Meteo"},
+            },
+        },
+        "freshness": {"state": status, "age_seconds": 60},
+        "decision": {
+            "gate": gate,
+            "severity": severity,
+            "reason": f"Environment gate is {gate}.",
+            "reason_codes": ["test_environment_signal"],
+            "current_pm2_5_ug_m3": 47.2,
+            "forecast_lower_pm2_5_ug_m3": 49.8,
+            "forecast_upper_pm2_5_ug_m3": 85.0,
+            "forecast_confidence": {
+                "arrival": forecast_confidence,
+                "on_trail": forecast_confidence,
+            },
+            "recheck_minutes": 15,
+            "decision_role": "outdoor_downshift_or_hold_only_never_training_promotion",
+            "can_promote_training": False,
+        },
+        "guardrail": "Environment evidence cannot promote training.",
+    }
+
+
+def _environment_packet_state(environment: dict) -> dict:
+    return {
+        "date": "2026-08-28",
+        "readiness": {
+            "readiness_level": "green",
+            "readiness_score": 82,
+            "confidence": "medium",
+            "reasons": [],
+        },
+        "data_freshness": {
+            "status": "current",
+            "activity_data": {"status": "current"},
+            "hard_session_limiters": [],
+        },
+        "phase": {"name": "base_rebuild"},
+        "cns_readiness": {},
+        "training_status_current": {},
+        "environment_evidence": environment,
+    }
+
+
+def _environment_packet_plan(*, applied: list[dict] | None = None) -> dict:
+    return {
+        "date": "2026-08-28",
+        "session": {
+            "title": "Easy bike continuity",
+            "type": "outdoor_bike_optional",
+            "duration_min": 60,
+            "intensity": "easy",
+        },
+        "decision_inputs": {"garmin_arbitration": {}},
+        "constraint_resolution": {"applied": applied or []},
+    }
+
+
 def test_coach_packet_writes_decision_surface_and_triages_models(tmp_path):
     load_context(tmp_path)
     _write_green_wellness(tmp_path, "2026-04-29")
@@ -90,6 +217,106 @@ def test_coach_packet_writes_decision_surface_and_triages_models(tmp_path):
     )
     assert (tmp_path / "snapshots" / "coach_packet.json").exists()
     assert (tmp_path / "snapshots" / "coach_packet.txt").exists()
+
+
+def test_coach_packet_surfaces_compact_environment_signal_and_hold_cautions(tmp_path):
+    environment = _environment_evidence()
+    packet = build_coach_packet(
+        tmp_path,
+        "2026-08-28",
+        state=_environment_packet_state(environment),
+        plan=_environment_packet_plan(),
+    )
+
+    signal = next(
+        item
+        for item in packet["evidence"]["trusted"]
+        if item["name"] == "Bukit Kiara environment evidence"
+    )
+    assert signal["status"] == "current"
+    assert signal["can_promote_training"] is False
+    assert signal["value"]["can_promote_training"] is False
+    assert signal["value"]["current"]["pm2_5_ug_m3"] == 47.2
+    assert signal["value"]["provenance"]["evidence_id"] == "env-20260828-0130"
+    assert signal["value"]["provenance"]["sensor"]["provider"] == "AirGradient"
+    assert (
+        packet["artifacts"]["source_environment_evidence"]
+        == "snapshots/environment_evidence.json"
+    )
+    assert any(
+        item["source"] == "environment_evidence"
+        and item["type"] == "environment_limited"
+        and item["can_promote_training"] is False
+        for item in packet["evidence"]["cautions"]
+    )
+    assert any(
+        item["source"] == "environment_evidence"
+        and item["type"] == "environment_hold"
+        for item in packet["evidence"]["cautions"]
+    )
+    assert packet["today_call"]["stance"] == "aerobic_continuity"
+
+
+def test_coach_packet_cautions_for_unavailable_and_stale_environment(tmp_path):
+    cases = (
+        ("historical_unavailable", "environment_unavailable"),
+        ("stale", "environment_stale"),
+    )
+    for status, expected_type in cases:
+        environment = _environment_evidence(
+            status=status,
+            gate=(
+                "historical_environment_unavailable"
+                if status == "historical_unavailable"
+                else "hold_pending_refresh"
+            ),
+        )
+        packet = build_coach_packet(
+            tmp_path,
+            "2026-08-28",
+            state=_environment_packet_state(environment),
+            plan=_environment_packet_plan(),
+        )
+        assert any(
+            item["source"] == "environment_evidence"
+            and item["type"] == expected_type
+            for item in packet["evidence"]["cautions"]
+        )
+
+
+def test_environment_downshift_stance_requires_applied_planner_constraint(tmp_path):
+    environment = _environment_evidence(
+        gate="close_mtb_prolonged_endurance_high_ventilation",
+        severity="red",
+        forecast_confidence="High",
+    )
+    state = _environment_packet_state(environment)
+    no_constraint = build_coach_packet(
+        tmp_path,
+        "2026-08-28",
+        state=state,
+        plan=_environment_packet_plan(),
+    )
+    assert no_constraint["today_call"]["stance"] == "aerobic_continuity"
+    assert any(
+        item["type"] == "environment_downshift"
+        for item in no_constraint["evidence"]["cautions"]
+    )
+
+    applied = build_coach_packet(
+        tmp_path,
+        "2026-08-28",
+        state=state,
+        plan=_environment_packet_plan(
+            applied=[
+                {
+                    "source": "environment_evidence",
+                    "reason": "Planner replaced venue-matched outdoor MTB.",
+                }
+            ]
+        ),
+    )
+    assert applied["today_call"]["stance"] == "environment_downshift"
 
 
 def test_coach_packet_surfaces_weekly_accountability_and_flags_unnamed_short_dose(tmp_path):

@@ -33,6 +33,216 @@ def _signal(
     }
 
 
+def _compact_environment_evidence(evidence: dict | None) -> dict | None:
+    if not isinstance(evidence, dict) or not evidence:
+        return None
+    latest = evidence.get("last_known_good")
+    latest = latest if isinstance(latest, dict) else {}
+    identity = latest.get("identity") if isinstance(latest.get("identity"), dict) else {}
+    observation = (
+        latest.get("observation") if isinstance(latest.get("observation"), dict) else {}
+    )
+    outlook = (
+        latest.get("exposure_outlook")
+        if isinstance(latest.get("exposure_outlook"), dict)
+        else {}
+    )
+    weather = latest.get("weather") if isinstance(latest.get("weather"), dict) else {}
+    provenance = (
+        latest.get("provenance") if isinstance(latest.get("provenance"), dict) else {}
+    )
+    attempt = (
+        evidence.get("latest_attempt")
+        if isinstance(evidence.get("latest_attempt"), dict)
+        else {}
+    )
+    decision = evidence.get("decision") if isinstance(evidence.get("decision"), dict) else {}
+    return {
+        "date": evidence.get("date"),
+        "status": evidence.get("status"),
+        "freshness": evidence.get("freshness"),
+        "current": {
+            key: observation.get(key)
+            for key in (
+                "observed_at_utc",
+                "pm2_5_ug_m3",
+                "pm10_ug_m3",
+                "temperature_c",
+                "relative_humidity_pct",
+                "heat_index_c",
+            )
+        },
+        "particle_nowcast": latest.get("particle_nowcast"),
+        "arrival": outlook.get("arrival"),
+        "on_trail": outlook.get("on_trail"),
+        "trail_weather": weather.get("trail_period"),
+        "evidence_quality": latest.get("evidence_quality"),
+        "decision": {
+            **{
+                key: decision.get(key)
+                for key in (
+                    "gate",
+                    "severity",
+                    "reason",
+                    "reason_codes",
+                    "current_pm2_5_ug_m3",
+                    "forecast_lower_pm2_5_ug_m3",
+                    "forecast_upper_pm2_5_ug_m3",
+                    "forecast_confidence",
+                    "recheck_minutes",
+                    "decision_role",
+                )
+            },
+            "can_promote_training": False,
+        },
+        "can_promote_training": False,
+        "provenance": {
+            "artifact_type": evidence.get("artifact_type"),
+            "version": evidence.get("version"),
+            "source": evidence.get("source"),
+            "evidence_id": identity.get("evidence_id"),
+            "schema_version": identity.get("schema_version"),
+            "location": latest.get("location"),
+            "sensor": provenance.get("sensor"),
+            "weather_forecast": provenance.get("weather_forecast"),
+            "weather_reference": provenance.get("weather_reference"),
+            "latest_attempt": {
+                key: attempt.get(key)
+                for key in (
+                    "attempted_at",
+                    "status",
+                    "error",
+                    "semantic_issues",
+                    "evidence_id",
+                )
+            },
+            "historical_projection": evidence.get("historical_projection"),
+        },
+        "guardrail": evidence.get("guardrail"),
+    }
+
+
+def _environment_signal(state: dict) -> dict:
+    evidence = state.get("environment_evidence")
+    evidence = evidence if isinstance(evidence, dict) else {}
+    decision = evidence.get("decision") if isinstance(evidence.get("decision"), dict) else {}
+    status = evidence.get("status") or "missing"
+    message = decision.get("reason") or evidence.get("guardrail") or (
+        "No environment evidence is available for this target date."
+    )
+    signal = _signal(
+        "Bukit Kiara environment evidence",
+        status,
+        _compact_environment_evidence(evidence),
+        "venue_scoped_outdoor_hold_or_downshift_only",
+        message,
+    )
+    signal["can_promote_training"] = False
+    return signal
+
+
+def _environment_cautions(state: dict) -> list[dict]:
+    evidence = state.get("environment_evidence")
+    if not isinstance(evidence, dict) or not evidence:
+        return []
+    status = str(evidence.get("status") or "unknown").lower()
+    freshness = evidence.get("freshness") if isinstance(evidence.get("freshness"), dict) else {}
+    decision = evidence.get("decision") if isinstance(evidence.get("decision"), dict) else {}
+    latest = evidence.get("last_known_good")
+    latest = latest if isinstance(latest, dict) else {}
+    quality = (
+        latest.get("evidence_quality")
+        if isinstance(latest.get("evidence_quality"), dict)
+        else {}
+    )
+    attempt = (
+        evidence.get("latest_attempt")
+        if isinstance(evidence.get("latest_attempt"), dict)
+        else {}
+    )
+    gate = str(decision.get("gate") or "").lower()
+    severity = str(decision.get("severity") or "yellow").lower()
+    reason = decision.get("reason") or evidence.get("guardrail") or (
+        "Environment evidence needs review before outdoor training."
+    )
+    common = {
+        "source": "environment_evidence",
+        "severity": "red" if severity == "red" else "yellow",
+        "can_promote_training": False,
+    }
+    cautions: list[dict] = []
+    if status in {"unknown", "expired", "unavailable", "historical_unavailable"}:
+        cautions.append(
+            {
+                **common,
+                "type": "environment_unavailable",
+                "message": reason,
+            }
+        )
+    if status == "stale":
+        cautions.append(
+            {
+                **common,
+                "type": "environment_stale",
+                "message": (
+                    f"Environment evidence is stale at {freshness.get('age_seconds')} seconds old. "
+                    "It can preserve a restriction but cannot clear or promote outdoor training."
+                ),
+            }
+        )
+
+    forecast_confidence = decision.get("forecast_confidence") or {}
+    confidence_values = (
+        list(forecast_confidence.values())
+        if isinstance(forecast_confidence, dict)
+        else [forecast_confidence]
+    )
+    limited = bool(
+        status == "retained_current"
+        or attempt.get("status") not in {None, "success"}
+        or quality.get("limitations")
+        or str(quality.get("state") or "").lower() not in {"", "good", "ready"}
+        or any(
+            str(value or "").lower().startswith(("low", "insufficient", "limited"))
+            for value in confidence_values
+        )
+    )
+    if limited:
+        cautions.append(
+            {
+                **common,
+                "type": "environment_limited",
+                "message": (
+                    "Environment evidence or its exposure outlook is limited. Use the current raw "
+                    "observation and conservative gate, but do not manufacture forecast certainty or training clearance."
+                ),
+            }
+        )
+    if "hold" in gate:
+        cautions.append(
+            {
+                **common,
+                "type": "environment_hold",
+                "message": reason,
+            }
+        )
+    downshift_gate = bool(
+        severity == "red"
+        or gate.startswith("close_")
+        or "closed" in gate
+        or "closure" in gate
+    )
+    if downshift_gate:
+        cautions.append(
+            {
+                **common,
+                "type": "environment_downshift",
+                "message": reason,
+            }
+        )
+    return cautions
+
+
 def _compact_modalities(windows: dict) -> dict:
     compact = {}
     for window_name in ("last_7_days", "last_28_days"):
@@ -757,6 +967,7 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
         _rest_recharge_signal(state),
         _wearable_coverage_signal(state),
         _oxygenation_respiration_signal(state),
+        _environment_signal(state),
         _signal(
             "Garmin wellness freshness",
             freshness.get("status") or "unknown",
@@ -1043,7 +1254,7 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
 
 
 def _build_cautions(state: dict, plan: dict | None = None) -> list[dict]:
-    cautions = []
+    cautions = _environment_cautions(state)
     adaptive = state.get("adaptive_training") or {}
     adaptive_audit = adaptive.get("programming_audit") or {}
     adaptive_items = adaptive_audit.get("items") or []
@@ -1453,6 +1664,8 @@ def _today_decision(state: dict, plan: dict, cautions: list[dict]) -> dict:
         and session.get("intensity") not in {"recovery", "easy"}
     ):
         stance = "cns_downshift"
+    elif "environment_evidence" in constraint_sources:
+        stance = "environment_downshift"
     elif "garmin_diagnosis_arbitration" in constraint_sources:
         stance = "garmin_downshift"
     elif "data_freshness" in constraint_sources:
@@ -1683,6 +1896,7 @@ def build_coach_packet(
             "text": "snapshots/coach_packet.txt",
             "source_state": "snapshots/current_state.json",
             "source_plan": "snapshots/today_plan.json",
+            "source_environment_evidence": "snapshots/environment_evidence.json",
             "source_cycling_ftp": "snapshots/garmin_cycling_ftp_current.json",
         },
     }

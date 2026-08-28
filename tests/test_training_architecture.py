@@ -33,17 +33,36 @@ def _context():
             "venue_profiles": {
                 "bukit_kiara": {
                     "preferred_environment_report": {
-                        "name": "Local Bukit Kiara ride conditions",
+                        "name": "Local Bukit Kiara MTB environment evidence",
                         "location": "Taman Tun Dr. Ismail / Bukit Kiara",
-                        "base_url": "http://192.168.80.147:8765/",
-                        "endpoints": {
-                            "current": "/api/current",
-                            "analysis": "/api/analysis?days=28",
+                        "endpoint": "http://192.168.80.147:8765/api/v1/mtb/environment-evidence",
+                        "schema_contract": {
+                            "schema_major": 1,
+                            "kind": "mtb_environment_evidence",
+                            "boundary_role": "environmental_evidence",
+                            "training_prescription_included": False,
+                            "historical_series_included": False,
+                        },
+                        "freshness_contract": {
+                            "stale_after_seconds": 420,
+                            "expired_after_seconds": 900,
+                        },
+                        "sports_exercise_bands_ug_m3": {
+                            "normal_below": 25,
+                            "moderate_from": 25,
+                            "poor_from": 51,
+                            "hazardous_above": 150,
+                        },
+                        "automatic_gate_venue_keys": ["bukit_kiara"],
+                        "automatic_gate_venue_aliases": ["Bukit Kiara", "Kiara", "TTDI"],
+                        "artifacts": {
+                            "current": "snapshots/environment_evidence.json",
+                            "dated_pattern": "snapshots/environment_evidence_YYYY-MM-DD.json",
                         },
                         "fields_of_interest": ["weather", "PM2.5", "arrival range"],
-                        "decision_use": "Direct same-day coaching context only.",
-                        "access_rule": "Read JSON directly; do not persist.",
-                        "guardrail": "Cannot promote readiness.",
+                        "decision_use": "Venue-scoped hold or downshift only.",
+                        "access_rule": "Use the single v1 endpoint and retain bounded normalized artifacts.",
+                        "guardrail": "Cannot promote readiness or increase intensity.",
                     }
                 }
             },
@@ -158,11 +177,27 @@ def test_training_architecture_builds_config_and_snapshot(tmp_path):
     assert artifact["integrated_coaching_model"]["purpose"].startswith("Combine directive")
     environment = artifact["integrated_coaching_model"]["same_day_environment_context"]
     assert environment["location"] == "Taman Tun Dr. Ismail / Bukit Kiara"
-    assert environment["base_url"] == "http://192.168.80.147:8765/"
-    assert environment["endpoints"]["current"] == "/api/current"
-    assert environment["decision_role"] == "Direct same-day coaching context only."
+    assert environment["endpoint"].endswith("/api/v1/mtb/environment-evidence")
+    assert "endpoints" not in environment
+    assert environment["schema_contract"]["kind"] == "mtb_environment_evidence"
+    assert environment["freshness_contract"] == {
+        "stale_after_seconds": 420,
+        "expired_after_seconds": 900,
+    }
+    assert environment["sports_exercise_bands_ug_m3"] == {
+        "normal_below": 25,
+        "moderate_from": 25,
+        "poor_from": 51,
+        "hazardous_above": 150,
+    }
+    assert environment["venue_scope"]["keys"] == ["bukit_kiara"]
+    assert environment["artifacts"]["current"] == "snapshots/environment_evidence.json"
+    assert environment["decision_role"] == "Venue-scoped hold or downshift only."
+    assert "automatically increase" in environment["planner_boundary"]["forbidden"]
+    assert "Raw endpoint response" in environment["persistence_boundary"]["excluded"]
     assert "outdoor_air_quality_model" not in artifact["integrated_coaching_model"]
     assert "outdoor_air_quality" not in artifact["artifact_contract"]
+    assert "environment_evidence" in artifact["artifact_contract"]
     assert artifact["session_contract"]["required_fields"][0] == "purpose"
     assert "stop_rule_outcome" in artifact["session_contract"]["post_session_review"]
     assert artifact["athlete_model"]["highest_return_sequence"][0] == "bike-specific continuity"

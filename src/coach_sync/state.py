@@ -21,6 +21,7 @@ from .load_model import (
 from .paths import snapshots_dir
 from .readiness import build_readiness
 from .rest_recharge import build_rest_recharge_window
+from .ride_conditions import build_environment_evidence
 from .self_evaluation import build_self_evaluation_report
 from .session_evidence import build_latest_session_evidence
 from .session_response import build_latest_session_response
@@ -294,6 +295,7 @@ def build_current_state(
     context = load_context(root)
     tz = context.get("athlete", {}).get("timezone", DEFAULT_TIMEZONE)
     target_date = parse_date(for_date) or today_local(tz)
+    environment_evidence = build_environment_evidence(root, target_date)
     readiness = build_readiness(root, target_date)
     activities = load_activities(root)
     latest_session_evidence = build_latest_session_evidence(
@@ -543,6 +545,7 @@ def build_current_state(
         "readiness": readiness,
         "readiness_accuracy": readiness.get("readiness_accuracy"),
         "data_freshness": freshness,
+        "environment_evidence": environment_evidence,
         "training_load": training_load,
         "wellness_trends": wellness_trends,
         "wellness_verification": wellness_verification,
@@ -592,6 +595,20 @@ def build_current_state(
             "wellness_available": wellness is not None,
             "training_status_available": training_status is not None,
             "activity_count": len(activities),
+            "environment_evidence_date": environment_evidence.get("date"),
+            "environment_evidence_status": environment_evidence.get("status"),
+            "environment_evidence_source": (
+                (environment_evidence.get("persistence") or {}).get(
+                    "current_snapshot"
+                    if target_date == today_local(tz)
+                    else "dated_snapshot"
+                )
+                or (
+                    "snapshots/environment_evidence.json"
+                    if target_date == today_local(tz)
+                    else f"snapshots/environment_evidence_{target_date.isoformat()}.json"
+                )
+            ),
         },
     }
     write_json(snapshots_dir(root) / "current_state.json", state)

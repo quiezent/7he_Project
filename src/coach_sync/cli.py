@@ -105,10 +105,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     ride_conditions = sub.add_parser(
         "ride-conditions",
-        help="Read the athlete-managed local Bukit Kiara environmental service without persisting it.",
+        help=(
+            "Refresh the bounded Bukit Kiara environment-evidence snapshot from the "
+            "athlete-managed local service."
+        ),
     )
     _add_root(ride_conditions)
-    ride_conditions.add_argument("--base-url", default=None)
+    ride_conditions.add_argument("--endpoint", "--base-url", dest="endpoint", default=None)
     ride_conditions.add_argument("--timeout", type=float, default=5.0)
 
     for name, help_text in (
@@ -274,7 +277,7 @@ def run(args: argparse.Namespace) -> Any:
     if args.command == "ride-conditions":
         return fetch_ride_conditions(
             args.root,
-            base_url=args.base_url,
+            base_url=args.endpoint,
             timeout=args.timeout,
         )
     if args.command == "readiness":

@@ -2,15 +2,18 @@ import json
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
+import coach_sync.ride_conditions as ride_conditions_module
+import coach_sync.state as state_module
 from coach_sync.cleanup import cleanup_derived
 from coach_sync.cli import main
-from coach_sync.context import load_context
+from coach_sync.context import load_context, save_context
 from coach_sync.io import write_json
 from coach_sync.state import (
     _cached_or_build_report,
     _guard_current_model_predictions,
     build_current_state,
 )
+from coach_sync.time_utils import DEFAULT_TIMEZONE, today_local
 
 
 def test_current_state_writes_training_snapshots(tmp_path):
@@ -31,6 +34,69 @@ def test_current_state_writes_training_snapshots(tmp_path):
     assert (tmp_path / "snapshots" / "training_load.json").exists()
     assert (tmp_path / "snapshots" / "current_state.json").exists()
     assert (tmp_path / "snapshots" / "adaptive_training.json").exists()
+
+
+def test_current_date_state_builds_and_surfaces_environment_evidence(tmp_path, monkeypatch):
+    load_context(tmp_path)
+    target = today_local(DEFAULT_TIMEZONE)
+    calls = []
+    environment = {
+        "artifact_type": "environment_evidence_current",
+        "version": "mtb_environment_evidence_adapter_v1",
+        "date": target.isoformat(),
+        "status": "current",
+        "freshness": {"state": "current", "age_seconds": 90},
+        "decision": {
+            "gate": "hold_and_recheck",
+            "can_promote_training": False,
+        },
+    }
+
+    def fake_environment(root, for_date):
+        calls.append((root, for_date))
+        return environment
+
+    monkeypatch.setattr(state_module, "build_environment_evidence", fake_environment)
+
+    state = build_current_state(tmp_path, target, refresh_models=False)
+
+    assert calls == [(tmp_path, target)]
+    assert state["environment_evidence"] == environment
+    assert state["environment_evidence"]["decision"]["can_promote_training"] is False
+    assert state["evidence_sources"]["environment_evidence_status"] == "current"
+    assert (
+        state["evidence_sources"]["environment_evidence_source"]
+        == "snapshots/environment_evidence.json"
+    )
+
+
+def test_historical_state_never_fetches_current_environment_evidence(tmp_path, monkeypatch):
+    context = load_context(tmp_path)
+    context.setdefault("athlete", {}).setdefault("venue_profiles", {}).setdefault(
+        "bukit_kiara", {}
+    )["preferred_environment_report"] = {
+        "endpoint": "http://127.0.0.1:9999/api/v1/mtb/environment-evidence",
+        "timezone": "Asia/Kuala_Lumpur",
+    }
+    save_context(context, tmp_path)
+
+    def fail_fetch(*_args, **_kwargs):
+        raise AssertionError("historical state must not call the current environment endpoint")
+
+    monkeypatch.setattr(ride_conditions_module, "_http_json", fail_fetch)
+
+    state = build_current_state(
+        tmp_path,
+        "2026-04-29",
+        refresh_models=False,
+    )
+
+    assert state["environment_evidence"]["status"] == "historical_unavailable"
+    assert state["environment_evidence"]["decision"] == {
+        "gate": "historical_environment_unavailable",
+        "decision_role": "not_projected_from_current_date",
+        "can_promote_training": False,
+    }
 
 
 def test_exact_date_all_day_rest_surfaces_without_refreshing_core_readiness(tmp_path):
@@ -198,10 +264,14 @@ def test_cleanup_preserves_raw_detail_and_removes_only_transient_current_alias(t
     transient_current = snapshots / "activity_loop_load_current.json"
     dated_loop = snapshots / "activity_loop_load_2026-06-10_123.json"
     current_state = snapshots / "current_state.json"
+    environment_current = snapshots / "environment_evidence.json"
+    environment_dated = snapshots / "environment_evidence_2026-08-28.json"
     transient_detail.write_text("{}", encoding="utf-8")
     transient_current.write_text("{}", encoding="utf-8")
     dated_loop.write_text("{}", encoding="utf-8")
     current_state.write_text("{}", encoding="utf-8")
+    environment_current.write_text("{}", encoding="utf-8")
+    environment_dated.write_text("{}", encoding="utf-8")
 
     result = cleanup_derived(tmp_path, apply=True)
 
@@ -209,6 +279,8 @@ def test_cleanup_preserves_raw_detail_and_removes_only_transient_current_alias(t
     assert not transient_current.exists()
     assert dated_loop.exists()
     assert current_state.exists()
+    assert environment_current.exists()
+    assert environment_dated.exists()
     assert str(transient_detail.resolve()) not in result["removed_or_would_remove"]
     assert str(transient_current.resolve()) in result["removed_or_would_remove"]
     assert str(dated_loop.resolve()) not in result["removed_or_would_remove"]

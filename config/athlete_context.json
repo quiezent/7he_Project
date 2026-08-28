@@ -85,23 +85,66 @@
           "training_role": "Default weekly anchor for climb-loop fitness, enduro repeatability, and controlled trail exposure."
         },
         "preferred_environment_report": {
-          "name": "Clayton local Bukit Kiara ride-conditions service",
+          "name": "Clayton local Bukit Kiara MTB environment-evidence service",
           "location": "Taman Tun Dr. Ismail / Bukit Kiara",
+          "location_name": "Bukit Kiara / Taman Tun Dr Ismail",
+          "location_id": 86311,
+          "timezone": "Asia/Kuala_Lumpur",
           "base_url": "http://192.168.80.147:8765/",
-          "url": "http://192.168.80.147:8765/",
+          "endpoint": "http://192.168.80.147:8765/api/v1/mtb/environment-evidence",
           "endpoints": {
-            "current": "/api/current",
-            "analysis": "/api/analysis?days=28"
+            "environment_evidence": "/api/v1/mtb/environment-evidence"
+          },
+          "schema_contract": {
+            "schema_major": 1,
+            "kind": "mtb_environment_evidence",
+            "boundary_role": "environmental_evidence",
+            "training_prescription_included": false,
+            "historical_series_included": false
+          },
+          "freshness_contract": {
+            "stale_after_seconds": 420,
+            "expired_after_seconds": 900,
+            "rule": "A stale high value may retain a venue restriction, but a stale or expired low value cannot clear outdoor training."
+          },
+          "sports_exercise_bands_ug_m3": {
+            "normal_below": 25,
+            "moderate_from": 25,
+            "poor_from": 51,
+            "hazardous_above": 150,
+            "labels": {
+              "normal": "below 25",
+              "moderate_caution": "25 to below 51",
+              "poor_exercise_conditions": "51 to 150",
+              "likely_hazardous_outdoors": "above 150"
+            },
+            "basis": "AIS 2023 exercise-in-bushfire-smoke atmospheric PM2.5 concentration bands applied directly to raw ug/m3; these are not AQI breakpoints or a medical diagnosis."
+          },
+          "automatic_gate_venue_keys": [
+            "bukit_kiara"
+          ],
+          "automatic_gate_venue_aliases": [
+            "Bukit Kiara",
+            "Kiara",
+            "Taman Tun Dr. Ismail",
+            "TTDI"
+          ],
+          "artifacts": {
+            "current": "snapshots/environment_evidence.json",
+            "dated_pattern": "snapshots/environment_evidence_YYYY-MM-DD.json",
+            "content_boundary": "Bounded normalized selected evidence, latest-attempt status and last-known-good evidence only; never the raw response or the server history series."
           },
           "fields_of_interest": [
-            "raw PM2.5 and PM10 concentration, unit, observation time and reading age",
-            "30-minute and 60-minute particle movement plus recheck interval",
-            "90-minute arrival and on-trail concentration ranges with confidence",
-            "heat index, apparent temperature, humidity, rain probability and ventilation"
+            "contract identity, server usability and freshness provenance",
+            "raw PM2.5 and PM10 concentration, observation time and reading age",
+            "particle nowcast state, 30-minute and 60-minute movement and recheck interval",
+            "modeled arrival and on-trail PM2.5 ranges, calibration state and confidence",
+            "heat index, apparent temperature, humidity, rain probability, rain amount and airflow",
+            "evidence-quality limitations and weather-particle validation state"
           ],
-          "decision_use": "Fresh transient coaching context before weather- or haze-sensitive Bukit Kiara calls. The athlete-managed server supplies local concentration, movement, exposure-window uncertainty and weather; the head coach still resolves the session.",
-          "access_rule": "Read the JSON endpoints directly or run python tools/ride_conditions.py. Do not scrape the dashboard, duplicate its history database, persist the response as stack state, or silently fall back to IQAir when the local service is unavailable.",
-          "guardrail": "Treat the values as raw concentrations rather than AQI. Combine them with freshness, trend/range confidence, symptoms, trail conditions, duration, ventilation, heat and consequence. The service may hold or downshift outdoor exposure but cannot promote physical/CNS readiness, establish indoor air quality, or automatically substitute a session."
+          "decision_use": "Venue-scoped environmental ceiling for Bukit Kiara/TTDI outdoor sessions. It may retain a restriction, hold for recheck, downshift consequence or replace a venue-matched outdoor candidate when the environment ceiling is lower; it can never promote physical/CNS readiness or increase intensity.",
+          "access_rule": "Read only the v1 environment-evidence endpoint or run python tools/ride_conditions.py. Persist only the bounded normalized current/daily artifacts with latest-attempt and last-known-good semantics. Never store the raw response, duplicate the server history series, call legacy current/analysis endpoints, scrape the dashboard, or fall back to IQAir.",
+          "guardrail": "Treat PM2.5 values as raw atmospheric concentrations rather than AQI. Combine freshness, range confidence/calibration, symptoms, trail conditions, duration, heat, rain and technical consequence. A no-downshift result means only that this venue evidence did not lower the existing ceiling; it is not readiness clearance, indoor-air evidence or permission for an automatic intensity increase."
         },
         "twin_peak_stage_network": {
           "start_hub": {
@@ -741,7 +784,7 @@
       "type": "adaptive_training_programming_controller_added"
     },
     {
-      "note": "Clayton replaced IQAir with his athlete-managed local Bukit Kiara ride-conditions service at http://192.168.80.147:8765/. The stack uses a lightweight non-persistent JSON client for current raw PM2.5/PM10, particle movement, arrival/on-trail uncertainty, heat, rain and ventilation. It does not copy the server's history database, infer AQI, promote readiness or automatically substitute training.",
+      "note": "Clayton replaced IQAir with his athlete-managed local Bukit Kiara service at http://192.168.80.147:8765/. The initial integration read separate current and analysis surfaces without storing stack evidence; the later purpose-built v1 MTB environment-evidence contract supersedes that adapter and is recorded separately below.",
       "timestamp": "2026-08-28T09:16:00+08:00",
       "type": "local_ride_conditions_source_configured"
     },
@@ -749,6 +792,11 @@
       "note": "Corrected an over-conservative CNS dose collapse: compromised CNS still blocks structured intensity and technical consequence, but after a normal coordination and clarity gate it may retain Clayton's established 60-minute low-cost Suito continuity dose at the lower 120-125 W band. Impaired CNS remains recovery-only. This preserves bike continuity without misclassifying easy volume as permission for intervals.",
       "timestamp": "2026-08-28T09:20:00+08:00",
       "type": "cns_low_cost_continuity_resolution_corrected"
+    },
+    {
+      "note": "Clayton supplied the purpose-built v1 MTB environment-evidence endpoint at http://192.168.80.147:8765/api/v1/mtb/environment-evidence. The stack now retains bounded normalized current and dated artifacts with latest-attempt and last-known-good semantics for venue-scoped hold/downshift decisions. It stores neither the raw response nor server history and never uses legacy local endpoints, falls back to IQAir, infers AQI, promotes readiness or automatically increases intensity.",
+      "timestamp": "2026-08-28T10:45:00+08:00",
+      "type": "mtb_environment_evidence_contract_integrated"
     }
   ],
   "medical": {
@@ -1127,5 +1175,5 @@
       }
     ]
   },
-  "updated_at": "2026-08-25T16:38:32+08:00"
+  "updated_at": "2026-08-28T10:45:00+08:00"
 }

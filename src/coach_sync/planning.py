@@ -30,9 +30,19 @@ TRAINABLE_SESSION_TYPES = {
     "cns_recovery",
     "endurance_data_limited",
     "endurance_skills",
+    "environment_indoor_continuity",
     "garmin_aerobic_continuity",
     "mtb_repeatability_controlled",
     "outdoor_bike_optional",
+}
+
+
+BUKIT_KIARA_VENUE_KEYS = {"bukit_kiara"}
+BUKIT_KIARA_VENUE_ALIASES = {
+    "bukit kiara",
+    "kiara",
+    "taman tun dr ismail",
+    "ttdi",
 }
 
 
@@ -808,6 +818,283 @@ def _is_no_training_session(session: dict) -> bool:
     )
 
 
+def _venue_token(value: object) -> str:
+    return " ".join(str(value or "").strip().lower().replace("_", " ").split())
+
+
+def _environment_venue_scope(environment: dict) -> tuple[set[str], set[str]]:
+    decision = environment.get("decision") if isinstance(environment, dict) else {}
+    decision = decision if isinstance(decision, dict) else {}
+    keys = {
+        _venue_token(value).replace(" ", "_")
+        for value in (decision.get("venue_keys") or BUKIT_KIARA_VENUE_KEYS)
+        if value
+    }
+    aliases = {
+        _venue_token(value)
+        for value in (decision.get("venue_aliases") or BUKIT_KIARA_VENUE_ALIASES)
+        if value
+    }
+    return keys or set(BUKIT_KIARA_VENUE_KEYS), aliases or set(
+        BUKIT_KIARA_VENUE_ALIASES
+    )
+
+
+def _session_explicitly_targets_environment_venue(
+    session: dict,
+    environment: dict,
+) -> bool:
+    """Scope the TTDI proxy only to an explicitly named Bukit Kiara session."""
+    keys, aliases = _environment_venue_scope(environment)
+    action = session.get("action_identity")
+    action = action if isinstance(action, dict) else {}
+    key_values = (action.get("venue_key"), session.get("venue_key"))
+    if any(_venue_token(value).replace(" ", "_") in keys for value in key_values if value):
+        return True
+
+    venue = session.get("venue") or session.get("location")
+    if isinstance(venue, dict):
+        venue_values = (
+            venue.get("key"),
+            venue.get("venue_key"),
+            venue.get("name"),
+            venue.get("label"),
+        )
+    else:
+        venue_values = (venue,)
+    return any(_venue_token(value) in aliases for value in venue_values if value)
+
+
+def _is_definitely_indoor_or_rest(session: dict) -> bool:
+    if _is_no_training_session(session):
+        return True
+    modality = str(session.get("modality") or "").lower()
+    session_type = str(session.get("type") or "").lower()
+    return bool(
+        "indoor" in modality
+        or session_type in {
+            "cns_recovery",
+            "environment_indoor_continuity",
+            "scheduled_rest",
+        }
+        or ("indoor" in session_type and "outdoor" not in session_type)
+    )
+
+
+def _compact_environment_input(state: dict) -> dict | None:
+    environment = state.get("environment_evidence")
+    if not isinstance(environment, dict) or not environment:
+        return None
+    latest = environment.get("last_known_good")
+    latest = latest if isinstance(latest, dict) else {}
+    identity = latest.get("identity")
+    identity = identity if isinstance(identity, dict) else {}
+    observation = latest.get("observation")
+    observation = observation if isinstance(observation, dict) else {}
+    provenance = latest.get("provenance")
+    provenance = provenance if isinstance(provenance, dict) else {}
+    attempt = environment.get("latest_attempt")
+    attempt = attempt if isinstance(attempt, dict) else {}
+    decision = environment.get("decision")
+    decision = decision if isinstance(decision, dict) else {}
+    return {
+        "status": environment.get("status"),
+        "date": environment.get("date"),
+        "source": {
+            "endpoint": (environment.get("source") or {}).get("endpoint"),
+            "fallback": (environment.get("source") or {}).get("fallback"),
+        },
+        "freshness": environment.get("freshness"),
+        "latest_attempt": {
+            "attempted_at": attempt.get("attempted_at"),
+            "status": attempt.get("status"),
+            "error": attempt.get("error"),
+            "evidence_id": attempt.get("evidence_id"),
+        },
+        "evidence": {
+            "evidence_id": identity.get("evidence_id"),
+            "schema_version": identity.get("schema_version"),
+            "observed_at_utc": observation.get("observed_at_utc"),
+            "pm2_5_ug_m3": observation.get("pm2_5_ug_m3"),
+            "sensor": provenance.get("sensor"),
+        },
+        "decision": {
+            key: decision.get(key)
+            for key in (
+                "gate",
+                "severity",
+                "reason",
+                "reason_codes",
+                "current_pm2_5_ug_m3",
+                "forecast_lower_pm2_5_ug_m3",
+                "forecast_upper_pm2_5_ug_m3",
+                "forecast_confidence",
+                "recheck_minutes",
+                "decision_role",
+                "can_promote_training",
+            )
+        },
+        "guardrail": environment.get("guardrail"),
+    }
+
+
+def _environment_indoor_fallback(environment: dict, source_session: dict) -> dict:
+    decision = environment.get("decision") or {}
+    source_duration = source_session.get("duration_min")
+    try:
+        source_duration = int(source_duration)
+    except (TypeError, ValueError):
+        source_duration = 60
+    total_duration = max(0, min(60, source_duration))
+    if total_duration < 20:
+        return {
+            "title": "Environment hold — no planned outdoor exercise",
+            "type": "scheduled_rest",
+            "duration_min": 0,
+            "intensity": "recovery",
+            "details": [
+                "The venue-matched outdoor candidate is closed by current environmental evidence.",
+                "Do not replace a very short planned exposure with a larger automatic training dose.",
+            ],
+        }
+    warm_up_min = 10 if total_duration >= 45 else 5
+    cool_down_min = 10 if total_duration >= 45 else 5
+    main_min = total_duration - warm_up_min - cool_down_min
+    return {
+        "title": "Environment-capped indoor bike continuity",
+        "type": "environment_indoor_continuity",
+        "modality": "bike_indoor",
+        "duration_min": total_duration,
+        "intensity": "easy",
+        "density_cost": "low",
+        "bike_touch_status": "normal",
+        "schema_version": 3,
+        "contract_fields": list(SESSION_CONTRACT_FIELDS),
+        "purpose": (
+            "Preserve Clayton's established bike-specific continuity dose while avoiding a "
+            "deterministic high-ventilation Bukit Kiara exposure breach."
+        ),
+        "dose": {
+            "total_duration_min": total_duration,
+            "warm_up": f"{warm_up_min} minutes at 105-115 W.",
+            "main": f"{main_min} minutes at 120-130 W / global RPE 2-3.",
+            "cool_down": f"{cool_down_min} minutes easy at 100-110 W.",
+            "environment_gate": decision.get("gate"),
+        },
+        "adaptation_hypothesis": (
+            "A familiar low-cost aerobic touch maintains bike continuity without the inhaled "
+            "particulate dose of prolonged or high-ventilation outdoor MTB."
+        ),
+        "execution_rules": [
+            "Use the indoor trainer only after Clayton confirms materially cleaner indoor air; this outdoor source cannot establish indoor air quality.",
+            "Stay seated and mechanically quiet with no torque repetitions, standing surges, intervals, or extension.",
+            "Use current airway and eye symptoms as an independent admission gate.",
+        ],
+        "expected_result": {
+            "rpe": "global RPE 2-3",
+            "load": "low-cost bike continuity",
+            "next_day": "normal breathing, cognition, and legs without added autonomic cost",
+        },
+        "stop_rules": [
+            "Do not start indoors unless materially cleaner indoor air is athlete-confirmed.",
+            "Stop for eye, nose, throat, cough, wheeze, chest, neurological, focal-pain, or altered-mechanics symptoms.",
+            "Stop or downshift if global RPE exceeds 4 or heart rate becomes disproportionate to power.",
+        ],
+        "post_session_review_fields": [
+            "indoor_air_context",
+            "airway_and_eye_symptoms_before_during_after",
+            "global_rpe",
+            "heart_rate_drift",
+            "fluid_consumed",
+            "stop_rule_outcome",
+        ],
+    }
+
+
+def _environment_constraint_for_session(
+    effective: dict,
+    original: dict,
+    state: dict,
+    *,
+    sabbath_exception: dict | None = None,
+    recurring_scheduled_rest: dict | None = None,
+) -> tuple[dict, dict] | None:
+    environment = state.get("environment_evidence")
+    if not isinstance(environment, dict) or not environment:
+        return None
+    readiness = state.get("readiness") or {}
+    cns_status = str((state.get("cns_readiness") or {}).get("status") or "").lower()
+    if (
+        str(readiness.get("readiness_level") or "").lower() == "red"
+        or str(readiness.get("hard_session_guidance") or "").lower() == "avoid"
+        or cns_status in {"impaired", "compromised"}
+        or _is_definitely_indoor_or_rest(effective)
+        or not _session_explicitly_targets_environment_venue(original, environment)
+    ):
+        return None
+
+    decision = environment.get("decision") or {}
+    freshness = environment.get("freshness") or {}
+    freshness_state = str(freshness.get("state") or environment.get("status") or "").lower()
+    if freshness_state in {"expired", "unknown", "historical_unavailable"}:
+        return None
+
+    gate = str(decision.get("gate") or "")
+    current_pm = decision.get("current_pm2_5_ug_m3")
+    try:
+        current_pm = float(current_pm) if current_pm is not None else None
+    except (TypeError, ValueError):
+        current_pm = None
+    fresh_or_retained = freshness_state in {"current", "retained_current"}
+    stale = freshness_state == "stale"
+    all_outdoor_breach = gate in {
+        "close_all_planned_outdoor_exercise",
+        "outdoor_training_closed",
+    } or bool(fresh_or_retained and current_pm is not None and current_pm > 150)
+    mtb_breach = gate in {
+        "close_mtb_prolonged_endurance_high_ventilation",
+        "retained_high_ventilation_closure_pending_refresh",
+        "outdoor_mtb_endurance_high_ventilation_closed",
+        "retained_outdoor_mtb_endurance_high_ventilation_closed_pending_refresh",
+    } or bool(
+        (fresh_or_retained or stale)
+        and current_pm is not None
+        and current_pm >= 51
+    )
+    if not all_outdoor_breach and not (mtb_breach and _is_mtb_session(original)):
+        return None
+
+    if sabbath_exception is not None:
+        replacement = _scheduled_rest_plan(
+            recurring_scheduled_rest
+            or {
+                "label": "Sunday Sabbath",
+                "reason": "The authorized race-event exposure is unavailable; the exception does not authorize substitute training.",
+            }
+        )
+    else:
+        replacement = _environment_indoor_fallback(environment, effective)
+    latest = environment.get("last_known_good") or {}
+    identity = latest.get("identity") if isinstance(latest.get("identity"), dict) else {}
+    constraint = {
+        "source": "environment_evidence",
+        "reason": decision.get("reason")
+        or "Bukit Kiara environmental evidence closes the planned outdoor exposure.",
+        "gate": gate,
+        "evidence_id": identity.get("evidence_id"),
+        "freshness": {
+            "state": freshness.get("state"),
+            "age_seconds": freshness.get("age_seconds"),
+            "expired_after_seconds": freshness.get("expired_after_seconds"),
+        },
+        "current_pm2_5_ug_m3": current_pm,
+        "decision_role": "venue_scoped_outdoor_downshift_only",
+        "original_session": _session_summary(effective),
+        "effective_session": _session_summary(replacement),
+    }
+    return replacement, constraint
+
+
 def _is_existing_lower_recovery_ceiling(session: dict, replacement: dict) -> bool:
     """Do not let a CNS safety replacement increase a deliberate recovery-only dose."""
     session_type = str(session.get("type") or "").lower()
@@ -901,6 +1188,17 @@ def _apply_session_constraints(
             }
         )
         effective = replacement
+
+    environment_resolution = _environment_constraint_for_session(
+        effective,
+        original,
+        state,
+        sabbath_exception=sabbath_exception,
+        recurring_scheduled_rest=recurring_scheduled_rest,
+    )
+    if environment_resolution is not None:
+        effective, environment_constraint = environment_resolution
+        constraints.append(environment_constraint)
 
     return effective, constraints
 
@@ -1121,6 +1419,7 @@ def build_today_plan(
     enforce_scheduled_rest = bool(scheduled_rest and sabbath_exception is None)
     weekly_session = load_weekly_session(root, target_date)
     selected_session = planned_session or weekly_session
+    environment_input = _compact_environment_input(state)
     plan_source = {"type": "today_plan", "path": "snapshots/today_plan.json"}
     garmin_arbitration = build_garmin_arbitration(state)
     session_lifecycle = _planned_session_lifecycle(planned_session, state, target_date)
@@ -1195,6 +1494,39 @@ def build_today_plan(
         "Progression follows readiness, recent load, bike specificity, and next-day response.",
         "Downshift tomorrow if the session produces unusually poor recovery or skill quality.",
     ]
+    environment_scope_session = (
+        selected_session.get("session")
+        if isinstance(selected_session, dict)
+        and isinstance(selected_session.get("session"), dict)
+        else session
+    )
+    environment_decision = (
+        environment_input.get("decision")
+        if isinstance(environment_input, dict)
+        and isinstance(environment_input.get("decision"), dict)
+        else {}
+    )
+    environment_gate = str(environment_decision.get("gate") or "")
+    environment_constraint_applied = any(
+        item.get("source") == "environment_evidence"
+        for item in applied_constraints
+        if isinstance(item, dict)
+    )
+    if (
+        environment_input
+        and _session_explicitly_targets_environment_venue(
+            environment_scope_session,
+            state.get("environment_evidence") or {},
+        )
+        and environment_gate
+        not in {"", "no_environment_downshift_from_current_point"}
+        and not environment_constraint_applied
+    ):
+        guardrails.insert(
+            0,
+            environment_decision.get("reason")
+            or "Bukit Kiara environment evidence requires a same-day hold or recheck.",
+        )
     if selected_session and not enforce_scheduled_rest and not (level == "red" or hard_guidance == "avoid"):
         if plan_source.get("type") == "input_planned_session":
             guardrails.insert(0, f"Using coach-authored planned session from {plan_source['path']}.")
@@ -1291,6 +1623,7 @@ def build_today_plan(
                 "session_ceiling": (state.get("cns_readiness") or {}).get("session_ceiling"),
             },
             "session_lifecycle": session_lifecycle,
+            "environment_evidence": environment_input,
             "adaptive_training": {
                 "state_basis_date": (state.get("adaptive_training") or {}).get("date"),
                 "roadmap_block": (state.get("adaptive_training") or {}).get("roadmap_block"),

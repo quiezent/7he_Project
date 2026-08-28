@@ -53,8 +53,10 @@
 Garmin tokens are handled by the `garminconnect`/`garth` stack. Do not store passwords in repo files.
 
 ## Same-Day Environment Check
-- For a weather- or haze-sensitive Bukit Kiara decision, run `python tools/ride_conditions.py`. It reads Clayton's athlete-managed local service at `http://192.168.80.147:8765/` and exposes current raw PM2.5/PM10, observation age, particle movement, the 90-minute arrival and on-trail uncertainty bands, heat, rain and ventilation.
-- This remains transient coaching context, not a persisted stack artifact or automatic planner gate. The client does not scrape the dashboard or copy its local history database. If the service is unavailable, environment is unknown; the stack does not silently fall back to IQAir. Raw concentrations remain distinct from AQI and cannot promote readiness or establish indoor air quality.
+- For a weather- or haze-sensitive Bukit Kiara decision, run `python tools/ride_conditions.py`. It reads Clayton's single athlete-managed v1 contract at `http://192.168.80.147:8765/api/v1/mtb/environment-evidence`.
+- The stack validates the service boundary and `usable` state, applies the server's 420-second stale and 900-second expiry limits, and retains only bounded normalized selected evidence in `snapshots/environment_evidence.json` and `snapshots/environment_evidence_YYYY-MM-DD.json`. Those artifacts preserve latest-attempt and last-known-good state without copying the raw response or the server's history series.
+- The decision surface uses raw PM2.5 sport-exercise bands directly: below 25 ug/m3 normal, 25 to below 51 moderate caution, 51-150 poor exercise conditions, and above 150 likely hazardous outdoors. These are not AQI values. Arrival/on-trail ranges, confidence/calibration, heat, rain and airflow remain explicit uncertainty and consequence modifiers.
+- Environment applies only to matching Bukit Kiara/TTDI outdoor candidates and may retain a restriction, hold for recheck, downshift consequence or replace that candidate when its ceiling is lower. It cannot promote readiness, establish indoor air quality, or automatically increase duration, intensity or technical consequence. There is no legacy local-endpoint or IQAir fallback; an unavailable/expired source leaves the environment unknown.
 
 ## Command Surface
 Preferred direct commands:
@@ -75,6 +77,7 @@ Preferred direct commands:
 - Wear-state coverage: `python tools/wearable_coverage.py --date <YYYY-MM-DD>`
 - Training status: `python tools/training_status.py`
 - Garmin Training Readiness: `python tools/training_readiness.py --date <YYYY-MM-DD>`
+- Bukit Kiara MTB environment evidence: `python tools/ride_conditions.py`
 - Activity profile: `python tools/activity_profile.py`
 - N-of-1 adaptation profile: `python tools/adaptation_profile.py --all`
 - Training hypothesis tests: `python tools/training_hypotheses.py --date <YYYY-MM-DD>`
@@ -239,6 +242,8 @@ Blank template fields are ignored.
   - training status, ACWR, load focus, VO2 max, and acclimation
 - `snapshots/garmin_training_readiness_current.json`
   - separate Garmin Training Readiness feed with endpoint, date, freshness, and device-capability provenance; context only, never a replacement for physical or CNS readiness gates
+- `snapshots/environment_evidence.json` / `snapshots/environment_evidence_YYYY-MM-DD.json`
+  - bounded normalized current/daily evidence from the athlete-managed v1 Bukit Kiara endpoint, with latest-attempt and last-known-good state, raw PM2.5/PM10, exposure-window uncertainty, weather and limitations; never the raw response or server history, and usable only as a venue-scoped hold/downshift ceiling
 - `snapshots/garmin_surface_manifest.json`
   - endpoint-by-endpoint collection state, raw/normalized field coverage, contiguous data eras and gaps, units, lineage, privacy verification, and downstream coaching use
 - `snapshots/last_live_sync_status.json` / `snapshots/sync_run_ledger.json`

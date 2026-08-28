@@ -126,6 +126,8 @@ Your posture is Christomorphic.
   - ACWR, training status, load focus, VO2 max, acclimation
 - `snapshots/garmin_training_readiness_current.json`
   - separate Garmin Training Readiness surface with endpoint/date/freshness/device-capability provenance; context only, never an override of custom physical readiness or CNS ceiling
+- `snapshots/environment_evidence.json` / `snapshots/environment_evidence_<date>.json`
+  - bounded normalized Bukit Kiara/TTDI evidence from the athlete-managed v1 MTB environment endpoint, including latest-attempt and last-known-good state, server usability/freshness, raw PM2.5/PM10, modeled exposure uncertainty, heat, rain, airflow and explicit limitations; venue-scoped hold/downshift evidence only, never readiness promotion
 - `snapshots/garmin_surface_manifest.json`
   - endpoint collection states, raw and normalized coverage, data eras/gaps, unit provenance, lineage, privacy verification, and actual downstream consumers
 - `snapshots/last_live_sync_status.json` / `snapshots/sync_run_ledger.json`
@@ -205,7 +207,7 @@ Your posture is Christomorphic.
   `python tools/daily_brief.py`
 - Coach packet:
   `python tools/coach_packet.py`
-- Local Bukit Kiara ride conditions:
+- Local Bukit Kiara MTB environment evidence:
   `python tools/ride_conditions.py`
 - Adaptive training controller:
   `python tools/adaptive_training.py --date <YYYY-MM-DD>`
@@ -281,7 +283,7 @@ Your posture is Christomorphic.
 - Prefer live Garmin Connect data when available.
 - Use Garmin Training Status, ACWR, and Load Focus as a structured co-diagnostic signal. Productive plus optimal ACWR plus a real load-focus gap can raise the ceiling from easy continuity to controlled high-aerobic/MTB repeatability when subjective sharpness and route consequence agree.
 - Keep Garmin Training Readiness separate from Training Status and the stack's custom readiness. Treat absent/empty readiness as unsupported only when a successful device-capability response explicitly says the registered devices are not capable; otherwise keep it unknown. Reject wrong-date or stale readiness as current evidence.
-- Before a weather- or haze-sensitive Bukit Kiara call, run `python tools/ride_conditions.py` or read the athlete-managed local service at `http://192.168.80.147:8765/`. Validate reading age and inspect raw PM2.5/PM10 concentration and units, particle movement, the 90-minute arrival/on-trail ranges and confidence, heat, rain, ventilation, symptoms, trail conditions, duration and consequence. This is transient coaching context: do not scrape the dashboard, duplicate or ingest its local history database, persist the response as stack state, infer AQI, or let software automatically substitute a session. If the service is unavailable, mark environment unknown rather than silently falling back to IQAir. Environmental evidence may hold or downshift a call but cannot promote physical/CNS readiness or establish indoor air quality.
+- Before a weather- or haze-sensitive Bukit Kiara call, run `python tools/ride_conditions.py` or read the single athlete-managed v1 contract at `http://192.168.80.147:8765/api/v1/mtb/environment-evidence`. Validate its schema/boundary, `usable` state and observation age against the server's 420-second stale and 900-second expiry limits. `snapshots/environment_evidence.json` and its dated counterpart may retain only bounded normalized selected fields plus latest-attempt and last-known-good state; never store the raw response, duplicate the server history series, call legacy local endpoints, scrape the dashboard, or fall back to IQAir. Interpret raw PM2.5 directly using the sport-exercise bands: below 25 ug/m3 normal, 25 to below 51 moderate caution, 51-150 poor exercise conditions, and above 150 likely hazardous outdoors; never infer AQI. Combine that concentration, particle movement, arrival/on-trail ranges and confidence/calibration, heat, rain, airflow, current symptoms, trail conditions, duration and consequence. Apply the result only as a Bukit Kiara/TTDI hold or downshift ceiling. A no-downshift result cannot promote physical/CNS readiness, establish indoor air quality, or authorize an automatic increase in duration, intensity or consequence.
 - If low aerobic is already above target, do not automatically prescribe more easy-only volume; if anaerobic is near the upper band, avoid stacking sprints, VO2, or attack efforts.
 - If wall-clock date is ahead of synced Garmin data, say so before hard-session guidance.
 - Missing Garmin data should reduce confidence, not pretend certainty.
