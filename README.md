@@ -53,8 +53,8 @@
 Garmin tokens are handled by the `garminconnect`/`garth` stack. Do not store passwords in repo files.
 
 ## Same-Day Environment Check
-- For a weather- or haze-sensitive outdoor decision, the coach reads the current [IQAir TTDI report](https://www.iqair.com/as/air-quality/malaysia/selangor/petaling-jaya/taman-tun-dr-ismail) directly and interprets its weather, explicitly labelled AQI, PM2.5 concentration and observation time alongside current symptoms and planned exposure.
-- This is transient coaching context, not a persisted stack artifact or automatic planner gate. Do not scrape the webpage. If automated IQAir access later becomes useful, use the official API with credentials stored outside this repository.
+- For a weather- or haze-sensitive Bukit Kiara decision, run `python tools/ride_conditions.py`. It reads Clayton's athlete-managed local service at `http://192.168.80.147:8765/` and exposes current raw PM2.5/PM10, observation age, particle movement, the 90-minute arrival and on-trail uncertainty bands, heat, rain and ventilation.
+- This remains transient coaching context, not a persisted stack artifact or automatic planner gate. The client does not scrape the dashboard or copy its local history database. If the service is unavailable, environment is unknown; the stack does not silently fall back to IQAir. Raw concentrations remain distinct from AQI and cannot promote readiness or establish indoor air quality.
 
 ## Command Surface
 Preferred direct commands:

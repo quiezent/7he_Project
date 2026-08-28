@@ -30,6 +30,7 @@ from .planning import build_today_plan
 from .predictive_backtest import build_predictive_backtest
 from .predictive_training import build_predictive_review, build_predictive_training
 from .readiness import build_readiness
+from .ride_conditions import fetch_ride_conditions
 from .reports import (
     insight_memo,
     intraday_trends,
@@ -101,6 +102,14 @@ def build_parser() -> argparse.ArgumentParser:
         dest="decision_only",
         help="Rebuild only the same-day decision surface; skip heavyweight reports.",
     )
+
+    ride_conditions = sub.add_parser(
+        "ride-conditions",
+        help="Read the athlete-managed local Bukit Kiara environmental service without persisting it.",
+    )
+    _add_root(ride_conditions)
+    ride_conditions.add_argument("--base-url", default=None)
+    ride_conditions.add_argument("--timeout", type=float, default=5.0)
 
     for name, help_text in (
         ("readiness", "Build today's readiness snapshot."),
@@ -262,6 +271,12 @@ def run(args: argparse.Namespace) -> Any:
         )
     if args.command == "rebuild":
         return sync_connect(args.root, rebuild_only=True, decision_only=args.decision_only)
+    if args.command == "ride-conditions":
+        return fetch_ride_conditions(
+            args.root,
+            base_url=args.base_url,
+            timeout=args.timeout,
+        )
     if args.command == "readiness":
         return build_readiness(args.root, args.date)
     if args.command == "state":

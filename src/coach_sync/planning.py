@@ -335,6 +335,66 @@ def _contract_for_session(session: dict) -> dict:
     duration = int(session.get("duration_min") or 0)
     intensity = session.get("intensity") or "easy"
 
+    if session_type == "cns_recovery":
+        established_continuity = duration >= 60
+        return {
+            "purpose": (
+                "Preserve bike-specific continuity under a compromised CNS ceiling without adding structured intensity "
+                "or technical consequence."
+                if established_continuity
+                else "Support nervous-system recovery without turning an impaired-CNS day into a training stimulus."
+            ),
+            "dose": {
+                "duration_min": duration,
+                "intensity": intensity,
+                "completion": (
+                    "10 minutes at 105-115 W, 40 minutes at 120-125 W, then 10 minutes at 100-110 W."
+                    if established_continuity
+                    else "Rest, mobility, walking, or no more than 20 minutes of genuinely restorative movement."
+                ),
+                "cap": (
+                    "Global RPE 2-3, seated, mechanically quiet; no torque repetitions, standing surges, intervals, or extension."
+                    if established_continuity
+                    else "Recovery only; stop if the movement does not improve clarity or freshness."
+                ),
+            },
+            "adaptation_hypothesis": (
+                "The established low-cost aerobic anchor can maintain bike continuity while the strict intensity and "
+                "consequence cap allows sleep-related autonomic strain to absorb."
+                if established_continuity
+                else "Removing training cost should allow autonomic and cognitive recovery before the next meaningful dose."
+            ),
+            "execution_rules": [
+                "Start only after the written coordination, clarity, illness, airway, pain, and unusual-leg-heaviness gate passes.",
+                "Use the indoor trainer with normal cooling; keep cadence natural and mechanics quiet.",
+                "Do not convert feeling better into extra watts, extra time, standing work, or intervals.",
+            ],
+            "expected_result": {
+                "garmin_load": "low" if established_continuity else "minimal",
+                "rpe": "2-3 globally" if established_continuity else "recovery only",
+                "next_day": "normal function with no added autonomic, airway, or local-muscular impairment",
+            },
+            "stop_rules": [
+                "Stop if global RPE exceeds 4, power-to-HR response becomes disproportionate, or coordination or clarity declines.",
+                "Stop for airway symptoms, focal or asymmetric pain, altered mechanics, neurological symptoms, or unusual leg heaviness.",
+                "Do not continue through a triggered stop rule to complete time or power targets.",
+            ],
+            "post_session_review_fields": [
+                "self_gate_result",
+                "pre_session_clarity_0_to_10",
+                "actual_duration_min",
+                "actual_training_load",
+                "actual_global_rpe",
+                "power_to_hr_drift",
+                "leg_response_onset_distribution_and_resolution",
+                "mechanics_stable",
+                "airway_symptoms",
+                "fluid_ml",
+                "stop_rule_outcome",
+                "next_morning_response",
+            ],
+        }
+
     if session_type == "bike_quality":
         return {
             "purpose": "Rebuild bike-specific engine quality using the current dated Garmin FTP with RPE/HR validation.",
@@ -512,6 +572,20 @@ def _data_limited_base_plan(state: dict) -> dict:
 
 def _cns_recovery_plan(cns: dict) -> dict:
     ceiling = (cns.get("session_ceiling") or {}).get("level") or "low_consequence_only"
+    status = str(cns.get("status") or "").lower()
+    if status == "compromised":
+        return {
+            "title": "CNS-capped low-aerobic continuity",
+            "type": "cns_recovery",
+            "duration_min": 60,
+            "intensity": "easy",
+            "details": [
+                "Start only with normal walking coordination, mental clarity at least 8/10, and no illness, airway, focal-pain, or unusual-heavy-leg signal; otherwise rest.",
+                "Ride the indoor trainer at 120-125 W and global RPE 2-3, seated and mechanically quiet, with no torque repetitions, standing surges, intervals, or durability extension.",
+                "No technical trail riding, speed, jumps, enduro simulation, setup testing, or stacked variables.",
+                f"CNS ceiling today: {ceiling}.",
+            ],
+        }
     return {
         "title": "CNS low-consequence recovery",
         "type": "cns_recovery",
@@ -726,6 +800,31 @@ def _session_summary(session: dict) -> dict:
     }
 
 
+def _is_no_training_session(session: dict) -> bool:
+    session_type = str(session.get("type") or "").lower()
+    duration = session.get("duration_min")
+    return session_type in {"scheduled_rest", "calendar_rest", "rest"} or (
+        isinstance(duration, (int, float)) and duration <= 0
+    )
+
+
+def _is_existing_lower_recovery_ceiling(session: dict, replacement: dict) -> bool:
+    """Do not let a CNS safety replacement increase a deliberate recovery-only dose."""
+    session_type = str(session.get("type") or "").lower()
+    if _is_mtb_session(session) or not (
+        session_type in {"recovery", "cns_recovery", "bike_recovery_primer"}
+        or "recovery" in session_type
+    ):
+        return False
+    duration = session.get("duration_min")
+    replacement_duration = replacement.get("duration_min")
+    return bool(
+        isinstance(duration, (int, float))
+        and isinstance(replacement_duration, (int, float))
+        and duration <= replacement_duration
+    )
+
+
 def _apply_session_constraints(
     session: dict,
     state: dict,
@@ -742,9 +841,20 @@ def _apply_session_constraints(
     cns = state.get("cns_readiness") or {}
     cns_status = str(cns.get("status") or "").lower()
     freshness = state.get("data_freshness") or {}
+    readiness = state.get("readiness") or {}
+    physical_red = (
+        str(readiness.get("readiness_level") or "").lower() == "red"
+        or str(readiness.get("hard_session_guidance") or "").lower() == "avoid"
+    )
 
-    if cns_status in {"impaired", "compromised"} and effective.get("type") != "scheduled_rest":
-        replacement = _cns_recovery_plan(cns)
+    cns_replacement = _cns_recovery_plan(cns)
+    if (
+        cns_status in {"impaired", "compromised"}
+        and not physical_red
+        and not _is_no_training_session(effective)
+        and not _is_existing_lower_recovery_ceiling(effective, cns_replacement)
+    ):
+        replacement = cns_replacement
         constraints.append(
             {
                 "source": "cns_readiness",

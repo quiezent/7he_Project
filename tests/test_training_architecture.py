@@ -33,11 +33,16 @@ def _context():
             "venue_profiles": {
                 "bukit_kiara": {
                     "preferred_environment_report": {
+                        "name": "Local Bukit Kiara ride conditions",
                         "location": "Taman Tun Dr. Ismail / Bukit Kiara",
-                        "url": "https://www.iqair.com/as/air-quality/malaysia/selangor/petaling-jaya/taman-tun-dr-ismail",
-                        "fields_of_interest": ["weather", "AQI", "PM2.5"],
+                        "base_url": "http://192.168.80.147:8765/",
+                        "endpoints": {
+                            "current": "/api/current",
+                            "analysis": "/api/analysis?days=28",
+                        },
+                        "fields_of_interest": ["weather", "PM2.5", "arrival range"],
                         "decision_use": "Direct same-day coaching context only.",
-                        "access_rule": "Read directly; do not scrape.",
+                        "access_rule": "Read JSON directly; do not persist.",
                         "guardrail": "Cannot promote readiness.",
                     }
                 }
@@ -153,6 +158,8 @@ def test_training_architecture_builds_config_and_snapshot(tmp_path):
     assert artifact["integrated_coaching_model"]["purpose"].startswith("Combine directive")
     environment = artifact["integrated_coaching_model"]["same_day_environment_context"]
     assert environment["location"] == "Taman Tun Dr. Ismail / Bukit Kiara"
+    assert environment["base_url"] == "http://192.168.80.147:8765/"
+    assert environment["endpoints"]["current"] == "/api/current"
     assert environment["decision_role"] == "Direct same-day coaching context only."
     assert "outdoor_air_quality_model" not in artifact["integrated_coaching_model"]
     assert "outdoor_air_quality" not in artifact["artifact_contract"]

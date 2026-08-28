@@ -85,17 +85,23 @@
           "training_role": "Default weekly anchor for climb-loop fitness, enduro repeatability, and controlled trail exposure."
         },
         "preferred_environment_report": {
+          "name": "Clayton local Bukit Kiara ride-conditions service",
           "location": "Taman Tun Dr. Ismail / Bukit Kiara",
-          "url": "https://www.iqair.com/as/air-quality/malaysia/selangor/petaling-jaya/taman-tun-dr-ismail",
+          "base_url": "http://192.168.80.147:8765/",
+          "url": "http://192.168.80.147:8765/",
+          "endpoints": {
+            "current": "/api/current",
+            "analysis": "/api/analysis?days=28"
+          },
           "fields_of_interest": [
-            "current weather and rain or thunderstorm context",
-            "temperature or feels-like and humidity",
-            "displayed AQI system and value",
-            "PM2.5 value, unit and observation time"
+            "raw PM2.5 and PM10 concentration, unit, observation time and reading age",
+            "30-minute and 60-minute particle movement plus recheck interval",
+            "90-minute arrival and on-trail concentration ranges with confidence",
+            "heat index, apparent temperature, humidity, rain probability and ventilation"
           ],
-          "decision_use": "Fresh direct coaching context before weather- or haze-sensitive outdoor calls; do not persist it as a stack state, infer a trend, or let software automatically substitute the session.",
-          "access_rule": "Read the current report directly through model web perception. Do not scrape the webpage. Use IQAir's official API only if a user-provided API key is configured outside the repository.",
-          "guardrail": "Keep AQI and PM2.5 concentration distinct. Combine the report with current symptoms, trail conditions, expected duration and ventilation; it cannot promote readiness or establish indoor air quality."
+          "decision_use": "Fresh transient coaching context before weather- or haze-sensitive Bukit Kiara calls. The athlete-managed server supplies local concentration, movement, exposure-window uncertainty and weather; the head coach still resolves the session.",
+          "access_rule": "Read the JSON endpoints directly or run python tools/ride_conditions.py. Do not scrape the dashboard, duplicate its history database, persist the response as stack state, or silently fall back to IQAir when the local service is unavailable.",
+          "guardrail": "Treat the values as raw concentrations rather than AQI. Combine them with freshness, trend/range confidence, symptoms, trail conditions, duration, ventilation, heat and consequence. The service may hold or downshift outdoor exposure but cannot promote physical/CNS readiness, establish indoor air quality, or automatically substitute a session."
         },
         "twin_peak_stage_network": {
           "start_hub": {
@@ -733,6 +739,16 @@
       "note": "The coaching stack was promoted from an evidence-fetch and safety surface into a deterministic adaptive programming tool. Garmin MCP remains direct live model perception. The stack now persists the dated roadmap block, current-week bike/MTB/meaningful-cost budget, separate endurance/engine/technical progression rungs, one active progression lever, promotion/hold evidence, and explicit programming-accountability conflicts without overriding same-day safety or silently rewriting dated contracts.",
       "timestamp": "2026-08-27T16:55:00+08:00",
       "type": "adaptive_training_programming_controller_added"
+    },
+    {
+      "note": "Clayton replaced IQAir with his athlete-managed local Bukit Kiara ride-conditions service at http://192.168.80.147:8765/. The stack uses a lightweight non-persistent JSON client for current raw PM2.5/PM10, particle movement, arrival/on-trail uncertainty, heat, rain and ventilation. It does not copy the server's history database, infer AQI, promote readiness or automatically substitute training.",
+      "timestamp": "2026-08-28T09:16:00+08:00",
+      "type": "local_ride_conditions_source_configured"
+    },
+    {
+      "note": "Corrected an over-conservative CNS dose collapse: compromised CNS still blocks structured intensity and technical consequence, but after a normal coordination and clarity gate it may retain Clayton's established 60-minute low-cost Suito continuity dose at the lower 120-125 W band. Impaired CNS remains recovery-only. This preserves bike continuity without misclassifying easy volume as permission for intervals.",
+      "timestamp": "2026-08-28T09:20:00+08:00",
+      "type": "cns_low_cost_continuity_resolution_corrected"
     }
   ],
   "medical": {
@@ -886,7 +902,8 @@
       "yellow_signal": "Motivated and physically capable, but with residual brain fog, weak feel, low HRV, elevated stress, or uncertainty about decision speed.",
       "red_signal": "Brain fog, sick/systemic stress, strained HRV, weak or very weak feel at low RPE, delayed processing, or confidence masking sloppy timing.",
       "if_watch": "Use one familiar skill target, low-to-moderate consequence, no speed hunting, no stacked setup changes, and stop when decision speed drops.",
-      "if_compromised_or_impaired": "No speed, jumps, enduro simulation, high-consequence descending, setup testing, hard intervals, or heavy gym loading; use rest, recovery, or low-consequence repetition only.",
+      "if_compromised": "No speed, jumps, enduro simulation, high-consequence descending, setup testing, hard intervals or heavy gym loading. If walking coordination is normal, clarity is at least 8/10 and there is no illness, airway symptom, focal pain or unusual leg heaviness, the established 60-minute low-cost Suito dose may remain at 120-125 W / global RPE 2-3, seated, with no torque repetitions, standing surges or extension.",
+      "if_impaired": "Recovery only for training purposes. Prefer rest or a short recovery dose; no MTB quality, structured intervals, gym loading or high-consequence technical work.",
       "subjective_notes_required": [
         "brain fog or mental clarity",
         "vision width",

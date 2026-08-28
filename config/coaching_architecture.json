@@ -181,7 +181,7 @@
       "Do not count elliptical load as bike-specific maintenance.",
       "Do not treat Garmin readiness as direct trail-skill readiness without subjective notes.",
       "Do not infer exercise-time oxygenation or respiration from daily or sleep Garmin summaries.",
-      "Do not treat a displayed AQI or PM2.5 concentration as readiness clearance, and do not conflate AQI with concentration units.",
+      "Do not convert the local service's raw PM2.5/PM10 concentrations into AQI or treat environmental evidence as readiness clearance.",
       "Do not treat low training load as permission for high-consequence MTB when CNS readiness is impaired or compromised.",
       "Do not use historical finger injury as a current training gate.",
       "Do not copy a full ideal week when life load, sleep, HRV, arm pump, or back-to-back trail plans require density control."
@@ -267,12 +267,12 @@
     ],
     "weight_rule": "Do not aggressively cut body mass before PDR26; fuel training and use post-race body-composition work only if it preserves power, recovery and technical quality."
   },
-  "date": "2026-08-27",
+  "date": "2026-08-28",
   "decision_hierarchy": [
     "Sabbath hard rest and current readiness.",
     "CNS readiness: cap technical consequence, novelty, speed, jumps, enduro simulation, and setup testing when nervous-system processing is not restored.",
     "Garmin freshness: wellness, activity, and training status must be current for hard guidance; Garmin Training Readiness is separately dated context only.",
-    "Same-day environment: before a weather- or haze-sensitive outdoor call, inspect the current IQAir TTDI weather and air-quality report directly and combine it with symptoms, trail conditions, duration and ventilation; this is transient coaching context, not a persistent software gate.",
+    "Same-day environment: before a weather- or haze-sensitive Bukit Kiara call, read Clayton's local ride-conditions JSON service and combine reading age, raw PM2.5/PM10, movement, arrival/on-trail uncertainty, heat, rain and ventilation with symptoms, duration and trail consequence; this is transient coaching context, not a persistent software gate.",
     "Garmin diagnosis arbitration: use Training Status, ACWR, and Load Focus to decide whether the session ceiling should downshift, hold, or allow a controlled upgrade.",
     "Current phase and recent load: avoid spikes while rebuilding.",
     "Bike-specific continuity: protect the weekly minimum before adding non-bike work.",
@@ -607,7 +607,7 @@
       },
       "latest_garmin_detected_ftp": {
         "activity_id": "23723839107",
-        "age_days": 33,
+        "age_days": 34,
         "category": "mtb",
         "date": "2026-07-25",
         "ftp_w": 211.0,
@@ -634,7 +634,7 @@
       "recent_60d_garmin_detected_ftp": [
         {
           "activity_id": "23590320093",
-          "age_days": 44,
+          "age_days": 45,
           "category": "mtb",
           "date": "2026-07-14",
           "ftp_w": 209.0,
@@ -643,7 +643,7 @@
         },
         {
           "activity_id": "23614632613",
-          "age_days": 42,
+          "age_days": 43,
           "category": "mtb",
           "date": "2026-07-16",
           "ftp_w": 214.0,
@@ -652,7 +652,7 @@
         },
         {
           "activity_id": "23723839107",
-          "age_days": 33,
+          "age_days": 34,
           "category": "mtb",
           "date": "2026-07-25",
           "ftp_w": 211.0,
@@ -662,7 +662,7 @@
       ]
     },
     "full_range": {
-      "activity_end": "2026-08-27",
+      "activity_end": "2026-08-28",
       "activity_start": "2021-06-18",
       "counted_sessions": 1396,
       "duration_min": 106504.5,
@@ -679,8 +679,8 @@
       "consistency_detraining": "strong",
       "nonbike_substitution": "moderate",
       "recent_365_bike_specific_corr_to_p20": null,
-      "recent_365_elliptical_corr_to_p20": 0.123,
-      "recent_365_indoor_bike_corr_to_p20": 0.433
+      "recent_365_elliptical_corr_to_p20": 0.124,
+      "recent_365_indoor_bike_corr_to_p20": 0.428
     },
     "nutrition_targets": {
       "latest_weight_date": "2026-08-25",
@@ -716,12 +716,12 @@
       "note": "Use the upper end in Kuala Lumpur heat or when skill quality drops late; gut-train before race day."
     },
     "recent_28d": {
-      "bike_specific_load": 1390.8,
-      "bike_specific_ratio": 0.964,
+      "bike_specific_load": 1297.7,
+      "bike_specific_ratio": 0.962,
       "elliptical_ratio": 0.0,
       "indoor_bike_sessions": 7,
-      "mtb_sessions": 8,
-      "training_load": 1442.0
+      "mtb_sessions": 7,
+      "training_load": 1348.9
     },
     "recent_7d": {
       "bike_specific_load": 366.2,
@@ -811,7 +811,7 @@
     "heat_rule": "In Kuala Lumpur, treat fuel/hydration as skill protection: sloppy braking, weak pumping, timid jumps, or poor line choice late can be carb/sodium/heat failure.",
     "range_selection_rule": "Choose within the canonical band from same-day heat/humidity, actual sweat response, session consequence, and gut tolerance. Previous-session weather is not a forecast, and Garmin heat acclimation never reduces the target by itself."
   },
-  "generated_at": "2026-08-27T17:19:47+08:00",
+  "generated_at": "2026-08-28T09:22:47+08:00",
   "integrated_coaching_model": {
     "cns_readiness_model": {
       "decision_role": "Use CNS readiness as a technical-consequence ceiling after Sabbath and physical readiness, not as a replacement for Garmin readiness.",
@@ -830,7 +830,7 @@
       ],
       "purpose": "Estimate whether Clayton's nervous system can safely process speed, line choice, braking timing, jumps, setup tests, and technical consequence.",
       "status_meaning": {
-        "compromised": "Use recovery or low-consequence repetition only; no speed hunting, jump progression, race simulation, or setup testing.",
+        "compromised": "No structured intensity or technical consequence. After normal coordination, clarity of at least 8/10 and a clean symptom gate, the established 60-minute low-cost Suito anchor may remain at 120-125 W / global RPE 2-3, seated, with no intervals, torque repetitions, standing surges or extension.",
         "impaired": "Recovery only for training purposes; no MTB quality, intervals, gym loading, or high-consequence technical work.",
         "ready": "No independent CNS cap; physical readiness, route consequence, and session contract still govern.",
         "watch": "Skill practice can proceed only if narrow, familiar, and low-to-moderate consequence."
@@ -905,18 +905,23 @@
     ],
     "purpose": "Combine directive enduro-specific coaching with Garmin-backed N-of-1 verification.",
     "same_day_environment_context": {
-      "access_rule": "Read the current report directly through model web perception. Do not scrape the webpage. Use IQAir's official API only if a user-provided API key is configured outside the repository.",
-      "decision_role": "Fresh direct coaching context before weather- or haze-sensitive outdoor calls; do not persist it as a stack state, infer a trend, or let software automatically substitute the session.",
+      "access_rule": "Read the JSON endpoints directly or run python tools/ride_conditions.py. Do not scrape the dashboard, duplicate its history database, persist the response as stack state, or silently fall back to IQAir when the local service is unavailable.",
+      "base_url": "http://192.168.80.147:8765/",
+      "decision_role": "Fresh transient coaching context before weather- or haze-sensitive Bukit Kiara calls. The athlete-managed server supplies local concentration, movement, exposure-window uncertainty and weather; the head coach still resolves the session.",
+      "endpoints": {
+        "analysis": "/api/analysis?days=28",
+        "current": "/api/current"
+      },
       "fields_of_interest": [
-        "current weather and rain or thunderstorm context",
-        "temperature or feels-like and humidity",
-        "displayed AQI system and value",
-        "PM2.5 value, unit and observation time"
+        "raw PM2.5 and PM10 concentration, unit, observation time and reading age",
+        "30-minute and 60-minute particle movement plus recheck interval",
+        "90-minute arrival and on-trail concentration ranges with confidence",
+        "heat index, apparent temperature, humidity, rain probability and ventilation"
       ],
-      "guardrail": "Keep AQI and PM2.5 concentration distinct. Combine the report with current symptoms, trail conditions, expected duration and ventilation; it cannot promote readiness or establish indoor air quality.",
+      "guardrail": "Treat the values as raw concentrations rather than AQI. Combine them with freshness, trend/range confidence, symptoms, trail conditions, duration, ventilation, heat and consequence. The service may hold or downshift outdoor exposure but cannot promote physical/CNS readiness, establish indoor air quality, or automatically substitute a session.",
       "location": "Taman Tun Dr. Ismail / Bukit Kiara",
-      "preferred_report_url": "https://www.iqair.com/as/air-quality/malaysia/selangor/petaling-jaya/taman-tun-dr-ismail",
-      "purpose": "Use current weather and displayed air-quality context before a weather- or haze-sensitive outdoor call without making it a persistent stack subsystem."
+      "purpose": "Use the athlete-managed local Bukit Kiara concentration, exposure-window and weather context before a weather- or haze-sensitive outdoor call without making it a persistent stack subsystem.",
+      "service_name": "Clayton local Bukit Kiara ride-conditions service"
     },
     "sleep_work_timing_governor": {
       "acute_short_sleep_field_gate": {
@@ -1334,7 +1339,7 @@
       "setup_rule": "Change only one suspension variable at a time and compare arm pump, brake dive, front grip, harshness, and corner-entry support."
     },
     "cns_recovery_gate": {
-      "allowed_work": "Rest, easy circulation, mobility, familiar low-speed skill repetition, or short low-consequence bike touch.",
+      "allowed_work": "Impaired means rest or a short recovery dose. Compromised may retain the established 60-minute indoor low-cost anchor at 120-125 W / global RPE 2-3 only after normal coordination, clarity of at least 8/10 and a clean symptom gate.",
       "blocked_work": "Intervals, speed hunting, high-consequence descents, jump progression, race simulation, heavy gym loading, and stacked bike/setup variables.",
       "purpose": "Return the nervous system to reliable technical processing before speed, jumps, enduro simulation, or setup testing.",
       "use_when": "Brain fog, low HRV, high stress, weak feel at low RPE, delayed line choice, or slow braking decisions are present."

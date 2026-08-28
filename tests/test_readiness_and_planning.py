@@ -921,6 +921,9 @@ def test_cns_impairment_still_overrides_bounded_familiar_skill_contract(tmp_path
     plan = build_today_plan(tmp_path, target, state=state)
 
     assert plan["session"]["type"] == "cns_recovery"
+    assert plan["session"]["duration_min"] == 60
+    assert "40 minutes at 120-125 W" in plan["session"]["dose"]["completion"]
+    assert "no torque repetitions" in plan["session"]["dose"]["cap"]
     assert plan["constraint_resolution"]["applied"][0]["source"] == "cns_readiness"
 
 
@@ -955,6 +958,90 @@ def test_red_readiness_still_overrides_bounded_familiar_skill_contract(tmp_path)
     assert plan["plan_source"]["type"] == "today_plan"
 
 
+def test_compromised_cns_cannot_upgrade_red_physical_readiness(tmp_path):
+    load_context(tmp_path)
+    target = "2026-04-30"
+    state = _green_state(target)
+    state["readiness"] = {
+        "readiness_level": "red",
+        "readiness_score": 35,
+        "hard_session_guidance": "avoid",
+    }
+    state["cns_readiness"] = {
+        "status": "compromised",
+        "interpretation": "CNS processing is not reliable enough for structured work.",
+        "session_ceiling": {"level": "low_consequence_repetition_only"},
+    }
+
+    plan = build_today_plan(tmp_path, target, state=state)
+
+    assert plan["session"]["type"] == "recovery"
+    assert plan["session"]["duration_min"] == 20
+    assert plan["constraint_resolution"]["applied"] == []
+
+
+def test_compromised_cns_does_not_replace_explicit_calendar_rest(tmp_path):
+    load_context(tmp_path)
+    target = "2026-04-30"
+    state = _green_state(target)
+    state["cns_readiness"] = {
+        "status": "compromised",
+        "interpretation": "CNS processing is not reliable enough for structured work.",
+        "session_ceiling": {"level": "low_consequence_repetition_only"},
+    }
+    write_json(
+        tmp_path / "input" / f"planned_session_{target}.json",
+        {
+            "date": target,
+            "generated_at": f"{target}T07:00:00+08:00",
+            "status": "active",
+            "session": {
+                "title": "Conference day — no planned training",
+                "type": "calendar_rest",
+                "duration_min": 0,
+                "intensity": "rest",
+            },
+        },
+    )
+
+    plan = build_today_plan(tmp_path, target, state=state)
+
+    assert plan["session"]["type"] == "calendar_rest"
+    assert plan["session"]["duration_min"] == 0
+    assert plan["constraint_resolution"]["applied"] == []
+
+
+def test_compromised_cns_does_not_expand_existing_recovery_dose(tmp_path):
+    load_context(tmp_path)
+    target = "2026-04-30"
+    state = _green_state(target)
+    state["cns_readiness"] = {
+        "status": "compromised",
+        "interpretation": "CNS processing is not reliable enough for structured work.",
+        "session_ceiling": {"level": "low_consequence_repetition_only"},
+    }
+    write_json(
+        tmp_path / "input" / f"planned_session_{target}.json",
+        {
+            "date": target,
+            "generated_at": f"{target}T07:00:00+08:00",
+            "status": "active",
+            "session": {
+                "title": "Deliberate short recovery",
+                "type": "recovery",
+                "duration_min": 20,
+                "intensity": "recovery",
+            },
+        },
+    )
+
+    plan = build_today_plan(tmp_path, target, state=state)
+
+    assert plan["session"]["type"] == "recovery"
+    assert plan["session"]["duration_min"] == 20
+    assert plan["constraint_resolution"]["applied"] == []
+
+
 def test_constraints_override_authored_hard_session_for_cns_impairment(tmp_path):
     load_context(tmp_path)
     target = "2026-04-30"
@@ -980,8 +1067,26 @@ def test_constraints_override_authored_hard_session_for_cns_impairment(tmp_path)
     plan = build_today_plan(tmp_path, target, state=state)
 
     assert plan["session"]["type"] == "cns_recovery"
+    assert plan["session"]["duration_min"] == 60
     assert plan["constraint_resolution"]["applied"][0]["source"] == "cns_readiness"
     _assert_schema_v3_contract(plan["session"])
+
+
+def test_impaired_cns_keeps_short_recovery_cap(tmp_path):
+    load_context(tmp_path)
+    target = "2026-04-30"
+    state = _green_state(target)
+    state["cns_readiness"] = {
+        "status": "impaired",
+        "interpretation": "CNS processing is impaired.",
+        "session_ceiling": {"level": "recovery_only"},
+    }
+
+    plan = build_today_plan(tmp_path, target, state=state)
+
+    assert plan["session"]["type"] == "cns_recovery"
+    assert plan["session"]["duration_min"] == 20
+    assert plan["session"]["expected_result"]["garmin_load"] == "minimal"
 
 
 def test_constraints_override_authored_hard_session_for_garmin_downshift(tmp_path):

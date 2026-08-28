@@ -272,7 +272,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                 "status_meaning": {
                     "ready": "No independent CNS cap; physical readiness, route consequence, and session contract still govern.",
                     "watch": "Skill practice can proceed only if narrow, familiar, and low-to-moderate consequence.",
-                    "compromised": "Use recovery or low-consequence repetition only; no speed hunting, jump progression, race simulation, or setup testing.",
+                    "compromised": "No structured intensity or technical consequence. After normal coordination, clarity of at least 8/10 and a clean symptom gate, the established 60-minute low-cost Suito anchor may remain at 120-125 W / global RPE 2-3, seated, with no intervals, torque repetitions, standing surges or extension.",
                     "impaired": "Recovery only for training purposes; no MTB quality, intervals, gym loading, or high-consequence technical work.",
                 },
                 "non_overrides": [
@@ -282,9 +282,11 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                 ],
             },
             "same_day_environment_context": {
-                "purpose": "Use current weather and displayed air-quality context before a weather- or haze-sensitive outdoor call without making it a persistent stack subsystem.",
+                "purpose": "Use the athlete-managed local Bukit Kiara concentration, exposure-window and weather context before a weather- or haze-sensitive outdoor call without making it a persistent stack subsystem.",
+                "service_name": environment_report.get("name"),
                 "location": environment_report.get("location"),
-                "preferred_report_url": environment_report.get("url"),
+                "base_url": environment_report.get("base_url") or environment_report.get("url"),
+                "endpoints": environment_report.get("endpoints"),
                 "fields_of_interest": environment_report.get("fields_of_interest"),
                 "decision_role": environment_report.get("decision_use"),
                 "access_rule": environment_report.get("access_rule"),
@@ -594,7 +596,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                 "Do not count elliptical load as bike-specific maintenance.",
                 "Do not treat Garmin readiness as direct trail-skill readiness without subjective notes.",
                 "Do not infer exercise-time oxygenation or respiration from daily or sleep Garmin summaries.",
-                "Do not treat a displayed AQI or PM2.5 concentration as readiness clearance, and do not conflate AQI with concentration units.",
+                "Do not convert the local service's raw PM2.5/PM10 concentrations into AQI or treat environmental evidence as readiness clearance.",
                 "Do not treat low training load as permission for high-consequence MTB when CNS readiness is impaired or compromised.",
                 "Do not use historical finger injury as a current training gate.",
                 "Do not copy a full ideal week when life load, sleep, HRV, arm pump, or back-to-back trail plans require density control.",
@@ -611,7 +613,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             "Sabbath hard rest and current readiness.",
             "CNS readiness: cap technical consequence, novelty, speed, jumps, enduro simulation, and setup testing when nervous-system processing is not restored.",
             "Garmin freshness: wellness, activity, and training status must be current for hard guidance; Garmin Training Readiness is separately dated context only.",
-            "Same-day environment: before a weather- or haze-sensitive outdoor call, inspect the current IQAir TTDI weather and air-quality report directly and combine it with symptoms, trail conditions, duration and ventilation; this is transient coaching context, not a persistent software gate.",
+            "Same-day environment: before a weather- or haze-sensitive Bukit Kiara call, read Clayton's local ride-conditions JSON service and combine reading age, raw PM2.5/PM10, movement, arrival/on-trail uncertainty, heat, rain and ventilation with symptoms, duration and trail consequence; this is transient coaching context, not a persistent software gate.",
             "Garmin diagnosis arbitration: use Training Status, ACWR, and Load Focus to decide whether the session ceiling should downshift, hold, or allow a controlled upgrade.",
             "Current phase and recent load: avoid spikes while rebuilding.",
             "Bike-specific continuity: protect the weekly minimum before adding non-bike work.",
@@ -870,7 +872,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             "cns_recovery_gate": {
                 "purpose": "Return the nervous system to reliable technical processing before speed, jumps, enduro simulation, or setup testing.",
                 "use_when": "Brain fog, low HRV, high stress, weak feel at low RPE, delayed line choice, or slow braking decisions are present.",
-                "allowed_work": "Rest, easy circulation, mobility, familiar low-speed skill repetition, or short low-consequence bike touch.",
+                "allowed_work": "Impaired means rest or a short recovery dose. Compromised may retain the established 60-minute indoor low-cost anchor at 120-125 W / global RPE 2-3 only after normal coordination, clarity of at least 8/10 and a clean symptom gate.",
                 "blocked_work": "Intervals, speed hunting, high-consequence descents, jump progression, race simulation, heavy gym loading, and stacked bike/setup variables.",
             },
             "strength_support": {
