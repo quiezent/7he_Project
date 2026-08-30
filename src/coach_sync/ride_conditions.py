@@ -5,6 +5,7 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 from typing import Any, Callable
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
@@ -27,6 +28,22 @@ DEFAULT_SPORT_BANDS = {
     "poor_from": 51.0,
     "hazardous_above": 150.0,
 }
+
+
+def _version_tuple(value: Any) -> tuple[int, int, int] | None:
+    if not isinstance(value, str):
+        return None
+    parts = value.strip().split(".")
+    if not parts or any(not part.isdigit() for part in parts[:3]):
+        return None
+    values = [int(part) for part in parts[:3]]
+    values.extend([0] * (3 - len(values)))
+    return tuple(values)  # type: ignore[return-value]
+
+
+def _requires_contract(schema_version: Any) -> bool:
+    parsed = _version_tuple(schema_version)
+    return parsed is not None and parsed >= (1, 6, 0)
 
 
 def _environment_config(context: dict[str, Any]) -> dict[str, Any]:
@@ -106,59 +123,265 @@ def _compact_support(value: Any) -> dict[str, float | None]:
     support = value if isinstance(value, dict) else {}
     return {
         "origin_count": _number(support.get("originCount")),
+        "independent_origin_count": _number(support.get("independentOriginCount")),
         "matched_count": _number(support.get("matchedCount")),
+        "matched_independent_origin_count": _number(
+            support.get("matchedIndependentOriginCount")
+        ),
+        "matched_distinct_days": _number(support.get("matchedDistinctDays")),
+        "matched_event_count": _number(support.get("matchedEventCount")),
+        "distinct_days": _number(support.get("distinctDays")),
         "minimum_required": _number(support.get("minimumRequired")),
     }
 
 
+def _compact_range(value: Any) -> dict[str, Any]:
+    item = value if isinstance(value, dict) else {}
+    return {
+        "low": _number(item.get("low")),
+        "high": _number(item.get("high")),
+        "calibrated": item.get("calibrated"),
+        "role": item.get("role"),
+        "contains_baseline": item.get("containsBaseline"),
+        "contains_experimental_projection": item.get("containsExperimentalProjection"),
+    }
+
+
+def _compact_upper(value: Any) -> dict[str, Any]:
+    item = value if isinstance(value, dict) else {}
+    return {
+        "value": _number(item.get("value")),
+        "calibrated": item.get("calibrated"),
+    }
+
+
+def _compact_thunderstorm(value: Any) -> dict[str, Any]:
+    item = value if isinstance(value, dict) else {}
+    metrics = item.get("metrics") if isinstance(item.get("metrics"), dict) else {}
+    weather_codes = metrics.get("weatherCodes")
+    return {
+        "level": item.get("level"),
+        "rank": _number(item.get("rank")),
+        "label": item.get("label"),
+        "basis": item.get("basis"),
+        "source": item.get("source"),
+        "used_for_decision": item.get("usedForDecision"),
+        "metrics": {
+            "weather_codes": list(weather_codes) if isinstance(weather_codes, list) else [],
+            "cape_max_j_kg": _number(metrics.get("capeMaxJkg")),
+            "lifted_index_min": _number(metrics.get("liftedIndexMin")),
+            "convective_inhibition_min_j_kg": _number(
+                metrics.get("convectiveInhibitionMinJkg")
+            ),
+            "modeled_gust_max_kmh": _number(metrics.get("modeledGustMaxKmh")),
+            "modeled_showers_mm": _number(metrics.get("modeledShowersMm")),
+            "precipitation_probability_max_pct": _number(
+                metrics.get("precipitationProbabilityMaxPct")
+            ),
+        },
+    }
+
+
+def _target_date_from_utc(value: Any, timezone_name: str | None) -> str | None:
+    parsed = _timestamp(value)
+    if parsed is None:
+        return None
+    try:
+        zone = ZoneInfo(timezone_name or DEFAULT_TIMEZONE)
+    except Exception:
+        zone = ZoneInfo(DEFAULT_TIMEZONE)
+    return parsed.astimezone(zone).date().isoformat()
+
+
+def _recheck_at_local(
+    value: Any,
+    target_date: str | None,
+    timezone_name: str | None,
+) -> str | None:
+    if not isinstance(value, str) or not target_date:
+        return None
+    match = re.search(r"(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)", value)
+    if not match:
+        return None
+    parsed_date = parse_date(target_date)
+    if parsed_date is None:
+        return None
+    try:
+        zone = ZoneInfo(timezone_name or DEFAULT_TIMEZONE)
+    except Exception:
+        zone = ZoneInfo(DEFAULT_TIMEZONE)
+    return datetime(
+        parsed_date.year,
+        parsed_date.month,
+        parsed_date.day,
+        int(match.group(1)),
+        int(match.group(2)),
+        tzinfo=zone,
+    ).isoformat(timespec="minutes")
+
+
 def _compact_clearance_event(value: Any) -> dict[str, Any]:
     event = value if isinstance(value, dict) else {}
+    conditioned = (
+        event.get("eventConditionedForecast")
+        if isinstance(event.get("eventConditionedForecast"), dict)
+        else {}
+    )
     return {
         "detected": event.get("detected"),
         "state": event.get("state"),
         "kind": event.get("kind"),
         "label": event.get("label"),
         "age_minutes": _number(event.get("ageMinutes")),
+        "last_evidence_at_utc": event.get("lastEvidenceAt"),
+        "detection_mode": event.get("detectionMode"),
         "rain_support": event.get("rainSupport"),
         "dry_air_mass_support": event.get("dryAirMassSupport"),
+        "event_conditioned_forecast": {
+            "available": conditioned.get("available"),
+            "status": conditioned.get("status"),
+            "completed_prior_events": _number(conditioned.get("completedPriorEvents")),
+            "completed_prior_distinct_days": _number(
+                conditioned.get("completedPriorDistinctDays")
+            ),
+            "minimum_prior_events": _number(conditioned.get("minimumPriorEvents")),
+            "minimum_prior_distinct_days": _number(
+                conditioned.get("minimumPriorDistinctDays")
+            ),
+            "event_at_utc": conditioned.get("eventAt"),
+            "event_age_minutes": _number(conditioned.get("eventAgeMinutes")),
+            "experimental": conditioned.get("experimental"),
+        },
     }
 
 
-def _compact_ride_window(value: Any) -> dict[str, Any]:
+def _compact_particle_forecast(value: Any) -> dict[str, Any]:
+    forecast = value if isinstance(value, dict) else {}
+    return {
+        "available": forecast.get("available"),
+        "used_learned_model_for_decision": forecast.get("usedLearnedModelForDecision"),
+        "forecast_state": forecast.get("forecastState"),
+        "point_role": forecast.get("pointRole"),
+        "method": forecast.get("method"),
+        "confidence": forecast.get("confidence"),
+        "confidence_detail": forecast.get("confidenceDetail"),
+        "baseline_mean_pm2_5_ug_m3": _number(forecast.get("baselineMeanPm25UgM3")),
+        "persistence_anchor_role": forecast.get("persistenceAnchorRole"),
+        "projected_mean_pm2_5_ug_m3": _number(forecast.get("projectedMeanPm25UgM3")),
+        "projected_peak_pm2_5_ug_m3": _number(forecast.get("projectedPeakPm25UgM3")),
+        "approximate": forecast.get("approximate"),
+        "validation_state": forecast.get("validationState"),
+        "used_for_validated_decision": forecast.get("usedForValidatedDecision"),
+        "mean_range_pm2_5_ug_m3": _compact_range(forecast.get("meanRangePm25UgM3")),
+        "upper_peak_pm2_5_ug_m3": _number(forecast.get("upperPeakPm25UgM3")),
+        "uncertainty_method": forecast.get("uncertaintyMethod"),
+        "lead_hours": _number(forecast.get("leadHours")),
+        "duration_hours": _number(forecast.get("durationHours")),
+        "support": _compact_support(forecast.get("support")),
+    }
+
+
+def _compact_airflow(value: Any) -> dict[str, Any]:
+    airflow = value if isinstance(value, dict) else {}
+    return {
+        "context": airflow.get("context"),
+        "modeled_wind_10m_mean_kmh": _number(airflow.get("modeledWind10mMeanKmh")),
+        "modeled_wind_gust_10m_max_kmh": _number(
+            airflow.get("modeledWindGust10mMaxKmh")
+        ),
+        "modeled_wind_180m_mean_kmh": _number(airflow.get("modeledWind180mMeanKmh")),
+        "modeled_direction_180m": airflow.get("modeledDirection180m"),
+        "used_for_particle_forecast": airflow.get("usedForParticleForecast"),
+    }
+
+
+def _compact_weather_period(value: Any, timezone_name: str | None) -> dict[str, Any]:
+    forecast = value if isinstance(value, dict) else {}
+    start_at = forecast.get("startAt")
+    return {
+        "available": forecast.get("available"),
+        "start_at_utc": start_at,
+        "end_at_utc": forecast.get("endAt"),
+        "target_date": _target_date_from_utc(start_at, timezone_name),
+        "modeled_session": forecast.get("modeledSession"),
+        "source_point_count": _number(forecast.get("sourcePointCount")),
+        "precipitation_source_point_count": _number(
+            forecast.get("precipitationSourcePointCount")
+        ),
+        "precipitation_equivalent_hours": _number(
+            forecast.get("precipitationEquivalentHours")
+        ),
+        "apparent_temperature_max_c": _number(forecast.get("apparentTemperatureMaxC")),
+        "temperature_max_c": _number(forecast.get("temperatureMaxC")),
+        "precipitation_probability_max_pct": _number(
+            forecast.get("precipitationProbabilityMaxPct")
+        ),
+        "precipitation_mm": _number(forecast.get("precipitationMm")),
+        "rain_used_for_comparison": forecast.get("rainUsedForComparison"),
+        "rain_signal": forecast.get("rainSignal"),
+        "thunderstorm": _compact_thunderstorm(forecast.get("thunderstorm")),
+        "airflow": _compact_airflow(forecast.get("airflow")),
+    }
+
+
+def _compact_ride_window(value: Any, timezone_name: str | None) -> dict[str, Any]:
     window = value if isinstance(value, dict) else {}
     forecast = window.get("weatherForecast") if isinstance(window.get("weatherForecast"), dict) else {}
+    weather_forecast = _compact_weather_period(forecast, timezone_name)
+    target_date = weather_forecast.get("target_date")
+    recheck = window.get("recheck")
     return {
         "target_day": window.get("targetDay"),
+        "target_date": target_date,
         "ride_window": window.get("rideWindow"),
+        "modeled_session": window.get("modeledSession"),
         "lead_hours": _number(window.get("leadHours")),
         "active": window.get("active"),
         "current_conditions_applicable": window.get("currentConditionsApplicable"),
-        "recheck": window.get("recheck"),
+        "recheck": recheck,
+        "recheck_at_local": _recheck_at_local(recheck, target_date, timezone_name),
         "confidence": window.get("confidence"),
-        "weather_forecast": {
-            "available": forecast.get("available"),
-            "apparent_temperature_max_c": _number(forecast.get("apparentTemperatureMaxC")),
-            "precipitation_probability_max_pct": _number(
-                forecast.get("precipitationProbabilityMaxPct")
-            ),
-            "precipitation_mm": _number(forecast.get("precipitationMm")),
-            "rain_signal": forecast.get("rainSignal"),
-        },
+        "particle_forecast": _compact_particle_forecast(window.get("particleForecast")),
+        "weather_forecast": weather_forecast,
     }
 
 
-def _compact_ride_windows(value: Any) -> dict[str, Any]:
+def _compact_ride_windows(value: Any, timezone_name: str | None) -> dict[str, Any]:
     windows = value if isinstance(value, dict) else {}
     comparison = windows.get("comparison") if isinstance(windows.get("comparison"), dict) else {}
+    model = comparison.get("particleModel") if isinstance(comparison.get("particleModel"), dict) else {}
     return {
         "comparison": {
             "status": comparison.get("status"),
+            "preferred_window": comparison.get("preferredWindow"),
+            "historical_lower_exposure_window": comparison.get(
+                "historicalLowerExposureWindow"
+            ),
+            "relative_only": comparison.get("relativeOnly"),
+            "ride_approval": comparison.get("rideApproval"),
+            "policy_id": comparison.get("policyId"),
+            "aggressive_experimental": comparison.get("aggressiveExperimental"),
+            "verdict": comparison.get("verdict"),
+            "reason": comparison.get("reason"),
             "confidence": comparison.get("confidence"),
-            "paired_days": _number(comparison.get("pairedDays")),
-            "required_days": _number(comparison.get("requiredDays")),
+            "particle_model": {
+                "status": model.get("status"),
+                "application_status": model.get("applicationStatus"),
+                "used_for_decision": model.get("usedForDecision"),
+                "used_for_comparison": model.get("usedForComparison"),
+                "model_version": model.get("modelVersion"),
+                "aggressive_mode": model.get("aggressiveMode"),
+                "validation": {
+                    "scored_window_count": _number(model.get("scoredWindowCount")),
+                    "minimum_scored_windows": _number(model.get("minimumScoredWindows")),
+                    "distinct_days": _number(model.get("distinctDays")),
+                    "minimum_distinct_days": _number(model.get("minimumDistinctDays")),
+                },
+                "note": model.get("note"),
+            },
         },
-        "morning": _compact_ride_window(windows.get("morning")),
-        "afternoon": _compact_ride_window(windows.get("afternoon")),
+        "morning": _compact_ride_window(windows.get("morning"), timezone_name),
+        "afternoon": _compact_ride_window(windows.get("afternoon"), timezone_name),
     }
 
 
@@ -176,11 +399,49 @@ def _validate_contract(
     payload: dict[str, Any],
     config: dict[str, Any],
     attempted_at: datetime,
+    previous_good: dict[str, Any] | None = None,
 ) -> list[str]:
     issues: list[str] = []
     schema_version = str(payload.get("schemaVersion") or "")
-    if schema_version.split(".", 1)[0] != SUPPORTED_SCHEMA_MAJOR:
+    parsed_schema = _version_tuple(schema_version)
+    if parsed_schema is None:
+        issues.append("schema_version_invalid")
+    elif str(parsed_schema[0]) != SUPPORTED_SCHEMA_MAJOR:
         issues.append("unsupported_schema_major")
+
+    contract = payload.get("contract") if isinstance(payload.get("contract"), dict) else {}
+    if contract and str(contract.get("schemaVersion") or "") != schema_version:
+        issues.append("contract_schema_mismatch")
+    if _requires_contract(schema_version):
+        if not contract:
+            issues.append("contract_required")
+        else:
+            if not str(contract.get("revision") or "").strip():
+                issues.append("contract_revision_missing")
+            revision_role = str(contract.get("revisionRole") or "").strip()
+            if not revision_role:
+                issues.append("contract_revision_role_missing")
+            elif revision_role != "contract_and_documentation_only":
+                issues.append("contract_revision_role_unsupported")
+            if (_number(contract.get("evidencePollSeconds")) or 0) <= 0:
+                issues.append("contract_poll_seconds_invalid")
+            resources = [
+                contract.get("openapi"),
+                contract.get("jsonSchema"),
+                contract.get("documentation"),
+            ]
+            refresh_policy = (
+                contract.get("refreshPolicy")
+                if isinstance(contract.get("refreshPolicy"), dict)
+                else {}
+            )
+            policy_resources = refresh_policy.get("resources")
+            if any(not isinstance(value, str) or not value for value in resources):
+                issues.append("contract_resources_invalid")
+            elif not isinstance(policy_resources, list) or any(
+                resource not in policy_resources for resource in resources
+            ):
+                issues.append("contract_refresh_resources_mismatch")
     if payload.get("kind") != "mtb_environment_evidence":
         issues.append("unexpected_kind")
 
@@ -219,6 +480,16 @@ def _validate_contract(
         observed_at.astimezone(timezone.utc) - attempted_at.astimezone(timezone.utc)
     ).total_seconds() > DEFAULT_FUTURE_TOLERANCE_SECONDS:
         issues.append("observation_timestamp_in_future")
+    else:
+        previous_observed_at = _timestamp(
+            _nested(previous_good or {}, "observation").get("observed_at_utc")
+        )
+        if (
+            previous_observed_at is not None
+            and observed_at.astimezone(timezone.utc)
+            < previous_observed_at.astimezone(timezone.utc)
+        ):
+            issues.append("observation_timestamp_regression")
 
     pm2_5 = _number(_nested(payload, "observation", "particles").get("pm25UgM3"))
     if pm2_5 is None or pm2_5 < 0:
@@ -226,7 +497,9 @@ def _validate_contract(
     return issues
 
 
-def _normalize(payload: dict[str, Any]) -> dict[str, Any]:
+def _normalize(payload: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
+    contract = _nested(payload, "contract")
+    refresh_policy = _nested(contract, "refreshPolicy")
     observation = _nested(payload, "observation")
     particles = _nested(observation, "particles")
     heat = _nested(observation, "heat")
@@ -244,12 +517,34 @@ def _normalize(payload: dict[str, Any]) -> dict[str, Any]:
     provenance = _nested(payload, "provenance")
     sensor = _nested(provenance, "sensor")
     forecast = _nested(provenance, "weatherForecast")
+    particle_forecast_provenance = _nested(provenance, "particleForecast")
     weather_reference = _nested(provenance, "weatherReference")
     logistics = _nested(payload, "logistics")
     typical_duration = _nested(logistics, "typicalTrailDurationMinutes")
     exposure_window = _nested(logistics, "modeledExposureWindowMinutes")
+    location = _nested(payload, "location")
+    timezone_name = str(location.get("timezone") or config.get("timezone") or DEFAULT_TIMEZONE)
+    nearby_storm = _nested(weather, "nearbyStorm")
+    decision_policy = _nested(weather, "decisionPolicy")
 
     return {
+        "contract": {
+            "schema_version": contract.get("schemaVersion"),
+            "revision": contract.get("revision"),
+            "revision_role": contract.get("revisionRole"),
+            "evidence_poll_seconds": _number(contract.get("evidencePollSeconds")),
+            "resources": {
+                "openapi": contract.get("openapi"),
+                "json_schema": contract.get("jsonSchema"),
+                "documentation": contract.get("documentation"),
+            },
+            "refresh_policy": {
+                "mode": refresh_policy.get("mode"),
+                "use_if_none_match": refresh_policy.get("useIfNoneMatch"),
+                "reload_when": list(refresh_policy.get("reloadWhen") or []),
+                "resources": list(refresh_policy.get("resources") or []),
+            },
+        },
         "identity": {
             "schema_version": payload.get("schemaVersion"),
             "kind": payload.get("kind"),
@@ -257,9 +552,22 @@ def _normalize(payload: dict[str, Any]) -> dict[str, Any]:
             "server_generated_at": payload.get("generatedAt"),
         },
         "location": {
-            "name": _nested(payload, "location").get("name"),
-            "timezone": _nested(payload, "location").get("timezone"),
+            "name": location.get("name"),
+            "latitude": _number(location.get("latitude")),
+            "longitude": _number(location.get("longitude")),
+            "timezone": location.get("timezone"),
             "sensor_location_id": sensor.get("locationId"),
+        },
+        "scope": {
+            "role": "direct_venue_environment_evidence",
+            "venue_keys": list(config.get("automatic_gate_venue_keys") or ["bukit_kiara"]),
+            "location": {
+                "name": location.get("name"),
+                "latitude": _number(location.get("latitude")),
+                "longitude": _number(location.get("longitude")),
+                "timezone": location.get("timezone"),
+            },
+            "transfer_to_unlisted_venues": False,
         },
         "boundary": {
             "role": _nested(payload, "boundary").get("role"),
@@ -306,8 +614,11 @@ def _normalize(payload: dict[str, Any]) -> dict[str, Any]:
             "change_30_min_ug_m3": _number(nowcast.get("change30MinutesUgM3")),
             "change_60_min_ug_m3": _number(nowcast.get("change60MinutesUgM3")),
             "fast_rise": nowcast.get("fastRise"),
+            "sustained_improvement": nowcast.get("sustainedImprovement"),
             "minimum_since_event_ug_m3": _number(nowcast.get("minimumSinceEventUgM3")),
             "recheck_minutes": _number(nowcast.get("recheckMinutes")),
+            "analysis_bucket_end_at_utc": nowcast.get("analysisBucketEndAt"),
+            "analysis_bucket_minutes": _number(nowcast.get("analysisBucketMinutes")),
             "particle_mix": {
                 "state": mix.get("state"),
                 "label": mix.get("label"),
@@ -320,13 +631,31 @@ def _normalize(payload: dict[str, Any]) -> dict[str, Any]:
                 "available": arrival.get("available"),
                 "offset_min": _number(arrival.get("offsetMinutes")),
                 "expected_at_utc": arrival.get("expectedAt"),
+                "based_on_observed_at_utc": arrival.get("basedOnObservedAt"),
                 "headline": arrival.get("headline"),
+                "persistence_anchor_pm2_5_ug_m3": _number(
+                    arrival.get("persistenceAnchorPm25UgM3")
+                    if arrival.get("persistenceAnchorPm25UgM3") is not None
+                    else arrival.get("baselinePm25UgM3")
+                ),
+                "persistence_anchor_role": arrival.get("persistenceAnchorRole"),
+                "model_feature_anchor_pm2_5_ug_m3": _number(
+                    arrival.get("modelFeatureAnchorPm25UgM3")
+                ),
+                "projected_pm2_5_ug_m3": _number(arrival.get("projectedPm25UgM3")),
                 "baseline_pm2_5_ug_m3": _number(arrival.get("baselinePm25UgM3")),
-                "likely_range_pm2_5_ug_m3": {
-                    "low": _number(arrival_range.get("low")),
-                    "high": _number(arrival_range.get("high")),
-                    "calibrated": arrival_range.get("calibrated"),
-                },
+                "point_role": arrival.get("pointRole"),
+                "forecast_state": arrival.get("forecastState"),
+                "approximate": arrival.get("approximate"),
+                "validation_state": arrival.get("validationState"),
+                "likely_range_pm2_5_ug_m3": _compact_range(arrival_range),
+                "decision_envelope_pm2_5_ug_m3": _compact_range(
+                    arrival.get("decisionEnvelopePm25UgM3")
+                ),
+                "upper_pm2_5_ug_m3": _compact_upper(arrival.get("upperPm25UgM3")),
+                "decision_upper_pm2_5_ug_m3": _number(
+                    arrival.get("decisionUpperPm25UgM3")
+                ),
                 "confidence": arrival.get("confidence"),
                 "confidence_detail": arrival.get("confidenceDetail"),
                 "method_id": arrival.get("methodId"),
@@ -338,17 +667,39 @@ def _normalize(payload: dict[str, Any]) -> dict[str, Any]:
                 "end_offset_min": _number(trail.get("endOffsetMinutes")),
                 "start_at_utc": trail.get("startAt"),
                 "end_at_utc": trail.get("endAt"),
+                "based_on_observed_at_utc": trail.get("basedOnObservedAt"),
                 "headline": trail.get("headline"),
+                "persistence_anchor_pm2_5_ug_m3": _number(
+                    trail.get("persistenceAnchorPm25UgM3")
+                    if trail.get("persistenceAnchorPm25UgM3") is not None
+                    else trail.get("baselineMeanPm25UgM3")
+                ),
+                "persistence_anchor_role": trail.get("persistenceAnchorRole"),
+                "model_feature_anchor_pm2_5_ug_m3": _number(
+                    trail.get("modelFeatureAnchorPm25UgM3")
+                ),
+                "projected_mean_pm2_5_ug_m3": _number(
+                    trail.get("projectedMeanPm25UgM3")
+                ),
+                "projected_peak_pm2_5_ug_m3": _number(
+                    trail.get("projectedPeakPm25UgM3")
+                ),
                 "baseline_mean_pm2_5_ug_m3": _number(trail.get("baselineMeanPm25UgM3")),
-                "likely_mean_range_pm2_5_ug_m3": {
-                    "low": _number(trail_range.get("low")),
-                    "high": _number(trail_range.get("high")),
-                    "calibrated": trail_range.get("calibrated"),
-                },
-                "upper_peak_pm2_5_ug_m3": {
-                    "value": _number(trail_peak.get("value")),
-                    "calibrated": trail_peak.get("calibrated"),
-                },
+                "point_role": trail.get("pointRole"),
+                "forecast_state": trail.get("forecastState"),
+                "approximate": trail.get("approximate"),
+                "validation_state": trail.get("validationState"),
+                "likely_mean_range_pm2_5_ug_m3": _compact_range(trail_range),
+                "decision_mean_envelope_pm2_5_ug_m3": _compact_range(
+                    trail.get("decisionMeanEnvelopePm25UgM3")
+                ),
+                "upper_mean_pm2_5_ug_m3": _compact_upper(
+                    trail.get("upperMeanPm25UgM3")
+                ),
+                "upper_peak_pm2_5_ug_m3": _compact_upper(trail_peak),
+                "decision_peak_risk_marker_pm2_5_ug_m3": _number(
+                    trail.get("decisionPeakRiskMarkerPm25UgM3")
+                ),
                 "confidence": trail.get("confidence"),
                 "confidence_detail": trail.get("confidenceDetail"),
                 "method_id": trail.get("methodId"),
@@ -360,32 +711,32 @@ def _normalize(payload: dict[str, Any]) -> dict[str, Any]:
             "forecast_source": weather.get("forecastSource"),
             "forecast_fetched_at_utc": weather.get("forecastFetchedAt"),
             "forecast_age_min": _number(weather.get("forecastAgeMinutes")),
-            "trail_period": {
-                "available": trail_weather.get("available"),
-                "start_at_utc": trail_weather.get("startAt"),
-                "end_at_utc": trail_weather.get("endAt"),
-                "apparent_temperature_max_c": _number(
-                    trail_weather.get("apparentTemperatureMaxC")
+            "trail_period": _compact_weather_period(trail_weather, timezone_name),
+            "nearby_storm": {
+                "available": nearby_storm.get("available"),
+                "fresh": nearby_storm.get("fresh"),
+                "age_minutes": _number(nearby_storm.get("ageMinutes")),
+                "present_weather": nearby_storm.get("presentWeather"),
+                "level": nearby_storm.get("level"),
+                "rank": _number(nearby_storm.get("rank")),
+                "label": nearby_storm.get("label"),
+                "basis": nearby_storm.get("basis"),
+                "source": nearby_storm.get("source"),
+                "used_for_decision": nearby_storm.get("usedForDecision"),
+            },
+            "decision_policy": {
+                "ordinary_rain_used_for_comparison": decision_policy.get(
+                    "ordinaryRainUsedForComparison"
                 ),
-                "precipitation_probability_max_pct": _number(
-                    trail_weather.get("precipitationProbabilityMaxPct")
+                "thunderstorm_used_for_comparison": decision_policy.get(
+                    "thunderstormUsedForComparison"
                 ),
-                "precipitation_mm": _number(trail_weather.get("precipitationMm")),
-                "rain_signal": trail_weather.get("rainSignal"),
-                "airflow": {
-                    "context": airflow.get("context"),
-                    "modeled_wind_10m_mean_kmh": _number(airflow.get("modeledWind10mMeanKmh")),
-                    "modeled_wind_180m_mean_kmh": _number(
-                        airflow.get("modeledWind180mMeanKmh")
-                    ),
-                    "modeled_direction_180m": airflow.get("modeledDirection180m"),
-                    "used_for_particle_forecast": airflow.get("usedForParticleForecast"),
-                },
+                "heat_used_as_tie_breaker": decision_policy.get("heatUsedAsTieBreaker"),
             },
             "particle_relationship_validated": weather.get("particleRelationshipValidated"),
         },
         "clearance_event": _compact_clearance_event(payload.get("clearanceEvent")),
-        "ride_windows": _compact_ride_windows(payload.get("rideWindows")),
+        "ride_windows": _compact_ride_windows(payload.get("rideWindows"), timezone_name),
         "evidence_quality": {
             "state": quality.get("state"),
             "limitations": _compact_limitations(quality.get("limitations")),
@@ -405,7 +756,51 @@ def _normalize(payload: dict[str, Any]) -> dict[str, Any]:
                 "provider": forecast.get("provider"),
                 "fetched_at_utc": forecast.get("fetchedAt"),
                 "age_minutes": _number(forecast.get("ageMinutes")),
-                "validation": forecast.get("validation"),
+                "validation": {
+                    "supported": _nested(forecast, "validation").get("supported"),
+                    "origin_count": _number(
+                        _nested(forecast, "validation").get("originCount")
+                    ),
+                    "minimum_origins": _number(
+                        _nested(forecast, "validation").get("minimumOrigins")
+                    ),
+                },
+            },
+            "particle_forecast": {
+                "provider": particle_forecast_provenance.get("provider"),
+                "model_version": particle_forecast_provenance.get("modelVersion"),
+                "used_for_decision": particle_forecast_provenance.get("usedForDecision"),
+                "used_for_comparison": particle_forecast_provenance.get(
+                    "usedForComparison"
+                ),
+                "fetched_at_utc": particle_forecast_provenance.get("fetchedAt"),
+                "error": particle_forecast_provenance.get("error"),
+                "validation": {
+                    "mode": _nested(particle_forecast_provenance, "validation").get("mode"),
+                    "supported": _nested(particle_forecast_provenance, "validation").get(
+                        "supported"
+                    ),
+                    "scored_window_count": _number(
+                        _nested(particle_forecast_provenance, "validation").get(
+                            "scoredWindowCount"
+                        )
+                    ),
+                    "minimum_scored_windows": _number(
+                        _nested(particle_forecast_provenance, "validation").get(
+                            "minimumScoredWindows"
+                        )
+                    ),
+                    "distinct_days": _number(
+                        _nested(particle_forecast_provenance, "validation").get(
+                            "distinctDays"
+                        )
+                    ),
+                    "minimum_distinct_days": _number(
+                        _nested(particle_forecast_provenance, "validation").get(
+                            "minimumDistinctDays"
+                        )
+                    ),
+                },
             },
             "weather_reference": {
                 "provider": weather_reference.get("provider"),
@@ -554,7 +949,11 @@ def _environment_decision(
     forecast_upper_values = [
         _number(arrival_range.get("high")),
         _number(trail_range.get("high")),
+        _number(_nested(arrival, "decision_envelope_pm2_5_ug_m3").get("high")),
+        _number(_nested(trail, "decision_mean_envelope_pm2_5_ug_m3").get("high")),
+        _number(arrival.get("decision_upper_pm2_5_ug_m3")),
         _number(_nested(trail, "upper_peak_pm2_5_ug_m3").get("value")),
+        _number(trail.get("decision_peak_risk_marker_pm2_5_ug_m3")),
     ]
     forecast_lower = max((value for value in forecast_lower_values if value is not None), default=None)
     forecast_upper = max((value for value in forecast_upper_values if value is not None), default=None)
@@ -574,6 +973,22 @@ def _environment_decision(
     rain_probability = _number(weather.get("precipitation_probability_max_pct"))
     rain_mm = _number(weather.get("precipitation_mm"))
     rain_signal = str(weather.get("rain_signal") or "")
+    rain_used_for_comparison = weather.get("rain_used_for_comparison") is True
+    thunderstorm = _nested(weather, "thunderstorm")
+    nearby_storm = _nested(evidence, "weather", "nearby_storm")
+    thunderstorm_level = str(thunderstorm.get("level") or "none").lower()
+    nearby_storm_level = str(nearby_storm.get("level") or "none").lower()
+    structured_thunderstorm_hold = (
+        (
+            thunderstorm_level in {"likely", "severe"}
+            and thunderstorm.get("used_for_decision") is True
+        )
+        or (
+            nearby_storm_level in {"likely", "severe"}
+            and nearby_storm.get("used_for_decision") is True
+            and nearby_storm.get("fresh") is True
+        )
+    )
     reason_codes: list[str] = []
     modifiers: list[str] = []
     recheck_minutes = _number(nowcast.get("recheck_minutes"))
@@ -582,12 +997,15 @@ def _environment_decision(
         modifiers.append("strong_heat_modifier")
     elif heat_max is not None and heat_max >= 38:
         modifiers.append("heat_load_modifier")
-    if (
+    rain_is_material = (
         (rain_probability is not None and rain_probability >= 70)
         or (rain_mm is not None and rain_mm >= 1)
         or rain_signal.lower() == "rain may disrupt the ride"
-    ):
-        modifiers.append("rain_disruption")
+    )
+    if rain_is_material and not rain_used_for_comparison:
+        modifiers.append("rain_context_only")
+    elif rain_is_material:
+        modifiers.append("rain_disruption_modifier")
     elif (
         (rain_probability is not None and rain_probability >= 40)
         or "shower" in rain_signal.lower()
@@ -597,7 +1015,11 @@ def _environment_decision(
         modifiers.append("evidence_quality_limited")
 
     if state in {"stale", "retained_current"}:
-        if current_pm is not None and current_pm >= bands["poor_from"]:
+        if current_pm is not None and current_pm > bands["hazardous_above"]:
+            gate = "retained_all_outdoor_closure_pending_refresh"
+            severity = "red"
+            reason_codes.append("retained_hazardous_value_preserves_all_outdoor_restriction")
+        elif current_pm is not None and current_pm >= bands["poor_from"]:
             gate = "retained_high_ventilation_closure_pending_refresh"
             severity = "red"
             reason_codes.append("retained_poor_value_preserves_restriction")
@@ -619,6 +1041,14 @@ def _environment_decision(
         gate = "close_mtb_prolonged_endurance_high_ventilation"
         severity = "red"
         reason_codes.append("calibrated_supported_forecast_lower_bound_poor")
+    elif structured_thunderstorm_hold:
+        gate = "hold_and_recheck"
+        severity = "yellow"
+        reason_codes.append("structured_thunderstorm_likely_or_severe")
+    elif forecast_upper is not None and forecast_upper >= bands["poor_from"]:
+        gate = "hold_and_recheck"
+        severity = "yellow"
+        reason_codes.append("conservative_uncertain_exposure_envelope_crosses_poor")
     elif current_pm is not None and current_pm >= bands["normal_below"]:
         upper_crosses_poor = forecast_upper is not None and forecast_upper >= bands["poor_from"]
         rebound = str(nowcast.get("state") or "").lower() in {"rebound", "rising"}
@@ -673,6 +1103,119 @@ def _environment_decision(
         "weather_particle_relationship_validated": _nested(evidence, "weather").get(
             "particle_relationship_validated"
         ),
+        "experimental_points_used_for_deterministic_closure": False,
+        "thunderstorm_level": thunderstorm_level,
+        "nearby_storm_level": nearby_storm_level,
+        "ordinary_rain_used_for_comparison": rain_used_for_comparison,
+    }
+
+
+def _contract_state(
+    evidence: dict[str, Any] | None,
+    latest_attempt: dict[str, Any],
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    contract = _nested(evidence or {}, "contract")
+    configured_contract = _nested(config, "schema_contract")
+    accepted_schema = contract.get("schema_version") or _nested(
+        evidence or {}, "identity"
+    ).get("schema_version")
+    accepted_revision = contract.get("revision")
+    configured_schema = config.get("schema_version") or configured_contract.get(
+        "schema_version"
+    )
+    configured_revision = config.get("contract_revision") or configured_contract.get(
+        "last_verified_revision"
+    )
+    drift = list(latest_attempt.get("contract_drift") or [])
+    semantic_issues = list(latest_attempt.get("semantic_issues") or [])
+    contract_issue = any(
+        issue.startswith("contract_") or issue in {"unsupported_schema_major", "schema_version_invalid"}
+        for issue in semantic_issues
+    )
+    revalidation_needed = bool(
+        latest_attempt.get("contract_revalidation_required") is True or contract_issue
+    )
+    if contract_issue:
+        state = "invalid"
+    elif revalidation_needed:
+        state = "changed_revalidation_needed"
+    elif drift:
+        state = "accepted_after_configured_revalidation"
+    elif accepted_revision:
+        state = "accepted"
+    elif accepted_schema:
+        state = "legacy_same_major"
+    else:
+        state = "unavailable"
+    return {
+        "state": state,
+        "schema_version": accepted_schema,
+        "revision": accepted_revision,
+        "revision_role": contract.get("revision_role"),
+        "evidence_poll_seconds": contract.get("evidence_poll_seconds"),
+        "resources": contract.get("resources") or {},
+        "configured_schema_version": configured_schema,
+        "configured_revision": configured_revision,
+        "drift": drift,
+        "revalidation_needed": revalidation_needed,
+        "freshness_independent": True,
+    }
+
+
+def _contract_acceptance(
+    payload: dict[str, Any],
+    previous_good: dict[str, Any] | None,
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    schema_version = str(payload.get("schemaVersion") or "")
+    if not _requires_contract(schema_version):
+        return {
+            "drift": [],
+            "revalidation_required": False,
+            "configured_contract_matches_live": None,
+        }
+    contract = _nested(payload, "contract")
+    live_revision = contract.get("revision")
+    configured_contract = _nested(config, "schema_contract")
+    configured_schema = config.get("schema_version") or configured_contract.get(
+        "schema_version"
+    )
+    configured_revision = config.get("contract_revision") or configured_contract.get(
+        "last_verified_revision"
+    )
+    previous_schema = _nested(previous_good or {}, "contract").get(
+        "schema_version"
+    ) or _nested(previous_good or {}, "identity").get("schema_version")
+    previous_revision = _nested(previous_good or {}, "contract").get("revision")
+    drift: list[str] = []
+    if configured_schema and schema_version != configured_schema:
+        drift.append("live_schema_differs_from_configured")
+    if configured_revision and live_revision != configured_revision:
+        drift.append("live_revision_differs_from_configured")
+    if previous_schema and schema_version != previous_schema:
+        drift.append("live_schema_differs_from_last_accepted")
+    if previous_revision and live_revision != previous_revision:
+        drift.append("live_revision_differs_from_last_accepted")
+    configured_matches_live = bool(
+        configured_schema == schema_version
+        and configured_revision
+        and configured_revision == live_revision
+    )
+    if not configured_schema or not configured_revision:
+        drift.append("live_contract_not_verified_in_config")
+    revalidation_required = bool(
+        not configured_matches_live
+        or (
+            previous_good
+            and (previous_schema != schema_version or previous_revision != live_revision)
+            and not configured_matches_live
+        )
+    )
+    return {
+        "drift": list(dict.fromkeys(drift)),
+        "revalidation_required": revalidation_required,
+        "configured_contract_matches_live": configured_matches_live,
     }
 
 
@@ -688,6 +1231,8 @@ def _project(
     last_known_good = last_known_good if isinstance(last_known_good, dict) else None
     freshness = _projection_status(last_known_good, latest_attempt, now)
     decision = _environment_decision(last_known_good, freshness, config)
+    contract_state = _contract_state(last_known_good, latest_attempt, config)
+    source_endpoint = latest_attempt.get("endpoint") or _endpoint(config)
     return {
         "artifact_type": "environment_evidence_current",
         "version": ENVIRONMENT_EVIDENCE_VERSION,
@@ -696,11 +1241,13 @@ def _project(
         "status": freshness.get("state"),
         "source": {
             "name": config.get("name") or "Clayton local Bukit Kiara environment evidence",
-            "endpoint": _endpoint(config),
+            "endpoint": source_endpoint,
+            "endpoint_source": latest_attempt.get("endpoint_source") or "config",
             "access": "athlete_managed_local_http_json",
             "fallback": "none",
         },
         "latest_attempt": latest_attempt or None,
+        "contract_state": contract_state,
         "last_known_good": last_known_good,
         "freshness": freshness,
         "decision": decision,
@@ -716,6 +1263,91 @@ def _project(
             "or indoor-air clearance."
         ),
     }
+
+
+def _future_projection(
+    stored: dict[str, Any],
+    config: dict[str, Any],
+    target_date: date,
+    observation_date: date,
+    now: datetime,
+) -> dict[str, Any]:
+    artifact = _project(stored, config, target_date, now)
+    latest = artifact.get("last_known_good") or {}
+    windows = latest.get("ride_windows") if isinstance(latest, dict) else {}
+    windows = windows if isinstance(windows, dict) else {}
+    matching_windows = [
+        name
+        for name in ("morning", "afternoon")
+        if isinstance(windows.get(name), dict)
+        and windows[name].get("target_date") == target_date.isoformat()
+    ]
+    artifact["decision"] = {
+        "gate": (
+            "future_exact_window_evidence_only"
+            if matching_windows
+            else "future_environment_recheck"
+        ),
+        "severity": "yellow",
+        "reason_codes": [
+            (
+                "exact_target_dated_ride_windows_available"
+                if matching_windows
+                else "no_exact_target_dated_ride_window"
+            )
+        ],
+        "reason": (
+            "Use only the exact target-dated ride-window evidence and its recheck; the current "
+            "observation is context and cannot clear or close this future session."
+        ),
+        "decision_role": "future_exact_window_only_no_current_observation_projection",
+        "can_promote_training": False,
+        "current_observation_applicable_to_target": False,
+        "current_pm_used_for_clearance_or_closure": False,
+        "matching_window_names": matching_windows,
+    }
+    artifact["future_target"] = {
+        "target_date": target_date.isoformat(),
+        "source_observation_date": observation_date.isoformat(),
+        "exact_target_window_names": matching_windows,
+        "current_observation_projected": False,
+        "future_observation_artifact_written": False,
+    }
+    artifact["persistence"] = {
+        **(artifact.get("persistence") or {}),
+        "dated_snapshot": f"snapshots/environment_evidence_{observation_date.isoformat()}.json",
+        "future_dated_snapshot_written": False,
+    }
+    return artifact
+
+
+def _within_advertised_poll_interval(
+    previous: dict[str, Any],
+    resolved_endpoint: str | None,
+    now: datetime,
+    config: dict[str, Any],
+) -> bool:
+    attempt = previous.get("latest_attempt") if isinstance(previous, dict) else {}
+    attempt = attempt if isinstance(attempt, dict) else {}
+    evidence = previous.get("last_known_good") if isinstance(previous, dict) else {}
+    evidence = evidence if isinstance(evidence, dict) else {}
+    if attempt.get("endpoint") != resolved_endpoint:
+        return False
+    attempted_at = _timestamp(attempt.get("attempted_at"))
+    if attempted_at is None:
+        return False
+    poll_seconds = _number(_nested(evidence, "contract").get("evidence_poll_seconds"))
+    poll_seconds = poll_seconds or _number(
+        _nested(evidence, "provenance", "sensor").get("poll_seconds")
+    )
+    poll_seconds = poll_seconds or _number(
+        _nested(config, "contract_discovery").get("evidence_poll_seconds")
+    )
+    poll_seconds = poll_seconds or _number(config.get("evidence_poll_seconds"))
+    if poll_seconds is None or poll_seconds <= 0:
+        return False
+    age = (now.astimezone(timezone.utc) - attempted_at.astimezone(timezone.utc)).total_seconds()
+    return 0 <= age < poll_seconds
 
 
 def build_environment_evidence(
@@ -743,9 +1375,13 @@ def build_environment_evidence(
         generated = generated.astimezone(ZoneInfo(str(timezone_name)))
     target = parse_date(for_date) or generated.date()
     current_path = snapshots_dir(root) / ARTIFACT_NAME
+    observation_date = generated.date()
     dated_path = snapshots_dir(root) / f"environment_evidence_{target.isoformat()}.json"
+    current_dated_path = (
+        snapshots_dir(root) / f"environment_evidence_{observation_date.isoformat()}.json"
+    )
 
-    if target != generated.date():
+    if target < observation_date:
         historical = read_json(dated_path, {})
         if isinstance(historical, dict) and historical.get("date") == target.isoformat():
             return {**historical, "historical_projection": True}
@@ -767,19 +1403,69 @@ def build_environment_evidence(
             "guardrail": "Current environment evidence is never projected backward into another date.",
         }
 
+    future_target = target > observation_date
     previous = read_json(current_path, {})
     previous_good = previous.get("last_known_good") if isinstance(previous, dict) else None
     resolved_endpoint = _endpoint(config, endpoint)
     if not refresh:
-        return _project(previous if isinstance(previous, dict) else {}, config, target, generated)
+        stored = previous if isinstance(previous, dict) else {}
+        return (
+            _future_projection(stored, config, target, observation_date, generated)
+            if future_target
+            else _project(stored, config, target, generated)
+        )
+    if (
+        endpoint is None
+        and fetch_json is None
+        and _within_advertised_poll_interval(
+            previous if isinstance(previous, dict) else {},
+            resolved_endpoint,
+            generated,
+            config,
+        )
+    ):
+        stored = previous if isinstance(previous, dict) else {}
+        current_projection = _project(
+            stored,
+            config,
+            observation_date,
+            generated,
+        )
+        write_json(current_path, current_projection)
+        write_json(current_dated_path, current_projection)
+        return (
+            _future_projection(stored, config, target, observation_date, generated)
+            if future_target
+            else current_projection
+        )
 
     latest_attempt: dict[str, Any] = {
         "attempted_at": generated.isoformat(timespec="seconds"),
         "endpoint": resolved_endpoint,
+        "endpoint_source": (
+            "explicit_override"
+            if endpoint
+            else "environment_override"
+            if os.getenv("COACH_RIDE_CONDITIONS_URL")
+            else "config"
+        ),
         "status": "failed",
         "error": None,
         "semantic_issues": [],
         "evidence_id": None,
+        "schema_version": None,
+        "contract_schema_version": None,
+        "contract_revision": None,
+        "contract_drift": [],
+        "contract_revalidation_required": False,
+        "configured_contract_matches_live": None,
+        "previous_accepted_schema_version": (
+            _nested(previous_good or {}, "contract").get("schema_version")
+            or _nested(previous_good or {}, "identity").get("schema_version")
+        ),
+        "previous_accepted_revision": _nested(previous_good or {}, "contract").get(
+            "revision"
+        ),
     }
     last_known_good = previous_good if isinstance(previous_good, dict) else None
     if not resolved_endpoint:
@@ -787,14 +1473,32 @@ def build_environment_evidence(
     else:
         try:
             payload = (fetch_json or _http_json)(resolved_endpoint, timeout)
-            issues = _validate_contract(payload, config, generated)
+            payload_contract = _nested(payload, "contract")
+            latest_attempt["schema_version"] = payload.get("schemaVersion")
+            latest_attempt["contract_schema_version"] = payload_contract.get("schemaVersion")
+            latest_attempt["contract_revision"] = payload_contract.get("revision")
+            issues = _validate_contract(payload, config, generated, last_known_good)
+            acceptance = _contract_acceptance(payload, last_known_good, config)
+            latest_attempt["contract_drift"] = acceptance["drift"]
+            latest_attempt["contract_revalidation_required"] = acceptance[
+                "revalidation_required"
+            ]
+            latest_attempt["configured_contract_matches_live"] = acceptance[
+                "configured_contract_matches_live"
+            ]
             latest_attempt["semantic_issues"] = issues
             latest_attempt["evidence_id"] = payload.get("evidenceId")
             if issues:
                 latest_attempt["status"] = "semantic_invalid"
+            elif acceptance["revalidation_required"]:
+                latest_attempt["status"] = "contract_revalidation_required"
+                latest_attempt["error"] = (
+                    "Live contract schema or revision changed; revalidate the advertised "
+                    "contract resources before accepting new evidence."
+                )
             else:
                 latest_attempt["status"] = "success"
-                last_known_good = _normalize(payload)
+                last_known_good = _normalize(payload, config)
         except Exception as exc:  # fail-soft inside the same-day stack rebuild
             latest_attempt.update(
                 {
@@ -803,18 +1507,21 @@ def build_environment_evidence(
                 }
             )
 
-    artifact = _project(
-        {
-            "latest_attempt": latest_attempt,
-            "last_known_good": last_known_good,
-        },
+    stored = {
+        "latest_attempt": latest_attempt,
+        "last_known_good": last_known_good,
+    }
+    current_artifact = _project(
+        stored,
         config,
-        target,
+        observation_date,
         generated,
     )
-    write_json(current_path, artifact)
-    write_json(dated_path, artifact)
-    return artifact
+    write_json(current_path, current_artifact)
+    write_json(current_dated_path, current_artifact)
+    if future_target:
+        return _future_projection(stored, config, target, observation_date, generated)
+    return current_artifact
 
 
 def fetch_ride_conditions(

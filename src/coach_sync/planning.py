@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+import math
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from .garmin_arbitration import build_garmin_arbitration
 from .io import read_json, write_json
@@ -823,21 +825,23 @@ def _venue_token(value: object) -> str:
 
 
 def _environment_venue_scope(environment: dict) -> tuple[set[str], set[str]]:
-    decision = environment.get("decision") if isinstance(environment, dict) else {}
-    decision = decision if isinstance(decision, dict) else {}
-    keys = {
+    """Return the validated source scope, never mutable coaching-decision aliases.
+
+    The local endpoint is a direct Bukit Kiara/TTDI evidence product. Even if a
+    decision block or future config accidentally advertises another alias, planning
+    must not transfer this evidence to Denai Peladang or another venue.
+    """
+    latest = environment.get("last_known_good") if isinstance(environment, dict) else {}
+    latest = latest if isinstance(latest, dict) else {}
+    scope = latest.get("scope")
+    scope = scope if isinstance(scope, dict) else {}
+    advertised_keys = {
         _venue_token(value).replace(" ", "_")
-        for value in (decision.get("venue_keys") or BUKIT_KIARA_VENUE_KEYS)
+        for value in (scope.get("venue_keys") or BUKIT_KIARA_VENUE_KEYS)
         if value
     }
-    aliases = {
-        _venue_token(value)
-        for value in (decision.get("venue_aliases") or BUKIT_KIARA_VENUE_ALIASES)
-        if value
-    }
-    return keys or set(BUKIT_KIARA_VENUE_KEYS), aliases or set(
-        BUKIT_KIARA_VENUE_ALIASES
-    )
+    keys = advertised_keys.intersection(BUKIT_KIARA_VENUE_KEYS)
+    return keys or set(BUKIT_KIARA_VENUE_KEYS), set(BUKIT_KIARA_VENUE_ALIASES)
 
 
 def _session_explicitly_targets_environment_venue(
@@ -848,21 +852,514 @@ def _session_explicitly_targets_environment_venue(
     keys, aliases = _environment_venue_scope(environment)
     action = session.get("action_identity")
     action = action if isinstance(action, dict) else {}
-    key_values = (action.get("venue_key"), session.get("venue_key"))
-    if any(_venue_token(value).replace(" ", "_") in keys for value in key_values if value):
-        return True
+    # A canonical action identity is authoritative. Conflicting prose must not turn
+    # a DP session into a Kiara session (or vice versa).
+    action_key = action.get("venue_key")
+    if action_key:
+        return _venue_token(action_key).replace(" ", "_") in keys
+    session_key = session.get("venue_key")
+    if session_key:
+        return _venue_token(session_key).replace(" ", "_") in keys
 
     venue = session.get("venue") or session.get("location")
     if isinstance(venue, dict):
-        venue_values = (
-            venue.get("key"),
-            venue.get("venue_key"),
-            venue.get("name"),
-            venue.get("label"),
-        )
+        venue_key = venue.get("key") or venue.get("venue_key")
+        if venue_key:
+            return _venue_token(venue_key).replace(" ", "_") in keys
+        venue_values = (venue.get("name"), venue.get("label"))
     else:
         venue_values = (venue,)
     return any(_venue_token(value) in aliases for value in venue_values if value)
+
+
+def _parse_environment_datetime(value: object) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo is not None else None
+
+
+def _environment_timezone(environment: dict) -> ZoneInfo:
+    latest = environment.get("last_known_good") or {}
+    scope = latest.get("scope") if isinstance(latest, dict) else {}
+    scope = scope if isinstance(scope, dict) else {}
+    location = scope.get("location")
+    location = location if isinstance(location, dict) else {}
+    timezone_name = location.get("timezone") or DEFAULT_TIMEZONE
+    try:
+        return ZoneInfo(str(timezone_name))
+    except (KeyError, ValueError):
+        return ZoneInfo(DEFAULT_TIMEZONE)
+
+
+def _observation_matches_target_date(environment: dict, target_date: date) -> bool:
+    if parse_date(environment.get("date")) != target_date:
+        return False
+    latest = environment.get("last_known_good") or {}
+    observation = latest.get("observation") if isinstance(latest, dict) else {}
+    observation = observation if isinstance(observation, dict) else {}
+    observed = _parse_environment_datetime(
+        observation.get("observed_at_utc") or observation.get("observed_at")
+    )
+    return bool(observed and observed.astimezone(_environment_timezone(environment)).date() == target_date)
+
+
+def _validated_forecast_windows(environment: dict, target_date: date) -> list[dict]:
+    """Return only exact, structured forecast windows for the requested local date.
+
+    `target_day: Tomorrow` is presentation text and is deliberately ignored. A
+    retained response cannot therefore roll "tomorrow" forward after a failed
+    refresh.
+    """
+    latest = environment.get("last_known_good") or {}
+    ride_windows = latest.get("ride_windows") if isinstance(latest, dict) else {}
+    ride_windows = ride_windows if isinstance(ride_windows, dict) else {}
+    timezone = _environment_timezone(environment)
+    valid: list[dict] = []
+    for name in ("morning", "afternoon"):
+        window = ride_windows.get(name)
+        if not isinstance(window, dict):
+            continue
+        weather = window.get("weather_forecast")
+        weather = weather if isinstance(weather, dict) else {}
+        start = _parse_environment_datetime(
+            weather.get("start_at_utc") or window.get("start_at_utc")
+        )
+        end = _parse_environment_datetime(
+            weather.get("end_at_utc") or window.get("end_at_utc")
+        )
+        normalized_date = parse_date(window.get("target_date"))
+        weather_date = parse_date(weather.get("target_date"))
+        modeled_window = _modeled_interval_minutes(window.get("modeled_session"))
+        modeled_weather = _modeled_interval_minutes(weather.get("modeled_session"))
+        start_local = start.astimezone(timezone) if start is not None else None
+        end_local = end.astimezone(timezone) if end is not None else None
+        timestamp_interval = (
+            (start_local.hour * 60 + start_local.minute, end_local.hour * 60 + end_local.minute)
+            if start_local is not None and end_local is not None
+            else None
+        )
+        modeled_duration_seconds = (
+            (modeled_window[1] - modeled_window[0]) * 60
+            if modeled_window is not None
+            else None
+        )
+        if (
+            start is None
+            or end is None
+            or end <= start
+            or weather.get("available") is False
+            or normalized_date != target_date
+            or weather_date not in {None, target_date}
+            or start_local.date() != target_date
+            or end_local.date() != target_date
+            or modeled_window is None
+            or modeled_weather is None
+            or modeled_window != modeled_weather
+            or modeled_window != timestamp_interval
+            or (end - start).total_seconds() != modeled_duration_seconds
+        ):
+            continue
+        valid.append({"name": name, **window})
+    return valid
+
+
+def _modeled_interval_minutes(value: object) -> tuple[int, int] | None:
+    text = str(value or "").strip().replace("–", "-")
+    parts = [part.strip() for part in text.split("-")]
+    if len(parts) != 2:
+        return None
+    try:
+        start = datetime.strptime(parts[0], "%H:%M").time()
+        end = datetime.strptime(parts[1], "%H:%M").time()
+    except ValueError:
+        return None
+    start_min = start.hour * 60 + start.minute
+    end_min = end.hour * 60 + end.minute
+    return (start_min, end_min) if end_min > start_min else None
+
+
+def _planned_window_selector(
+    session: dict,
+    target_date: date,
+    timezone: ZoneInfo,
+) -> tuple[str | None, datetime | None, str | None]:
+    """Parse a named slot or an explicit local start without guessing by hour."""
+    action = session.get("action_identity")
+    action = action if isinstance(action, dict) else {}
+    values = [
+        action.get("planned_start_at_local"),
+        action.get("start_at_local"),
+        action.get("time_of_day"),
+        session.get("planned_start_at_local"),
+        session.get("start_at_local"),
+        session.get("planned_start_time_local"),
+        session.get("time_of_day"),
+    ]
+    for value in values:
+        if not value:
+            continue
+        token = _venue_token(value)
+        if token in {"morning", "am"}:
+            return "morning", None, "explicit_named_window"
+        if token in {"afternoon", "pm"}:
+            return "afternoon", None, "explicit_named_window"
+
+        text = str(value).strip()
+        try:
+            local_time = datetime.strptime(text, "%H:%M").time()
+        except ValueError:
+            local_time = None
+        if local_time is not None:
+            return (
+                None,
+                datetime.combine(target_date, local_time, tzinfo=timezone),
+                "explicit_local_clock",
+            )
+
+        try:
+            parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        local = (
+            parsed.replace(tzinfo=timezone)
+            if parsed.tzinfo is None
+            else parsed.astimezone(timezone)
+        )
+        basis = (
+            "explicit_local_datetime"
+            if local.date() == target_date
+            else "explicit_datetime_wrong_target_date"
+        )
+        return None, local, basis
+    return None, None, None
+
+
+def _select_forecast_windows(
+    windows: list[dict],
+    session: dict,
+    environment: dict,
+    target_date: date,
+) -> tuple[list[dict], list[dict], str | None, str]:
+    timezone = _environment_timezone(environment)
+    window_name, planned_start, time_basis = _planned_window_selector(
+        session,
+        target_date,
+        timezone,
+    )
+    if window_name is not None:
+        candidates = [window for window in windows if window.get("name") == window_name]
+        return candidates, [], time_basis, "named_window_planning_context"
+    if planned_start is None:
+        return windows, [], None, "time_unspecified"
+    if planned_start.date() != target_date:
+        return [], [], time_basis, "wrong_target_date"
+
+    point_candidates: list[dict] = []
+    for window in windows:
+        weather = window.get("weather_forecast")
+        weather = weather if isinstance(weather, dict) else {}
+        start = _parse_environment_datetime(weather.get("start_at_utc"))
+        end = _parse_environment_datetime(weather.get("end_at_utc"))
+        if start is None or end is None:
+            continue
+        start_local = start.astimezone(timezone)
+        end_local = end.astimezone(timezone)
+        if start_local <= planned_start < end_local:
+            point_candidates.append(window)
+
+    if not point_candidates:
+        return [], [], time_basis, "exact_start_outside_modeled_window"
+    duration_min = _explicit_session_duration_min(session)
+    if duration_min is None:
+        return (
+            point_candidates,
+            [],
+            time_basis,
+            "exact_interval_duration_missing",
+        )
+    planned_end = planned_start + timedelta(minutes=duration_min)
+    applicable: list[dict] = []
+    for window in point_candidates:
+        weather = window.get("weather_forecast")
+        weather = weather if isinstance(weather, dict) else {}
+        end = _parse_environment_datetime(weather.get("end_at_utc"))
+        if end is not None and planned_end <= end.astimezone(timezone):
+            applicable.append(window)
+    if not applicable:
+        return [], [], time_basis, "exact_interval_outside_modeled_window"
+    return applicable, applicable, time_basis, "exact_interval_contained"
+
+
+def _explicit_session_duration_min(session: dict) -> float | None:
+    action = session.get("action_identity")
+    action = action if isinstance(action, dict) else {}
+    dose = session.get("dose")
+    dose = dose if isinstance(dose, dict) else {}
+    values = (
+        action.get("planned_duration_min"),
+        action.get("duration_min"),
+        session.get("planned_duration_min"),
+        session.get("duration_min"),
+        dose.get("total_duration_min"),
+        dose.get("duration_min"),
+    )
+    for value in values:
+        if isinstance(value, bool):
+            continue
+        try:
+            duration = float(value)
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(duration) and duration > 0:
+            return duration
+    return None
+
+
+def _environment_evaluation_time(environment: dict) -> datetime | None:
+    generated = _parse_environment_datetime(environment.get("generated_at"))
+    if generated is not None:
+        return generated
+    attempt = environment.get("latest_attempt")
+    attempt = attempt if isinstance(attempt, dict) else {}
+    return _parse_environment_datetime(attempt.get("attempted_at"))
+
+
+def _requires_exact_window_recheck(environment: dict) -> bool:
+    latest = environment.get("last_known_good")
+    latest = latest if isinstance(latest, dict) else {}
+    identity = latest.get("identity")
+    identity = identity if isinstance(identity, dict) else {}
+    version = str(identity.get("schema_version") or "")
+    try:
+        major, minor, *_ = (int(part) for part in version.split("."))
+    except (TypeError, ValueError):
+        return False
+    return (major, minor) >= (1, 6)
+
+
+def _window_recheck_state(environment: dict, window: dict) -> str:
+    """Distinguish an issued forecast from a post-recheck successful refresh."""
+    timezone = _environment_timezone(environment)
+    raw_recheck = window.get("recheck_at_local")
+    if not raw_recheck:
+        return (
+            "invalid_recheck_time"
+            if _requires_exact_window_recheck(environment)
+            else "not_provided"
+        )
+    recheck = _parse_environment_datetime(raw_recheck)
+    if recheck is None:
+        return "invalid_recheck_time"
+    recheck = recheck.astimezone(timezone)
+    evaluated = _environment_evaluation_time(environment)
+    if evaluated is None:
+        return "retained_recheck_required"
+    evaluated = evaluated.astimezone(timezone)
+    if evaluated < recheck:
+        return "planning_only_recheck_pending"
+
+    attempt = environment.get("latest_attempt")
+    attempt = attempt if isinstance(attempt, dict) else {}
+    attempted_at = _parse_environment_datetime(attempt.get("attempted_at"))
+    if (
+        str(attempt.get("status") or "").lower() == "success"
+        and attempted_at is not None
+        and attempted_at.astimezone(timezone) >= recheck
+    ):
+        return "recheck_satisfied"
+    return "retained_recheck_required"
+
+
+def _selected_recheck_state(environment: dict, windows: list[dict]) -> str:
+    states = {_window_recheck_state(environment, window) for window in windows}
+    if "retained_recheck_required" in states or "invalid_recheck_time" in states:
+        return "retained_recheck_required"
+    if "planning_only_recheck_pending" in states:
+        return "planning_only_recheck_pending"
+    if states == {"recheck_satisfied"}:
+        return "recheck_satisfied"
+    return "not_provided"
+
+
+def _compact_forecast_window(window: dict, environment: dict) -> dict:
+    weather = window.get("weather_forecast")
+    weather = weather if isinstance(weather, dict) else {}
+    thunderstorm = weather.get("thunderstorm")
+    thunderstorm = thunderstorm if isinstance(thunderstorm, dict) else {}
+    particle = window.get("particle_forecast")
+    particle = particle if isinstance(particle, dict) else {}
+    return {
+        "name": window.get("name"),
+        "target_date": window.get("target_date"),
+        "ride_window": window.get("ride_window"),
+        "modeled_session": window.get("modeled_session"),
+        "current_conditions_applicable": bool(window.get("current_conditions_applicable")),
+        "recheck": window.get("recheck"),
+        "recheck_at_local": window.get("recheck_at_local"),
+        "recheck_state": _window_recheck_state(environment, window),
+        "confidence": window.get("confidence"),
+        "particle_forecast": {
+            "available": particle.get("available"),
+            "validation_state": particle.get("validation_state"),
+            "mean_range_pm2_5_ug_m3": particle.get("mean_range_pm2_5_ug_m3"),
+            "upper_peak_pm2_5_ug_m3": particle.get("upper_peak_pm2_5_ug_m3"),
+        },
+        "weather_forecast": {
+            "available": weather.get("available"),
+            "start_at_utc": weather.get("start_at_utc"),
+            "end_at_utc": weather.get("end_at_utc"),
+            "target_date": weather.get("target_date"),
+            "modeled_session": weather.get("modeled_session"),
+            "rain_used_for_comparison": weather.get("rain_used_for_comparison"),
+            "rain_signal": weather.get("rain_signal"),
+            "thunderstorm": {
+                key: thunderstorm.get(key)
+                for key in ("level", "rank", "label", "basis", "source", "used_for_decision")
+            },
+        },
+    }
+
+
+def _environment_plan_applicability(
+    environment: dict,
+    target_date: date,
+    session: dict,
+) -> dict:
+    action = session.get("action_identity")
+    action = action if isinstance(action, dict) else {}
+    unresolved_options: list[str] = []
+    if not action.get("venue_key"):
+        raw_options = session.get("venue_options")
+        if isinstance(raw_options, (list, tuple)):
+            unresolved_options = [_venue_token(value) for value in raw_options if value]
+        venue_text = _venue_token(session.get("venue") or session.get("location"))
+        if (
+            any(alias in venue_text for alias in ("bukit kiara", "kiara", "ttdi"))
+            and any(alias in venue_text for alias in ("denai peladang", " dp", "dp "))
+        ):
+            unresolved_options = ["bukit kiara", "denai peladang"]
+    normalized_options = " ".join(unresolved_options)
+    if unresolved_options and "kiara" in normalized_options and (
+        "denai peladang" in normalized_options or "dp" in normalized_options
+    ):
+        return {
+            "status": "multi_venue_choice_unresolved",
+            "target_date": target_date.isoformat(),
+            "reason": "Kiara and Denai Peladang require separate environment branches; choose the venue before applying an automatic ceiling.",
+            "can_promote_training": False,
+            "venue_applicability": {
+                "bukit_kiara": "endpoint_evidence_available_subject_to_date",
+                "denai_peladang": "venue_specific_evidence_unavailable",
+            },
+            "windows": [],
+        }
+    venue_match = _session_explicitly_targets_environment_venue(session, environment)
+    if not venue_match:
+        return {
+            "status": "venue_specific_evidence_unavailable",
+            "target_date": target_date.isoformat(),
+            "reason": "The endpoint is direct Bukit Kiara/TTDI evidence; it cannot clear or close Denai Peladang or another venue.",
+            "can_promote_training": False,
+            "windows": [],
+        }
+
+    windows = _validated_forecast_windows(environment, target_date)
+    if not windows:
+        if _observation_matches_target_date(environment, target_date):
+            return {
+                "status": "current_observation_applicable",
+                "target_date": target_date.isoformat(),
+                "reason": "The normalized observation date matches the plan date.",
+                "can_promote_training": False,
+                "windows": [],
+            }
+        return {
+            "status": "forecast_unavailable_recheck",
+            "target_date": target_date.isoformat(),
+            "reason": "No exact structured Bukit Kiara forecast window matches this plan date; refresh closer to departure.",
+            "can_promote_training": False,
+            "windows": [],
+        }
+
+    safety_windows, applicable_windows, time_basis, interval_state = (
+        _select_forecast_windows(
+            windows,
+            session,
+            environment,
+            target_date,
+        )
+    )
+    recheck_state = _selected_recheck_state(environment, safety_windows)
+    comparison = ((environment.get("last_known_good") or {}).get("ride_windows") or {}).get(
+        "comparison"
+    ) or {}
+    if interval_state == "time_unspecified":
+        applicability_status = "forecast_windows_time_unspecified"
+        applicability_reason = (
+            "Morning and afternoon are separate forecast candidates; no window was auto-selected."
+        )
+    elif interval_state == "named_window_planning_context":
+        applicability_status = "forecast_named_window_planning_context"
+        applicability_reason = (
+            "The named window is planning and safety context only; an exact action interval is required for normal applicability."
+        )
+    elif interval_state == "exact_interval_duration_missing":
+        applicability_status = "forecast_exact_interval_duration_missing"
+        applicability_reason = (
+            "The planned start is inside a modeled window, but explicit session duration is missing; the window cannot clear the full action."
+        )
+    elif interval_state in {
+        "wrong_target_date",
+        "exact_start_outside_modeled_window",
+        "exact_interval_outside_modeled_window",
+    }:
+        applicability_status = "planned_interval_outside_published_window_recheck"
+        applicability_reason = (
+            "The complete proposed local action interval is not contained in an exact published modeled window on this date."
+        )
+    elif recheck_state == "planning_only_recheck_pending":
+        applicability_status = "forecast_planning_only_recheck_pending"
+        applicability_reason = (
+            "The exact window is planning context only until its stated recheck; it cannot clear the ride."
+        )
+    elif recheck_state == "retained_recheck_required":
+        applicability_status = "retained_recheck_required"
+        applicability_reason = (
+            "The stated recheck has passed without a successful refresh at or after that time; retained evidence cannot clear the ride."
+        )
+    else:
+        applicability_status = "forecast_window_applicable"
+        applicability_reason = (
+            "An exact structured forecast window matches the plan date and planned start."
+        )
+
+    return {
+        "status": applicability_status,
+        "target_date": target_date.isoformat(),
+        "reason": applicability_reason,
+        "time_basis": time_basis,
+        "action_interval_state": interval_state,
+        "recheck_state": recheck_state,
+        "can_promote_training": False,
+        "current_pm_used_for_clearance": False,
+        "preferred_window": comparison.get("preferred_window"),
+        "preferred_window_relative_only": comparison.get("relative_only"),
+        "ride_approval": comparison.get("ride_approval"),
+        "preferred_window_used_for_selection": False,
+        "windows": [
+            _compact_forecast_window(window, environment) for window in windows
+        ],
+        "candidate_window_names": [
+            window.get("name") for window in safety_windows
+        ],
+        "applicable_window_names": [
+            window.get("name") for window in applicable_windows
+        ],
+    }
 
 
 def _is_definitely_indoor_or_rest(session: dict) -> bool:
@@ -881,7 +1378,11 @@ def _is_definitely_indoor_or_rest(session: dict) -> bool:
     )
 
 
-def _compact_environment_input(state: dict) -> dict | None:
+def _compact_environment_input(
+    state: dict,
+    target_date: date,
+    session: dict,
+) -> dict | None:
     environment = state.get("environment_evidence")
     if not isinstance(environment, dict) or not environment:
         return None
@@ -893,6 +1394,8 @@ def _compact_environment_input(state: dict) -> dict | None:
     observation = observation if isinstance(observation, dict) else {}
     provenance = latest.get("provenance")
     provenance = provenance if isinstance(provenance, dict) else {}
+    scope = latest.get("scope")
+    scope = scope if isinstance(scope, dict) else {}
     attempt = environment.get("latest_attempt")
     attempt = attempt if isinstance(attempt, dict) else {}
     decision = environment.get("decision")
@@ -918,6 +1421,12 @@ def _compact_environment_input(state: dict) -> dict | None:
             "pm2_5_ug_m3": observation.get("pm2_5_ug_m3"),
             "sensor": provenance.get("sensor"),
         },
+        "scope": {
+            "role": scope.get("role"),
+            "venue_keys": scope.get("venue_keys") or ["bukit_kiara"],
+            "location": scope.get("location"),
+            "transfer_to_unlisted_venues": False,
+        },
         "decision": {
             key: decision.get(key)
             for key in (
@@ -934,6 +1443,11 @@ def _compact_environment_input(state: dict) -> dict | None:
                 "can_promote_training",
             )
         },
+        "plan_applicability": _environment_plan_applicability(
+            environment,
+            target_date,
+            session,
+        ),
         "guardrail": environment.get("guardrail"),
     }
 
@@ -1011,11 +1525,38 @@ def _environment_indoor_fallback(environment: dict, source_session: dict) -> dic
     }
 
 
+def _is_high_consequence_outdoor_session(session: dict) -> bool:
+    if _is_definitely_indoor_or_rest(session):
+        return False
+    if _is_mtb_session(session):
+        return True
+    text = " ".join(
+        str(session.get(key) or "").lower()
+        for key in ("type", "modality", "intensity", "title")
+    )
+    return "outdoor" in text and any(
+        marker in text
+        for marker in ("hard", "technical", "quality", "race", "interval", "high")
+    )
+
+
+def _window_has_structured_thunderstorm_hold(window: dict) -> bool:
+    weather = window.get("weather_forecast")
+    weather = weather if isinstance(weather, dict) else {}
+    thunderstorm = weather.get("thunderstorm")
+    thunderstorm = thunderstorm if isinstance(thunderstorm, dict) else {}
+    return bool(
+        str(thunderstorm.get("level") or "").lower() in {"likely", "severe"}
+        and thunderstorm.get("used_for_decision") is True
+    )
+
+
 def _environment_constraint_for_session(
     effective: dict,
     original: dict,
     state: dict,
     *,
+    target_date: date,
     sabbath_exception: dict | None = None,
     recurring_scheduled_rest: dict | None = None,
 ) -> tuple[dict, dict] | None:
@@ -1036,33 +1577,86 @@ def _environment_constraint_for_session(
     decision = environment.get("decision") or {}
     freshness = environment.get("freshness") or {}
     freshness_state = str(freshness.get("state") or environment.get("status") or "").lower()
-    if freshness_state in {"expired", "unknown", "historical_unavailable"}:
-        return None
-
+    current_applies = _observation_matches_target_date(environment, target_date)
     gate = str(decision.get("gate") or "")
-    current_pm = decision.get("current_pm2_5_ug_m3")
-    try:
-        current_pm = float(current_pm) if current_pm is not None else None
-    except (TypeError, ValueError):
-        current_pm = None
-    fresh_or_retained = freshness_state in {"current", "retained_current"}
-    stale = freshness_state == "stale"
-    all_outdoor_breach = gate in {
-        "close_all_planned_outdoor_exercise",
-        "outdoor_training_closed",
-    } or bool(fresh_or_retained and current_pm is not None and current_pm > 150)
-    mtb_breach = gate in {
-        "close_mtb_prolonged_endurance_high_ventilation",
-        "retained_high_ventilation_closure_pending_refresh",
-        "outdoor_mtb_endurance_high_ventilation_closed",
-        "retained_outdoor_mtb_endurance_high_ventilation_closed_pending_refresh",
-    } or bool(
-        (fresh_or_retained or stale)
-        and current_pm is not None
-        and current_pm >= 51
-    )
-    if not all_outdoor_breach and not (mtb_breach and _is_mtb_session(original)):
-        return None
+    current_pm: float | None = None
+    forecast_window_names: list[str] = []
+    forecast_recheck_state: str | None = None
+    reason = decision.get("reason")
+
+    current_breach = False
+    if current_applies and freshness_state not in {
+        "expired",
+        "unknown",
+        "historical_unavailable",
+    }:
+        raw_current_pm = decision.get("current_pm2_5_ug_m3")
+        try:
+            current_pm = float(raw_current_pm) if raw_current_pm is not None else None
+        except (TypeError, ValueError):
+            current_pm = None
+        fresh_or_retained = freshness_state in {"current", "retained_current"}
+        stale = freshness_state == "stale"
+        all_outdoor_breach = gate in {
+            "close_all_planned_outdoor_exercise",
+            "outdoor_training_closed",
+        } or bool(
+            (fresh_or_retained or stale)
+            and current_pm is not None
+            and current_pm > 150
+        )
+        mtb_breach = gate in {
+            "close_mtb_prolonged_endurance_high_ventilation",
+            "retained_high_ventilation_closure_pending_refresh",
+            "outdoor_mtb_endurance_high_ventilation_closed",
+            "retained_outdoor_mtb_endurance_high_ventilation_closed_pending_refresh",
+        } or bool(
+            (fresh_or_retained or stale)
+            and current_pm is not None
+            and current_pm >= 51
+        )
+        current_breach = all_outdoor_breach or (
+            mtb_breach and _is_mtb_session(original)
+        )
+
+    if not current_breach:
+        # A later window never uses the current reading as clearance. Current high
+        # evidence may retain a restriction; otherwise use only the exact window's
+        # structured safety evidence.
+        windows = _validated_forecast_windows(environment, target_date)
+        if not windows or not _is_high_consequence_outdoor_session(original):
+            return None
+        safety_windows, _, time_basis, _ = _select_forecast_windows(
+            windows,
+            original,
+            environment,
+            target_date,
+        )
+        if not safety_windows:
+            return None
+        thunder_windows = [
+            window
+            for window in safety_windows
+            if _window_has_structured_thunderstorm_hold(window)
+        ]
+        # With no planned time, do not choose the favourable window. A deterministic
+        # hold is warranted only when every published option carries the structured
+        # likely/severe signal; otherwise planning surfaces both for a later choice.
+        thunder_applies = bool(thunder_windows) and (
+            time_basis is not None or len(thunder_windows) == len(safety_windows)
+        )
+        if not thunder_applies:
+            return None
+        gate = "structured_thunderstorm_hold"
+        forecast_window_names = [str(window.get("name")) for window in thunder_windows]
+        forecast_recheck_state = _selected_recheck_state(
+            environment,
+            thunder_windows,
+        )
+        reason = (
+            "Structured likely/severe thunderstorm evidence applies to the exact-date "
+            "Bukit Kiara forecast window; hold or move this high-consequence outdoor session."
+        )
 
     if sabbath_exception is not None:
         replacement = _scheduled_rest_plan(
@@ -1078,7 +1672,7 @@ def _environment_constraint_for_session(
     identity = latest.get("identity") if isinstance(latest.get("identity"), dict) else {}
     constraint = {
         "source": "environment_evidence",
-        "reason": decision.get("reason")
+        "reason": reason
         or "Bukit Kiara environmental evidence closes the planned outdoor exposure.",
         "gate": gate,
         "evidence_id": identity.get("evidence_id"),
@@ -1088,6 +1682,9 @@ def _environment_constraint_for_session(
             "expired_after_seconds": freshness.get("expired_after_seconds"),
         },
         "current_pm2_5_ug_m3": current_pm,
+        "forecast_window_names": forecast_window_names,
+        "forecast_recheck_state": forecast_recheck_state,
+        "target_date": target_date.isoformat(),
         "decision_role": "venue_scoped_outdoor_downshift_only",
         "original_session": _session_summary(effective),
         "effective_session": _session_summary(replacement),
@@ -1118,6 +1715,7 @@ def _apply_session_constraints(
     arbitration: dict,
     plan_source: dict,
     *,
+    target_date: date,
     sabbath_exception: dict | None = None,
     recurring_scheduled_rest: dict | None = None,
 ) -> tuple[dict, list[dict]]:
@@ -1193,6 +1791,7 @@ def _apply_session_constraints(
         effective,
         original,
         state,
+        target_date=target_date,
         sabbath_exception=sabbath_exception,
         recurring_scheduled_rest=recurring_scheduled_rest,
     )
@@ -1419,7 +2018,6 @@ def build_today_plan(
     enforce_scheduled_rest = bool(scheduled_rest and sabbath_exception is None)
     weekly_session = load_weekly_session(root, target_date)
     selected_session = planned_session or weekly_session
-    environment_input = _compact_environment_input(state)
     plan_source = {"type": "today_plan", "path": "snapshots/today_plan.json"}
     garmin_arbitration = build_garmin_arbitration(state)
     session_lifecycle = _planned_session_lifecycle(planned_session, state, target_date)
@@ -1469,6 +2067,7 @@ def build_today_plan(
             state,
             garmin_arbitration,
             plan_source,
+            target_date=target_date,
             sabbath_exception=sabbath_exception,
             recurring_scheduled_rest=recurring_scheduled_rest,
         )
@@ -1500,6 +2099,11 @@ def build_today_plan(
         and isinstance(selected_session.get("session"), dict)
         else session
     )
+    environment_input = _compact_environment_input(
+        state,
+        target_date,
+        environment_scope_session,
+    )
     environment_decision = (
         environment_input.get("decision")
         if isinstance(environment_input, dict)
@@ -1507,6 +2111,15 @@ def build_today_plan(
         else {}
     )
     environment_gate = str(environment_decision.get("gate") or "")
+    environment_applicability = (
+        environment_input.get("plan_applicability")
+        if isinstance(environment_input, dict)
+        and isinstance(environment_input.get("plan_applicability"), dict)
+        else {}
+    )
+    environment_applicability_status = str(
+        environment_applicability.get("status") or ""
+    )
     environment_constraint_applied = any(
         item.get("source") == "environment_evidence"
         for item in applied_constraints
@@ -1518,15 +2131,28 @@ def build_today_plan(
             environment_scope_session,
             state.get("environment_evidence") or {},
         )
-        and environment_gate
-        not in {"", "no_environment_downshift_from_current_point"}
         and not environment_constraint_applied
     ):
-        guardrails.insert(
-            0,
-            environment_decision.get("reason")
-            or "Bukit Kiara environment evidence requires a same-day hold or recheck.",
-        )
+        environment_guardrail = None
+        if (
+            environment_applicability_status == "current_observation_applicable"
+            and environment_gate
+            not in {"", "no_environment_downshift_from_current_point"}
+        ):
+            environment_guardrail = environment_decision.get("reason")
+        elif environment_applicability_status in {
+            "forecast_windows_time_unspecified",
+            "forecast_window_applicable",
+            "forecast_planning_only_recheck_pending",
+            "forecast_named_window_planning_context",
+            "forecast_exact_interval_duration_missing",
+            "retained_recheck_required",
+            "planned_interval_outside_published_window_recheck",
+            "forecast_unavailable_recheck",
+        }:
+            environment_guardrail = environment_applicability.get("reason")
+        if environment_guardrail:
+            guardrails.insert(0, environment_guardrail)
     if selected_session and not enforce_scheduled_rest and not (level == "red" or hard_guidance == "avoid"):
         if plan_source.get("type") == "input_planned_session":
             guardrails.insert(0, f"Using coach-authored planned session from {plan_source['path']}.")

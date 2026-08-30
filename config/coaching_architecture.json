@@ -162,7 +162,7 @@
     "coaching_architecture": "config/coaching_architecture.json is the durable training architecture for future agents.",
     "config_context": "config/athlete_context.json remains the canonical athlete strategy store.",
     "daily_decision_surface": "snapshots/coach_packet.json remains the same-day decision surface after sync/rebuild.",
-    "environment_evidence": "snapshots/environment_evidence.json and snapshots/environment_evidence_YYYY-MM-DD.json retain bounded normalized selected fields from the athlete-managed v1 Bukit Kiara endpoint plus latest-attempt and last-known-good semantics. They store neither the raw endpoint response nor server history and never use legacy endpoint data, fall back to IQAir, promote readiness or authorize an automatic intensity increase.",
+    "environment_evidence": "snapshots/environment_evidence.json and snapshots/environment_evidence_YYYY-MM-DD.json retain bounded decision-bearing fields from the athlete-managed schema-1.6 Bukit Kiara endpoint plus contract state, exact-date forecast windows, latest-attempt and last-known-good semantics. They store neither the raw endpoint response nor server history; never use legacy endpoint data or fall back to IQAir; and cannot clear Denai Peladang, promote readiness or authorize an automatic intensity increase.",
     "garmin_surface_manifest": "snapshots/garmin_surface_manifest.json inventories configured Garmin endpoints, attempt states, raw/normalized field coverage, eras/gaps, units, lineage, privacy checks, and actual downstream consumers.",
     "garmin_training_readiness": "snapshots/garmin_training_readiness_current.json is a separate context-only Garmin feed with source date, age, endpoint health, and tri-state device-capability provenance; it cannot replace physical readiness or the CNS ceiling.",
     "latest_session_evidence": "snapshots/current_state.json latest_session_evidence is the bounded raw-session interpretation block; every joined field must retain source, unit, and confidence limits.",
@@ -182,7 +182,7 @@
       "Do not count elliptical load as bike-specific maintenance.",
       "Do not treat Garmin readiness as direct trail-skill readiness without subjective notes.",
       "Do not infer exercise-time oxygenation or respiration from daily or sleep Garmin summaries.",
-      "Do not convert the v1 environment-evidence endpoint's raw PM2.5/PM10 concentrations into AQI, project its venue scope elsewhere, or treat a no-downshift result as readiness clearance or permission to increase intensity.",
+      "Do not convert the schema-1.6 environment-evidence endpoint's raw PM2.5/PM10 concentrations into AQI, project Kiara weather/thunderstorm/ride-window evidence onto Denai Peladang, or treat an experimental ranking or no-downshift result as readiness clearance or permission to increase intensity.",
       "Do not treat low training load as permission for high-consequence MTB when CNS readiness is impaired or compromised.",
       "Do not use historical finger injury as a current training gate.",
       "Do not copy a full ideal week when life load, sleep, HRV, arm pump, or back-to-back trail plans require density control."
@@ -268,12 +268,12 @@
     ],
     "weight_rule": "Do not aggressively cut body mass before PDR26; fuel training and use post-race body-composition work only if it preserves power, recovery and technical quality."
   },
-  "date": "2026-08-28",
+  "date": "2026-08-31",
   "decision_hierarchy": [
     "Sabbath hard rest and current readiness.",
     "CNS readiness: cap technical consequence, novelty, speed, jumps, enduro simulation, and setup testing when nervous-system processing is not restored.",
     "Garmin freshness: wellness, activity, and training status must be current for hard guidance; Garmin Training Readiness is separately dated context only.",
-    "Same-day environment: refresh snapshots/environment_evidence.json from Clayton's single v1 MTB environment-evidence endpoint and combine server usability, 420/900-second freshness, raw PM2.5/PM10 sport bands, arrival/on-trail uncertainty, heat, rain and airflow with current symptoms, duration and consequence. Apply it only as a Bukit Kiara/TTDI hold or downshift ceiling; never as readiness promotion or an automatic intensity increase.",
+    "Same-day environment: refresh snapshots/environment_evidence.json from Clayton's sole schema-1.6 MTB environment-evidence endpoint and combine server usability, 420/900-second freshness, raw PM2.5/PM10 sport bands, persistence anchors, conservative envelopes, exact-date ride windows, structured thunderstorm evidence, heat, ordinary-rain context and airflow with current symptoms, duration and consequence. Apply it only as a Bukit Kiara/TTDI hold or downshift ceiling; Denai Peladang requires venue-specific evidence, and no result may promote readiness or automatically increase intensity.",
     "Garmin diagnosis arbitration: use Training Status, ACWR, and Load Focus to decide whether the session ceiling should downshift, hold, or allow a controlled upgrade.",
     "Current phase and recent load: avoid spikes while rebuilding.",
     "Bike-specific continuity: protect the weekly minimum before adding non-bike work.",
@@ -608,7 +608,7 @@
       },
       "latest_garmin_detected_ftp": {
         "activity_id": "23723839107",
-        "age_days": 34,
+        "age_days": 37,
         "category": "mtb",
         "date": "2026-07-25",
         "ftp_w": 211.0,
@@ -635,7 +635,7 @@
       "recent_60d_garmin_detected_ftp": [
         {
           "activity_id": "23590320093",
-          "age_days": 45,
+          "age_days": 48,
           "category": "mtb",
           "date": "2026-07-14",
           "ftp_w": 209.0,
@@ -644,7 +644,7 @@
         },
         {
           "activity_id": "23614632613",
-          "age_days": 43,
+          "age_days": 46,
           "category": "mtb",
           "date": "2026-07-16",
           "ftp_w": 214.0,
@@ -653,7 +653,7 @@
         },
         {
           "activity_id": "23723839107",
-          "age_days": 34,
+          "age_days": 37,
           "category": "mtb",
           "date": "2026-07-25",
           "ftp_w": 211.0,
@@ -663,29 +663,29 @@
       ]
     },
     "full_range": {
-      "activity_end": "2026-08-28",
+      "activity_end": "2026-08-31",
       "activity_start": "2021-06-18",
-      "counted_sessions": 1396,
-      "duration_min": 106504.5,
+      "counted_sessions": 1397,
+      "duration_min": 106564.5,
       "elliptical_load": 7241.4,
       "elliptical_sessions": 71,
-      "indoor_bike_load": 38643.4,
-      "indoor_bike_sessions": 606,
+      "indoor_bike_load": 38694.8,
+      "indoor_bike_sessions": 607,
       "mtb_load": 99547.7,
       "mtb_sessions": 493,
-      "training_load": 161137.1
+      "training_load": 161188.5
     },
     "hypothesis_support": {
       "bike_specificity": "weak",
       "consistency_detraining": "strong",
       "nonbike_substitution": "moderate",
       "recent_365_bike_specific_corr_to_p20": null,
-      "recent_365_elliptical_corr_to_p20": 0.124,
-      "recent_365_indoor_bike_corr_to_p20": 0.428
+      "recent_365_elliptical_corr_to_p20": 0.136,
+      "recent_365_indoor_bike_corr_to_p20": 0.397
     },
     "nutrition_targets": {
-      "latest_weight_date": "2026-08-25",
-      "latest_weight_kg": 77.64,
+      "latest_weight_date": "2026-08-28",
+      "latest_weight_kg": 76.56,
       "mtb_90_to_150_min": {
         "carbs_g_per_hour": [
           45,
@@ -717,19 +717,19 @@
       "note": "Use the upper end in Kuala Lumpur heat or when skill quality drops late; gut-train before race day."
     },
     "recent_28d": {
-      "bike_specific_load": 1297.7,
-      "bike_specific_ratio": 0.962,
+      "bike_specific_load": 1349.1,
+      "bike_specific_ratio": 0.963,
       "elliptical_ratio": 0.0,
-      "indoor_bike_sessions": 7,
+      "indoor_bike_sessions": 8,
       "mtb_sessions": 7,
-      "training_load": 1348.9
+      "training_load": 1400.3
     },
     "recent_7d": {
-      "bike_specific_load": 366.2,
+      "bike_specific_load": 229.1,
       "bike_specific_ratio": 1.0,
       "indoor_bike_sessions": 4,
-      "mtb_sessions": 3,
-      "training_load": 366.2
+      "mtb_sessions": 0,
+      "training_load": 229.1
     },
     "weekly_continuity_blocks": {
       "current_rebuild_apr_to_may_2026": {
@@ -812,7 +812,7 @@
     "heat_rule": "In Kuala Lumpur, treat fuel/hydration as skill protection: sloppy braking, weak pumping, timid jumps, or poor line choice late can be carb/sodium/heat failure.",
     "range_selection_rule": "Choose within the canonical band from same-day heat/humidity, actual sweat response, session consequence, and gut tolerance. Previous-session weather is not a forecast, and Garmin heat acclimation never reduces the target by itself."
   },
-  "generated_at": "2026-08-28T10:56:25+08:00",
+  "generated_at": "2026-08-31T00:11:07+08:00",
   "integrated_coaching_model": {
     "cns_readiness_model": {
       "decision_role": "Use CNS readiness as a technical-consequence ceiling after Sabbath and physical readiness, not as a replacement for Garmin readiness.",
@@ -912,16 +912,51 @@
         "current": "snapshots/environment_evidence.json",
         "dated_pattern": "snapshots/environment_evidence_YYYY-MM-DD.json"
       },
+      "contract_discovery": {
+        "evidence_poll_seconds": 180,
+        "poll_policy": "Poll passive evidence no more frequently than contract.evidencePollSeconds (currently 180 seconds), including after HTTP 503. Never call the dashboard-internal refresh route.",
+        "reload_policy": "The adapter validates the evidence envelope and flags schemaVersion or contract.revision drift without replacing accepted last-known-good evidence. Contract-resource revalidation is an explicit engineering-owner step, not a silent adapter fetch: resolve the advertised root-relative resources against the evidence origin, request them with If-None-Match when a cached copy exists, review the current contract, then update the verified schema/revision in canonical config. A major schema-version change is incompatible; within major version 1, ignore unknown fields only after that review.",
+        "resources": {
+          "documentation": "/docs/coach-api.md",
+          "json_schema": "/api/v1/mtb/environment-evidence/schema",
+          "openapi": "/api/openapi.json"
+        },
+        "revision_guardrail": "contract.revision identifies only the published schema, OpenAPI description and integration guide. It is not an evidence identifier or freshness timestamp. Evidence provenance remains evidenceId, generatedAt and observation.timestamp."
+      },
       "decision_role": "Venue-scoped environmental ceiling for Bukit Kiara/TTDI outdoor sessions. It may retain a restriction, hold for recheck, downshift consequence or replace a venue-matched outdoor candidate when the environment ceiling is lower; it can never promote physical/CNS readiness or increase intensity.",
       "endpoint": "http://192.168.80.147:8765/api/v1/mtb/environment-evidence",
       "fields_of_interest": [
         "contract identity, server usability and freshness provenance",
+        "schema-version and contract-revision change indicators, discovery resources and passive poll cadence",
         "raw PM2.5 and PM10 concentration, observation time and reading age",
         "particle nowcast state, 30-minute and 60-minute movement and recheck interval",
-        "modeled arrival and on-trail PM2.5 ranges, calibration state and confidence",
-        "heat index, apparent temperature, humidity, rain probability, rain amount and airflow",
+        "90-minute-arrival and 90-to-210-minute on-trail PM2.5 persistence anchors, experimental points, envelopes, calibration state and confidence",
+        "equal 120-minute Morning/Afternoon ride-window comparison, relative-only verdict, recheck time and rideApproval=false",
+        "heat index, apparent temperature, humidity, ordinary-rain context, structured thunderstorm evidence and airflow",
         "evidence-quality limitations and weather-particle validation state"
       ],
+      "forecast_evidence_policy": {
+        "comparison": "An experimental forecast may inform the server's relative Morning/Afternoon ranking before formal validation, but preferredWindow remains relativeOnly and rideApproval remains false.",
+        "point_estimates": "Arrival/on-trail local-analogue projections and sensor-anchored CAMS ride-window projections are aggressive experimental estimates. Preserve the latest raw sensor persistence anchor separately and never present an experimental point as a validated forecast.",
+        "recheck_rule": "Honor the window's stated recheck time before commitment. A prior experimental ranking is planning/caution evidence only and cannot replace the required fresh recheck.",
+        "target_match_rule": "Use a ride-window forecast only when its target local date and modeled session interval exactly match the proposed Bukit Kiara session. Never carry a Tomorrow window into another date or treat current conditions as applicable when currentConditionsApplicable=false.",
+        "uncertainty": "Use the decision envelopes, empirical ranges, upper-risk markers, support counts, calibration state and evidence-quality limitations. A wide uncalibrated envelope may hold or downshift a decision even when the experimental point is attractive.",
+        "validated_point_role": "Only pointRole=validated_forecast represents prospective validation; persistence_anchor and aggressive_cams_forecast do not.",
+        "validation_state": "experimental_not_validated"
+      },
+      "forecast_horizon_contract": {
+        "current_exposure_window_offset_minutes": {
+          "end": 210,
+          "start": 90
+        },
+        "decision_to_trail_minutes": 90,
+        "modeled_trail_duration_minutes": 120,
+        "ride_windows": {
+          "afternoon_candidate": "14:00-18:00 with a modeled 14:00-16:00 session",
+          "comparison_scope": "Relative comparison of equal 120-minute Bukit Kiara sessions after the 90-minute decision-to-trail interval; it is not ride clearance.",
+          "morning_candidate": "09:00-13:00 with a modeled 09:00-11:00 session"
+        }
+      },
       "freshness_contract": {
         "expired_after_seconds": 900,
         "rule": "A stale high value may retain a venue restriction, but a stale or expired low value cannot clear outdoor training.",
@@ -935,15 +970,19 @@
       },
       "planner_boundary": {
         "allowed": "For a venue-matched outdoor candidate, retain a restriction, hold for recheck, downshift consequence, or replace the candidate only when this environment ceiling is lower than the already-resolved session ceiling.",
-        "forbidden": "Never promote physical or CNS readiness, clear indoor air, infer AQI, broaden the evidence beyond Bukit Kiara/TTDI, or automatically increase duration, intensity or technical consequence.",
+        "forbidden": "Never promote physical or CNS readiness, clear indoor air, infer AQI, broaden direct weather/thunderstorm/ride-window applicability beyond Bukit Kiara/TTDI, treat rideApproval=false as permission, carry a forecast across a different date/window, or automatically increase duration, intensity or technical consequence.",
         "no_downshift_meaning": "No environment downshift means only that this evidence did not lower the existing ceiling; every other readiness, symptom, freshness, density and consequence gate still applies."
       },
-      "purpose": "Normalize the athlete-managed v1 Bukit Kiara MTB environment-evidence contract into bounded current and dated stack evidence before a weather- or haze-sensitive venue-matched outdoor call.",
+      "purpose": "Normalize the sole athlete-managed Bukit Kiara MTB environment-evidence URL using its schema 1.6.0 self-describing contract into bounded current and dated stack evidence before a weather- or haze-sensitive venue-matched outdoor call.",
       "schema_contract": {
         "boundary_role": "environmental_evidence",
         "historical_series_included": false,
         "kind": "mtb_environment_evidence",
+        "last_verified_revision": "sha256:ba6c38068f20213c",
+        "revision_role": "contract_and_documentation_only",
+        "ride_approval": false,
         "schema_major": 1,
+        "schema_version": "1.6.0",
         "training_prescription_included": false
       },
       "service_name": "Clayton local Bukit Kiara MTB environment-evidence service",
@@ -967,9 +1006,18 @@
           "Taman Tun Dr. Ismail",
           "TTDI"
         ],
+        "cross_venue_boundary": {
+          "denai_peladang": "Denai Peladang is athlete-reported about 18 km from Bukit Kiara. Bukit Kiara/TTDI evidence may be used only as regional particle-precaution context for DP; it cannot establish DP weather, thunderstorm risk, trail conditions, direct PM2.5 clearance or ride approval. Automated DP environment gating requires a venue-specific source and contract."
+        },
         "keys": [
           "bukit_kiara"
         ]
+      },
+      "weather_decision_semantics": {
+        "heat": "Apparent heat is a tie-breaker after particle and thunderstorm comparison, not ride approval.",
+        "ordinary_rain": "Context only. Rain probability, amount and trail condition may affect logistics, traction and consequence, but ordinary rain never selects the preferred ride window and rainUsedForComparison must remain false.",
+        "ride_approval": false,
+        "thunderstorm": "Structured thunderstorm evidence is a safety comparison input and takes priority over particle overlap when usedForDecision is true. Fresh nearby-storm evidence may affect a near-term window only through the explicit thunderstorm policy; stale nearby evidence is context only."
       }
     },
     "sleep_work_timing_governor": {

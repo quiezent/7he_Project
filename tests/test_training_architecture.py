@@ -38,10 +38,23 @@ def _context():
                         "endpoint": "http://192.168.80.147:8765/api/v1/mtb/environment-evidence",
                         "schema_contract": {
                             "schema_major": 1,
+                            "schema_version": "1.6.0",
+                            "last_verified_revision": "sha256:ba6c38068f20213c",
+                            "revision_role": "contract_and_documentation_only",
                             "kind": "mtb_environment_evidence",
                             "boundary_role": "environmental_evidence",
                             "training_prescription_included": False,
                             "historical_series_included": False,
+                            "ride_approval": False,
+                        },
+                        "contract_discovery": {
+                            "evidence_poll_seconds": 180,
+                            "resources": {
+                                "openapi": "/api/openapi.json",
+                                "json_schema": "/api/v1/mtb/environment-evidence/schema",
+                                "documentation": "/docs/coach-api.md",
+                            },
+                            "reload_policy": "Reload on schemaVersion or revision change with If-None-Match.",
                         },
                         "freshness_contract": {
                             "stale_after_seconds": 420,
@@ -55,6 +68,29 @@ def _context():
                         },
                         "automatic_gate_venue_keys": ["bukit_kiara"],
                         "automatic_gate_venue_aliases": ["Bukit Kiara", "Kiara", "TTDI"],
+                        "forecast_horizon_contract": {
+                            "decision_to_trail_minutes": 90,
+                            "modeled_trail_duration_minutes": 120,
+                            "current_exposure_window_offset_minutes": {
+                                "start": 90,
+                                "end": 210,
+                            },
+                        },
+                        "forecast_evidence_policy": {
+                            "validation_state": "experimental_not_validated",
+                            "comparison": "Relative ranking only; rideApproval=false.",
+                            "target_match_rule": "Require exact local date and session window.",
+                            "recheck_rule": "Honor the stated recheck before commitment.",
+                        },
+                        "weather_decision_semantics": {
+                            "ordinary_rain": "Context only.",
+                            "thunderstorm": "Safety comparison input.",
+                            "heat": "Tie-breaker only.",
+                            "ride_approval": False,
+                        },
+                        "cross_venue_boundary": {
+                            "denai_peladang": "Regional particle context only; no direct DP automation.",
+                        },
                         "artifacts": {
                             "current": "snapshots/environment_evidence.json",
                             "dated_pattern": "snapshots/environment_evidence_YYYY-MM-DD.json",
@@ -64,7 +100,17 @@ def _context():
                         "access_rule": "Use the single v1 endpoint and retain bounded normalized artifacts.",
                         "guardrail": "Cannot promote readiness or increase intensity.",
                     }
-                }
+                },
+                "denai_peladang": {
+                    "distance_from_bukit_kiara_km": {
+                        "value": 18,
+                        "precision": "about",
+                    },
+                    "environment_evidence_boundary": {
+                        "kiara_source_role": "Regional particle-precaution context only.",
+                        "direct_applicability": False,
+                    },
+                },
             },
             "event_focus": {
                 "upcoming_events": [
@@ -180,6 +226,17 @@ def test_training_architecture_builds_config_and_snapshot(tmp_path):
     assert environment["endpoint"].endswith("/api/v1/mtb/environment-evidence")
     assert "endpoints" not in environment
     assert environment["schema_contract"]["kind"] == "mtb_environment_evidence"
+    assert environment["schema_contract"]["schema_version"] == "1.6.0"
+    assert environment["schema_contract"]["last_verified_revision"] == (
+        "sha256:ba6c38068f20213c"
+    )
+    assert environment["schema_contract"]["ride_approval"] is False
+    assert environment["contract_discovery"]["evidence_poll_seconds"] == 180
+    assert environment["contract_discovery"]["resources"] == {
+        "openapi": "/api/openapi.json",
+        "json_schema": "/api/v1/mtb/environment-evidence/schema",
+        "documentation": "/docs/coach-api.md",
+    }
     assert environment["freshness_contract"] == {
         "stale_after_seconds": 420,
         "expired_after_seconds": 900,
@@ -191,6 +248,23 @@ def test_training_architecture_builds_config_and_snapshot(tmp_path):
         "hazardous_above": 150,
     }
     assert environment["venue_scope"]["keys"] == ["bukit_kiara"]
+    assert "regional particle context only" in (
+        environment["venue_scope"]["cross_venue_boundary"]["denai_peladang"].lower()
+    )
+    assert environment["forecast_horizon_contract"] == {
+        "decision_to_trail_minutes": 90,
+        "modeled_trail_duration_minutes": 120,
+        "current_exposure_window_offset_minutes": {"start": 90, "end": 210},
+    }
+    assert (
+        environment["forecast_evidence_policy"]["validation_state"]
+        == "experimental_not_validated"
+    )
+    assert "exact local date" in environment["forecast_evidence_policy"][
+        "target_match_rule"
+    ]
+    assert environment["weather_decision_semantics"]["ride_approval"] is False
+    assert environment["weather_decision_semantics"]["ordinary_rain"] == "Context only."
     assert environment["artifacts"]["current"] == "snapshots/environment_evidence.json"
     assert environment["decision_role"] == "Venue-scoped hold or downshift only."
     assert "automatically increase" in environment["planner_boundary"]["forbidden"]

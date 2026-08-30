@@ -282,11 +282,12 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                 ],
             },
             "same_day_environment_context": {
-                "purpose": "Normalize the athlete-managed v1 Bukit Kiara MTB environment-evidence contract into bounded current and dated stack evidence before a weather- or haze-sensitive venue-matched outdoor call.",
+                "purpose": "Normalize the sole athlete-managed Bukit Kiara MTB environment-evidence URL using its schema 1.6.0 self-describing contract into bounded current and dated stack evidence before a weather- or haze-sensitive venue-matched outdoor call.",
                 "service_name": environment_report.get("name"),
                 "location": environment_report.get("location"),
                 "endpoint": environment_report.get("endpoint"),
                 "schema_contract": environment_report.get("schema_contract"),
+                "contract_discovery": environment_report.get("contract_discovery"),
                 "freshness_contract": environment_report.get("freshness_contract"),
                 "sports_exercise_bands_ug_m3": environment_report.get(
                     "sports_exercise_bands_ug_m3"
@@ -294,7 +295,19 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                 "venue_scope": {
                     "keys": environment_report.get("automatic_gate_venue_keys"),
                     "aliases": environment_report.get("automatic_gate_venue_aliases"),
+                    "cross_venue_boundary": environment_report.get(
+                        "cross_venue_boundary"
+                    ),
                 },
+                "forecast_horizon_contract": environment_report.get(
+                    "forecast_horizon_contract"
+                ),
+                "forecast_evidence_policy": environment_report.get(
+                    "forecast_evidence_policy"
+                ),
+                "weather_decision_semantics": environment_report.get(
+                    "weather_decision_semantics"
+                ),
                 "artifacts": environment_report.get("artifacts"),
                 "fields_of_interest": environment_report.get("fields_of_interest"),
                 "decision_role": environment_report.get("decision_use"),
@@ -302,7 +315,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                 "guardrail": environment_report.get("guardrail"),
                 "planner_boundary": {
                     "allowed": "For a venue-matched outdoor candidate, retain a restriction, hold for recheck, downshift consequence, or replace the candidate only when this environment ceiling is lower than the already-resolved session ceiling.",
-                    "forbidden": "Never promote physical or CNS readiness, clear indoor air, infer AQI, broaden the evidence beyond Bukit Kiara/TTDI, or automatically increase duration, intensity or technical consequence.",
+                    "forbidden": "Never promote physical or CNS readiness, clear indoor air, infer AQI, broaden direct weather/thunderstorm/ride-window applicability beyond Bukit Kiara/TTDI, treat rideApproval=false as permission, carry a forecast across a different date/window, or automatically increase duration, intensity or technical consequence.",
                     "no_downshift_meaning": "No environment downshift means only that this evidence did not lower the existing ceiling; every other readiness, symptom, freshness, density and consequence gate still applies.",
                 },
                 "persistence_boundary": {
@@ -614,7 +627,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
                 "Do not count elliptical load as bike-specific maintenance.",
                 "Do not treat Garmin readiness as direct trail-skill readiness without subjective notes.",
                 "Do not infer exercise-time oxygenation or respiration from daily or sleep Garmin summaries.",
-                "Do not convert the v1 environment-evidence endpoint's raw PM2.5/PM10 concentrations into AQI, project its venue scope elsewhere, or treat a no-downshift result as readiness clearance or permission to increase intensity.",
+                "Do not convert the schema-1.6 environment-evidence endpoint's raw PM2.5/PM10 concentrations into AQI, project Kiara weather/thunderstorm/ride-window evidence onto Denai Peladang, or treat an experimental ranking or no-downshift result as readiness clearance or permission to increase intensity.",
                 "Do not treat low training load as permission for high-consequence MTB when CNS readiness is impaired or compromised.",
                 "Do not use historical finger injury as a current training gate.",
                 "Do not copy a full ideal week when life load, sleep, HRV, arm pump, or back-to-back trail plans require density control.",
@@ -631,7 +644,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             "Sabbath hard rest and current readiness.",
             "CNS readiness: cap technical consequence, novelty, speed, jumps, enduro simulation, and setup testing when nervous-system processing is not restored.",
             "Garmin freshness: wellness, activity, and training status must be current for hard guidance; Garmin Training Readiness is separately dated context only.",
-            "Same-day environment: refresh snapshots/environment_evidence.json from Clayton's single v1 MTB environment-evidence endpoint and combine server usability, 420/900-second freshness, raw PM2.5/PM10 sport bands, arrival/on-trail uncertainty, heat, rain and airflow with current symptoms, duration and consequence. Apply it only as a Bukit Kiara/TTDI hold or downshift ceiling; never as readiness promotion or an automatic intensity increase.",
+            "Same-day environment: refresh snapshots/environment_evidence.json from Clayton's sole schema-1.6 MTB environment-evidence endpoint and combine server usability, 420/900-second freshness, raw PM2.5/PM10 sport bands, persistence anchors, conservative envelopes, exact-date ride windows, structured thunderstorm evidence, heat, ordinary-rain context and airflow with current symptoms, duration and consequence. Apply it only as a Bukit Kiara/TTDI hold or downshift ceiling; Denai Peladang requires venue-specific evidence, and no result may promote readiness or automatically increase intensity.",
             "Garmin diagnosis arbitration: use Training Status, ACWR, and Load Focus to decide whether the session ceiling should downshift, hold, or allow a controlled upgrade.",
             "Current phase and recent load: avoid spikes while rebuilding.",
             "Bike-specific continuity: protect the weekly minimum before adding non-bike work.",
@@ -978,7 +991,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             "cns_readiness": "snapshots/cns_readiness.json is the current technical-consequence ceiling after current_state rebuild.",
             "garmin_surface_manifest": "snapshots/garmin_surface_manifest.json inventories configured Garmin endpoints, attempt states, raw/normalized field coverage, eras/gaps, units, lineage, privacy checks, and actual downstream consumers.",
             "garmin_training_readiness": "snapshots/garmin_training_readiness_current.json is a separate context-only Garmin feed with source date, age, endpoint health, and tri-state device-capability provenance; it cannot replace physical readiness or the CNS ceiling.",
-            "environment_evidence": "snapshots/environment_evidence.json and snapshots/environment_evidence_YYYY-MM-DD.json retain bounded normalized selected fields from the athlete-managed v1 Bukit Kiara endpoint plus latest-attempt and last-known-good semantics. They store neither the raw endpoint response nor server history and never use legacy endpoint data, fall back to IQAir, promote readiness or authorize an automatic intensity increase.",
+            "environment_evidence": "snapshots/environment_evidence.json and snapshots/environment_evidence_YYYY-MM-DD.json retain bounded decision-bearing fields from the athlete-managed schema-1.6 Bukit Kiara endpoint plus contract state, exact-date forecast windows, latest-attempt and last-known-good semantics. They store neither the raw endpoint response nor server history; never use legacy endpoint data or fall back to IQAir; and cannot clear Denai Peladang, promote readiness or authorize an automatic intensity increase.",
             "latest_session_evidence": "snapshots/current_state.json latest_session_evidence is the bounded raw-session interpretation block; every joined field must retain source, unit, and confidence limits.",
             "live_sync_provenance": "snapshots/last_live_sync_status.json and snapshots/sync_run_ledger.json preserve live-contact truth across later rebuild-only runs.",
             "oxygenation_respiration": "Dedicated Garmin Pulse Ox and respiration endpoints retain attempt state, coverage, valid samples, and negative sentinels. Daily or sleep values are contextual only and never imputed into an activity interval or used as medical diagnosis or training clearance.",

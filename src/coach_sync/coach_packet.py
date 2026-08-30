@@ -33,107 +33,216 @@ def _signal(
     }
 
 
-def _compact_environment_evidence(evidence: dict | None) -> dict | None:
-    if not isinstance(evidence, dict) or not evidence:
-        return None
-    latest = evidence.get("last_known_good")
-    latest = latest if isinstance(latest, dict) else {}
-    identity = latest.get("identity") if isinstance(latest.get("identity"), dict) else {}
-    observation = (
-        latest.get("observation") if isinstance(latest.get("observation"), dict) else {}
+def _dict(value: Any) -> dict:
+    return value if isinstance(value, dict) else {}
+
+
+def _environment_plan_input(plan: dict | None) -> dict:
+    return _dict(_dict(_dict(plan).get("decision_inputs")).get("environment_evidence"))
+
+
+def _plan_has_outdoor_candidate(plan: dict | None) -> bool:
+    session = _dict(_dict(plan).get("session"))
+    session_type = str(session.get("type") or "").strip().lower()
+    if session_type in {"scheduled_rest", "scheduled_recovery"}:
+        return False
+    text = " ".join(
+        str(session.get(key) or "").lower()
+        for key in ("type", "modality", "title", "venue", "location")
     )
-    outlook = (
-        latest.get("exposure_outlook")
-        if isinstance(latest.get("exposure_outlook"), dict)
-        else {}
+    if "indoor" in text or "suito" in text or "trainer" in text:
+        return False
+    action = _dict(session.get("action_identity"))
+    has_venue = any(
+        value is not None and str(value).strip()
+        for value in (
+            action.get("venue_key"),
+            session.get("venue_key"),
+            session.get("venue"),
+            session.get("location"),
+        )
     )
-    weather = latest.get("weather") if isinstance(latest.get("weather"), dict) else {}
-    provenance = (
-        latest.get("provenance") if isinstance(latest.get("provenance"), dict) else {}
+    return has_venue or any(
+        token in text for token in ("outdoor", "mtb", "trail", "hike")
     )
-    attempt = (
-        evidence.get("latest_attempt")
-        if isinstance(evidence.get("latest_attempt"), dict)
-        else {}
-    )
-    decision = evidence.get("decision") if isinstance(evidence.get("decision"), dict) else {}
+
+
+def _compact_pm_envelope(value: Any) -> dict:
+    value = _dict(value)
     return {
-        "date": evidence.get("date"),
-        "status": evidence.get("status"),
-        "freshness": evidence.get("freshness"),
-        "current": {
-            key: observation.get(key)
-            for key in (
-                "observed_at_utc",
-                "pm2_5_ug_m3",
-                "pm10_ug_m3",
-                "temperature_c",
-                "relative_humidity_pct",
-                "heat_index_c",
-            )
-        },
-        "particle_nowcast": latest.get("particle_nowcast"),
-        "arrival": outlook.get("arrival"),
-        "on_trail": outlook.get("on_trail"),
-        "trail_weather": weather.get("trail_period"),
-        "evidence_quality": latest.get("evidence_quality"),
-        "decision": {
-            **{
-                key: decision.get(key)
-                for key in (
-                    "gate",
-                    "severity",
-                    "reason",
-                    "reason_codes",
-                    "current_pm2_5_ug_m3",
-                    "forecast_lower_pm2_5_ug_m3",
-                    "forecast_upper_pm2_5_ug_m3",
-                    "forecast_confidence",
-                    "recheck_minutes",
-                    "decision_role",
-                )
-            },
-            "can_promote_training": False,
-        },
-        "can_promote_training": False,
-        "provenance": {
-            "artifact_type": evidence.get("artifact_type"),
-            "version": evidence.get("version"),
-            "source": evidence.get("source"),
-            "evidence_id": identity.get("evidence_id"),
-            "schema_version": identity.get("schema_version"),
-            "location": latest.get("location"),
-            "sensor": provenance.get("sensor"),
-            "weather_forecast": provenance.get("weather_forecast"),
-            "weather_reference": provenance.get("weather_reference"),
-            "latest_attempt": {
-                key: attempt.get(key)
-                for key in (
-                    "attempted_at",
-                    "status",
-                    "error",
-                    "semantic_issues",
-                    "evidence_id",
-                )
-            },
-            "historical_projection": evidence.get("historical_projection"),
-        },
-        "guardrail": evidence.get("guardrail"),
+        key: value.get(key)
+        for key in ("low", "high", "calibrated", "role")
+        if key in value
     }
 
 
-def _environment_signal(state: dict) -> dict:
+def _compact_thunderstorm(value: Any) -> dict:
+    value = _dict(value)
+    return {
+        key: value.get(key)
+        for key in ("level", "rank", "label", "basis", "used_for_decision")
+        if key in value
+    }
+
+
+def _compact_environment_window(window: dict, raw_window: dict) -> dict:
+    particle = _dict(window.get("particle_forecast"))
+    weather = _dict(window.get("weather_forecast"))
+    raw_weather = _dict(raw_window.get("weather_forecast"))
+    return {
+        "name": window.get("name"),
+        "target_date": window.get("target_date"),
+        "ride_window": window.get("ride_window"),
+        "modeled_session": window.get("modeled_session"),
+        "current_conditions_applicable": window.get(
+            "current_conditions_applicable"
+        ),
+        "recheck": window.get("recheck"),
+        "forecast_validation": particle.get("validation_state"),
+        "mean_decision_envelope_pm2_5_ug_m3": _compact_pm_envelope(
+            particle.get("mean_range_pm2_5_ug_m3")
+        ),
+        "upper_peak_pm2_5_ug_m3": particle.get("upper_peak_pm2_5_ug_m3"),
+        "heat_index_max_c": raw_weather.get("apparent_temperature_max_c"),
+        "weather_start_at_utc": weather.get("start_at_utc"),
+        "weather_end_at_utc": weather.get("end_at_utc"),
+        "thunderstorm": _compact_thunderstorm(weather.get("thunderstorm")),
+    }
+
+
+def _compact_environment_evidence(
+    evidence: dict | None,
+    plan_environment: dict | None = None,
+) -> dict | None:
+    if not isinstance(evidence, dict) or not evidence:
+        return None
+    latest = _dict(evidence.get("last_known_good"))
+    contract = _dict(latest.get("contract"))
+    contract_state = _dict(evidence.get("contract_state"))
+    identity = _dict(latest.get("identity"))
+    observation = _dict(latest.get("observation"))
+    outlook = _dict(latest.get("exposure_outlook"))
+    arrival = _dict(outlook.get("arrival"))
+    on_trail = _dict(outlook.get("on_trail"))
+    decision = _dict(evidence.get("decision"))
+    quality = _dict(latest.get("evidence_quality"))
+    plan_environment = _dict(plan_environment)
+    applicability = _dict(plan_environment.get("plan_applicability"))
+    applicability_status = str(applicability.get("status") or "")
+    scope_unavailable = applicability_status in {
+        "venue_specific_evidence_unavailable",
+        "multi_venue_choice_unresolved",
+    }
+    raw_windows = _dict(latest.get("ride_windows"))
+    compact_windows = []
+    for window in [] if scope_unavailable else applicability.get("windows") or []:
+        if not isinstance(window, dict):
+            continue
+        compact_windows.append(
+            _compact_environment_window(
+                window,
+                _dict(raw_windows.get(str(window.get("name") or ""))),
+            )
+        )
+    comparison = (
+        {}
+        if scope_unavailable
+        else _dict(raw_windows.get("comparison"))
+    )
+    return {
+        "status": evidence.get("status"),
+        "freshness": evidence.get("freshness"),
+        "contract": {
+            "schema_version": contract.get("schema_version")
+            or identity.get("schema_version"),
+            "revision": contract.get("revision"),
+            "drift": contract_state.get("drift") or [],
+            "revalidation_needed": bool(contract_state.get("revalidation_needed")),
+            "freshness_independent": contract_state.get("freshness_independent"),
+        },
+        "evidence": {
+            "evidence_id": identity.get("evidence_id"),
+            "observed_at_utc": observation.get("observed_at_utc"),
+            "current_pm2_5_ug_m3": observation.get("pm2_5_ug_m3"),
+        },
+        "immediate": {"status": "not_applicable"} if scope_unavailable else {
+            "arrival_at_utc": arrival.get("expected_at_utc"),
+            "persistence_anchor_pm2_5_ug_m3": arrival.get(
+                "persistence_anchor_pm2_5_ug_m3"
+            ),
+            "arrival_decision_envelope_pm2_5_ug_m3": _compact_pm_envelope(
+                arrival.get("decision_envelope_pm2_5_ug_m3")
+            ),
+            "trail_decision_envelope_pm2_5_ug_m3": _compact_pm_envelope(
+                on_trail.get("decision_mean_envelope_pm2_5_ug_m3")
+            ),
+            "validation": {
+                "arrival": arrival.get("validation_state"),
+                "on_trail": on_trail.get("validation_state"),
+            },
+            "recheck_minutes": decision.get("recheck_minutes"),
+        },
+        "scope": latest.get("scope"),
+        "plan_applicability": {
+            key: applicability.get(key)
+            for key in (
+                "status",
+                "target_date",
+                "reason",
+                "time_basis",
+                "venue_applicability",
+                "applicable_window_names",
+                "can_promote_training",
+            )
+            if key in applicability
+        },
+        "forecast_windows": compact_windows,
+        "comparison": {"status": "not_applicable"} if scope_unavailable else {
+            "status": comparison.get("status"),
+            "preferred_window": comparison.get("preferred_window"),
+            "relative_only": comparison.get("relative_only"),
+            "ride_approval": comparison.get("ride_approval"),
+            "verdict": comparison.get("verdict"),
+            "recheck": {
+                name: _dict(raw_windows.get(name)).get("recheck")
+                for name in ("morning", "afternoon")
+            },
+        },
+        "limitations": quality.get("limitations") or [],
+        "decision": {
+            "status": "not_applicable",
+            "can_promote_training": False,
+        } if scope_unavailable else {
+            "gate": decision.get("gate"),
+            "severity": decision.get("severity"),
+            "reason": decision.get("reason"),
+            "can_promote_training": False,
+        },
+        "can_promote_training": False,
+        "guardrail": (
+            "Forecasts and preferred windows can hold or downshift only; relativeOnly, "
+            "experimental points and rideApproval=false never clear or promote training."
+        ),
+    }
+
+
+def _environment_signal(state: dict, plan: dict) -> dict:
     evidence = state.get("environment_evidence")
     evidence = evidence if isinstance(evidence, dict) else {}
     decision = evidence.get("decision") if isinstance(evidence.get("decision"), dict) else {}
+    plan_environment = _environment_plan_input(plan)
+    applicability = _dict(plan_environment.get("plan_applicability"))
     status = evidence.get("status") or "missing"
-    message = decision.get("reason") or evidence.get("guardrail") or (
+    message = applicability.get("reason") if applicability.get("status") in {
+        "venue_specific_evidence_unavailable",
+        "multi_venue_choice_unresolved",
+    } else decision.get("reason") or evidence.get("guardrail") or (
         "No environment evidence is available for this target date."
     )
     signal = _signal(
         "Bukit Kiara environment evidence",
         status,
-        _compact_environment_evidence(evidence),
+        _compact_environment_evidence(evidence, plan_environment),
         "venue_scoped_outdoor_hold_or_downshift_only",
         message,
     )
@@ -141,7 +250,7 @@ def _environment_signal(state: dict) -> dict:
     return signal
 
 
-def _environment_cautions(state: dict) -> list[dict]:
+def _environment_cautions(state: dict, plan: dict | None = None) -> list[dict]:
     evidence = state.get("environment_evidence")
     if not isinstance(evidence, dict) or not evidence:
         return []
@@ -171,7 +280,42 @@ def _environment_cautions(state: dict) -> list[dict]:
         "can_promote_training": False,
     }
     cautions: list[dict] = []
-    if status in {"unknown", "expired", "unavailable", "historical_unavailable"}:
+    outdoor_candidate = _plan_has_outdoor_candidate(plan)
+    plan_environment = _environment_plan_input(plan)
+    applicability = _dict(plan_environment.get("plan_applicability"))
+    applicability_status = str(applicability.get("status") or "")
+    scope_applicable = applicability_status not in {
+        "venue_specific_evidence_unavailable",
+        "multi_venue_choice_unresolved",
+    }
+    if outdoor_candidate and applicability_status in {
+        "venue_specific_evidence_unavailable",
+        "multi_venue_choice_unresolved",
+    }:
+        cautions.append(
+            {
+                **common,
+                "type": "environment_scope_unavailable_for_venue",
+                "message": applicability.get("reason"),
+            }
+        )
+    if outdoor_candidate and applicability_status in {
+        "forecast_unavailable_recheck",
+        "planned_time_outside_published_windows_recheck",
+    }:
+        cautions.append(
+            {
+                **common,
+                "type": "environment_forecast_date_unavailable",
+                "message": applicability.get("reason"),
+            }
+        )
+    if outdoor_candidate and scope_applicable and status in {
+        "unknown",
+        "expired",
+        "unavailable",
+        "historical_unavailable",
+    }:
         cautions.append(
             {
                 **common,
@@ -179,7 +323,7 @@ def _environment_cautions(state: dict) -> list[dict]:
                 "message": reason,
             }
         )
-    if status == "stale":
+    if outdoor_candidate and scope_applicable and status == "stale":
         cautions.append(
             {
                 **common,
@@ -207,7 +351,7 @@ def _environment_cautions(state: dict) -> list[dict]:
             for value in confidence_values
         )
     )
-    if limited:
+    if outdoor_candidate and scope_applicable and limited:
         cautions.append(
             {
                 **common,
@@ -218,7 +362,97 @@ def _environment_cautions(state: dict) -> list[dict]:
                 ),
             }
         )
-    if "hold" in gate:
+    contract_state = _dict(evidence.get("contract_state"))
+    if contract_state.get("revalidation_needed"):
+        cautions.append(
+            {
+                **common,
+                "type": "environment_contract_revalidation_required",
+                "message": (
+                    "The environment contract changed or failed schema validation. "
+                    "Contract revalidation is separate from evidence freshness; retain only "
+                    "accepted last-known-good restrictions until it is resolved."
+                ),
+            }
+        )
+
+    windows = [item for item in applicability.get("windows") or [] if isinstance(item, dict)]
+    selected_names = set(applicability.get("applicable_window_names") or [])
+    relevant_windows = (
+        [item for item in windows if item.get("name") in selected_names]
+        if selected_names
+        else windows
+    )
+    outlook = _dict(latest.get("exposure_outlook"))
+    immediate_validation = {
+        str(_dict(outlook.get(name)).get("validation_state") or "").lower()
+        for name in ("arrival", "on_trail")
+    }
+    experimental = any(
+        str(_dict(item.get("particle_forecast")).get("validation_state") or "").lower()
+        not in {"", "validated", "calibrated"}
+        for item in relevant_windows
+    ) or any(
+        value not in {"", "validated", "calibrated"}
+        for value in immediate_validation
+    )
+    if outdoor_candidate and scope_applicable and experimental:
+        cautions.append(
+            {
+                **common,
+                "type": "environment_forecast_experimental_unvalidated",
+                "message": (
+                    "The applicable particle forecast is experimental or unvalidated. Use its "
+                    "conservative envelope for hold/recheck context only; it cannot clear training."
+                ),
+            }
+        )
+    thunder_windows = []
+    if applicability_status == "current_observation_applicable":
+        weather = _dict(latest.get("weather"))
+        current_storms = (
+            ("current", _dict(_dict(weather.get("trail_period")).get("thunderstorm"))),
+            ("nearby", _dict(weather.get("nearby_storm"))),
+        )
+        for name, thunder in current_storms:
+            rank = as_number(thunder.get("rank")) or 0
+            decision_used = thunder.get("used_for_decision") is True
+            nearby_fresh = name != "nearby" or thunder.get("fresh") is True
+            if decision_used and nearby_fresh and (
+                rank >= 2
+                or str(thunder.get("level") or "").lower() in {"likely", "severe"}
+            ):
+                thunder_windows.append(
+                    {"name": name, "level": thunder.get("level"), "label": thunder.get("label")}
+                )
+    for item in relevant_windows:
+        thunder = _dict(_dict(item.get("weather_forecast")).get("thunderstorm"))
+        rank = as_number(thunder.get("rank")) or 0
+        if thunder.get("used_for_decision") is True and (
+            rank >= 2
+            or str(thunder.get("level") or "").lower() in {"likely", "severe"}
+        ):
+            thunder_windows.append(
+                {
+                    "name": item.get("name"),
+                    "target_date": item.get("target_date"),
+                    "level": thunder.get("level"),
+                    "label": thunder.get("label"),
+                }
+            )
+    if outdoor_candidate and scope_applicable and thunder_windows:
+        cautions.append(
+            {
+                **common,
+                "type": "environment_thunderstorm_hold",
+                "windows": thunder_windows,
+                "message": (
+                    "Structured thunderstorm evidence reaches the hold threshold. Hold outdoor "
+                    "commitment and use the stated recheck; shower tolerance does not override lightning risk."
+                ),
+            }
+        )
+    if outdoor_candidate and scope_applicable and "hold" in gate:
         cautions.append(
             {
                 **common,
@@ -232,7 +466,7 @@ def _environment_cautions(state: dict) -> list[dict]:
         or "closed" in gate
         or "closure" in gate
     )
-    if downshift_gate:
+    if outdoor_candidate and scope_applicable and downshift_gate:
         cautions.append(
             {
                 **common,
@@ -967,7 +1201,7 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
         _rest_recharge_signal(state),
         _wearable_coverage_signal(state),
         _oxygenation_respiration_signal(state),
-        _environment_signal(state),
+        _environment_signal(state, plan),
         _signal(
             "Garmin wellness freshness",
             freshness.get("status") or "unknown",
@@ -1254,7 +1488,7 @@ def _build_trusted_evidence(state: dict, plan: dict, root: str | Path | None = N
 
 
 def _build_cautions(state: dict, plan: dict | None = None) -> list[dict]:
-    cautions = _environment_cautions(state)
+    cautions = _environment_cautions(state, plan)
     adaptive = state.get("adaptive_training") or {}
     adaptive_audit = adaptive.get("programming_audit") or {}
     adaptive_items = adaptive_audit.get("items") or []

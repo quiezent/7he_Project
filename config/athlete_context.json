@@ -97,10 +97,25 @@
           },
           "schema_contract": {
             "schema_major": 1,
+            "schema_version": "1.6.0",
+            "last_verified_revision": "sha256:ba6c38068f20213c",
+            "revision_role": "contract_and_documentation_only",
             "kind": "mtb_environment_evidence",
             "boundary_role": "environmental_evidence",
             "training_prescription_included": false,
-            "historical_series_included": false
+            "historical_series_included": false,
+            "ride_approval": false
+          },
+          "contract_discovery": {
+            "evidence_poll_seconds": 180,
+            "resources": {
+              "openapi": "/api/openapi.json",
+              "json_schema": "/api/v1/mtb/environment-evidence/schema",
+              "documentation": "/docs/coach-api.md"
+            },
+            "reload_policy": "The adapter validates the evidence envelope and flags schemaVersion or contract.revision drift without replacing accepted last-known-good evidence. Contract-resource revalidation is an explicit engineering-owner step, not a silent adapter fetch: resolve the advertised root-relative resources against the evidence origin, request them with If-None-Match when a cached copy exists, review the current contract, then update the verified schema/revision in canonical config. A major schema-version change is incompatible; within major version 1, ignore unknown fields only after that review.",
+            "poll_policy": "Poll passive evidence no more frequently than contract.evidencePollSeconds (currently 180 seconds), including after HTTP 503. Never call the dashboard-internal refresh route.",
+            "revision_guardrail": "contract.revision identifies only the published schema, OpenAPI description and integration guide. It is not an evidence identifier or freshness timestamp. Evidence provenance remains evidenceId, generatedAt and observation.timestamp."
           },
           "freshness_contract": {
             "stale_after_seconds": 420,
@@ -129,6 +144,37 @@
             "Taman Tun Dr. Ismail",
             "TTDI"
           ],
+          "forecast_horizon_contract": {
+            "decision_to_trail_minutes": 90,
+            "modeled_trail_duration_minutes": 120,
+            "current_exposure_window_offset_minutes": {
+              "start": 90,
+              "end": 210
+            },
+            "ride_windows": {
+              "morning_candidate": "09:00-13:00 with a modeled 09:00-11:00 session",
+              "afternoon_candidate": "14:00-18:00 with a modeled 14:00-16:00 session",
+              "comparison_scope": "Relative comparison of equal 120-minute Bukit Kiara sessions after the 90-minute decision-to-trail interval; it is not ride clearance."
+            }
+          },
+          "forecast_evidence_policy": {
+            "validation_state": "experimental_not_validated",
+            "point_estimates": "Arrival/on-trail local-analogue projections and sensor-anchored CAMS ride-window projections are aggressive experimental estimates. Preserve the latest raw sensor persistence anchor separately and never present an experimental point as a validated forecast.",
+            "uncertainty": "Use the decision envelopes, empirical ranges, upper-risk markers, support counts, calibration state and evidence-quality limitations. A wide uncalibrated envelope may hold or downshift a decision even when the experimental point is attractive.",
+            "comparison": "An experimental forecast may inform the server's relative Morning/Afternoon ranking before formal validation, but preferredWindow remains relativeOnly and rideApproval remains false.",
+            "validated_point_role": "Only pointRole=validated_forecast represents prospective validation; persistence_anchor and aggressive_cams_forecast do not.",
+            "target_match_rule": "Use a ride-window forecast only when its target local date and modeled session interval exactly match the proposed Bukit Kiara session. Never carry a Tomorrow window into another date or treat current conditions as applicable when currentConditionsApplicable=false.",
+            "recheck_rule": "Honor the window's stated recheck time before commitment. A prior experimental ranking is planning/caution evidence only and cannot replace the required fresh recheck."
+          },
+          "weather_decision_semantics": {
+            "ordinary_rain": "Context only. Rain probability, amount and trail condition may affect logistics, traction and consequence, but ordinary rain never selects the preferred ride window and rainUsedForComparison must remain false.",
+            "thunderstorm": "Structured thunderstorm evidence is a safety comparison input and takes priority over particle overlap when usedForDecision is true. Fresh nearby-storm evidence may affect a near-term window only through the explicit thunderstorm policy; stale nearby evidence is context only.",
+            "heat": "Apparent heat is a tie-breaker after particle and thunderstorm comparison, not ride approval.",
+            "ride_approval": false
+          },
+          "cross_venue_boundary": {
+            "denai_peladang": "Denai Peladang is athlete-reported about 18 km from Bukit Kiara. Bukit Kiara/TTDI evidence may be used only as regional particle-precaution context for DP; it cannot establish DP weather, thunderstorm risk, trail conditions, direct PM2.5 clearance or ride approval. Automated DP environment gating requires a venue-specific source and contract."
+          },
           "artifacts": {
             "current": "snapshots/environment_evidence.json",
             "dated_pattern": "snapshots/environment_evidence_YYYY-MM-DD.json",
@@ -136,10 +182,12 @@
           },
           "fields_of_interest": [
             "contract identity, server usability and freshness provenance",
+            "schema-version and contract-revision change indicators, discovery resources and passive poll cadence",
             "raw PM2.5 and PM10 concentration, observation time and reading age",
             "particle nowcast state, 30-minute and 60-minute movement and recheck interval",
-            "modeled arrival and on-trail PM2.5 ranges, calibration state and confidence",
-            "heat index, apparent temperature, humidity, rain probability, rain amount and airflow",
+            "90-minute-arrival and 90-to-210-minute on-trail PM2.5 persistence anchors, experimental points, envelopes, calibration state and confidence",
+            "equal 120-minute Morning/Afternoon ride-window comparison, relative-only verdict, recheck time and rideApproval=false",
+            "heat index, apparent temperature, humidity, ordinary-rain context, structured thunderstorm evidence and airflow",
             "evidence-quality limitations and weather-particle validation state"
           ],
           "decision_use": "Venue-scoped environmental ceiling for Bukit Kiara/TTDI outdoor sessions. It may retain a restriction, hold for recheck, downshift consequence or replace a venue-matched outdoor candidate when the environment ceiling is lower; it can never promote physical/CNS readiness or increase intensity.",
@@ -353,6 +401,23 @@
           "Shah Alam"
         ],
         "garmin_location_note": "Garmin reverse-geocodes the same venue cluster inconsistently as Ijok, Puncak Alam and Shah Alam; athlete confirmation identifies the cluster as Denai Peladang.",
+        "distance_from_bukit_kiara_km": {
+          "value": 18,
+          "precision": "about",
+          "source": "Athlete-direct report on 2026-08-30."
+        },
+        "environment_evidence_boundary": {
+          "kiara_source_role": "Regional particle-precaution context only.",
+          "direct_applicability": false,
+          "not_established_by_kiara_source": [
+            "Denai Peladang weather",
+            "Denai Peladang thunderstorm risk",
+            "Denai Peladang trail conditions",
+            "Denai Peladang direct PM2.5 clearance",
+            "Denai Peladang ride approval"
+          ],
+          "automation_requirement": "A direct Denai Peladang environment hold, downshift or clearance requires a venue-specific source and contract."
+        },
         "access_model": {
           "training_role": "Event-specific downhill and enduro venue rather than a routine weekly anchor.",
           "2026_course_status": "PDR26 uses a new downhill line that Clayton has not ridden; prior venue familiarity does not establish line familiarity."
@@ -797,6 +862,11 @@
       "note": "Clayton supplied the purpose-built v1 MTB environment-evidence endpoint at http://192.168.80.147:8765/api/v1/mtb/environment-evidence. The stack now retains bounded normalized current and dated artifacts with latest-attempt and last-known-good semantics for venue-scoped hold/downshift decisions. It stores neither the raw response nor server history and never uses legacy local endpoints, falls back to IQAir, infers AQI, promotes readiness or automatically increases intensity.",
       "timestamp": "2026-08-28T10:45:00+08:00",
       "type": "mtb_environment_evidence_contract_integrated"
+    },
+    {
+      "note": "The athlete-managed Bukit Kiara endpoint was upgraded in place to schema 1.6.0, revision sha256:ba6c38068f20213c. The contract now advertises OpenAPI, JSON Schema and coach documentation resources, a 180-second passive poll cadence, explicit 90-minute arrival and 90-to-210-minute trail horizons, experimental particle-forecast semantics, structured thunderstorm comparison, ordinary rain as context only, and rideApproval=false. Clayton also reported Denai Peladang is about 18 km from Kiara: Kiara evidence is regional particle-precaution context only for DP and cannot automate DP weather, thunderstorm or direct clearance without a DP-specific source.",
+      "timestamp": "2026-08-30T23:36:00+08:00",
+      "type": "mtb_environment_contract_and_venue_boundary_updated"
     }
   ],
   "medical": {
@@ -1175,5 +1245,5 @@
       }
     ]
   },
-  "updated_at": "2026-08-28T10:45:00+08:00"
+  "updated_at": "2026-08-30T23:36:00+08:00"
 }

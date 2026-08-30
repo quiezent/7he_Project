@@ -85,15 +85,30 @@ def _environment_evidence(
             "endpoint": "http://192.168.80.147:8765/api/v1/mtb/environment-evidence",
             "fallback": "none",
         },
+        "contract_state": {
+            "state": "accepted",
+            "drift": [],
+            "revalidation_needed": False,
+            "freshness_independent": True,
+        },
         "latest_attempt": {
             "attempted_at": "2026-08-28T09:30:00+08:00",
             "status": "success",
             "evidence_id": "env-20260828-0130",
         },
         "last_known_good": {
+            "contract": {
+                "schema_version": "1.6.0",
+                "revision": "sha256:test-contract",
+            },
             "identity": {
-                "schema_version": "1.0",
+                "schema_version": "1.6.0",
                 "evidence_id": "env-20260828-0130",
+            },
+            "scope": {
+                "role": "direct_venue_environment_evidence",
+                "venue_keys": ["bukit_kiara"],
+                "transfer_to_unlisted_venues": False,
             },
             "location": {
                 "name": "Taman Tun Dr. Ismail / Bukit Kiara",
@@ -116,11 +131,25 @@ def _environment_evidence(
             "exposure_outlook": {
                 "arrival": {
                     "confidence": forecast_confidence,
+                    "expected_at_utc": "2026-08-28T03:00:00Z",
+                    "persistence_anchor_pm2_5_ug_m3": 47.2,
+                    "validation_state": "experimental_not_validated",
                     "likely_range_pm2_5_ug_m3": {"low": 49.8, "high": 81.4},
+                    "decision_envelope_pm2_5_ug_m3": {
+                        "low": 47.2,
+                        "high": 81.4,
+                        "calibrated": False,
+                    },
                 },
                 "on_trail": {
                     "confidence": forecast_confidence,
+                    "validation_state": "experimental_not_validated",
                     "likely_mean_range_pm2_5_ug_m3": {"low": 47.2, "high": 85.0},
+                    "decision_mean_envelope_pm2_5_ug_m3": {
+                        "low": 47.2,
+                        "high": 85.0,
+                        "calibrated": False,
+                    },
                 },
             },
             "weather": {
@@ -128,6 +157,22 @@ def _environment_evidence(
                     "apparent_temperature_max_c": 37.4,
                     "precipitation_probability_max_pct": 22,
                 }
+            },
+            "ride_windows": {
+                "comparison": {
+                    "preferred_window": "morning",
+                    "relative_only": True,
+                    "ride_approval": False,
+                    "verdict": "Morning ranks lower, recheck before departure.",
+                },
+                "morning": {
+                    "recheck": "Recheck at 07:30",
+                    "weather_forecast": {"apparent_temperature_max_c": 34.8},
+                },
+                "afternoon": {
+                    "recheck": "Recheck at 12:30",
+                    "weather_forecast": {"apparent_temperature_max_c": 38.2},
+                },
             },
             "evidence_quality": {"state": "limited", "limitations": ["short_history"]},
             "provenance": {
@@ -181,7 +226,11 @@ def _environment_packet_state(environment: dict) -> dict:
     }
 
 
-def _environment_packet_plan(*, applied: list[dict] | None = None) -> dict:
+def _environment_packet_plan(
+    *,
+    applied: list[dict] | None = None,
+    applicability: dict | None = None,
+) -> dict:
     return {
         "date": "2026-08-28",
         "session": {
@@ -190,8 +239,67 @@ def _environment_packet_plan(*, applied: list[dict] | None = None) -> dict:
             "duration_min": 60,
             "intensity": "easy",
         },
-        "decision_inputs": {"garmin_arbitration": {}},
+        "decision_inputs": {
+            "garmin_arbitration": {},
+            "environment_evidence": {
+                "plan_applicability": applicability
+                or {
+                    "status": "current_observation_applicable",
+                    "target_date": "2026-08-28",
+                    "can_promote_training": False,
+                    "windows": [],
+                }
+            },
+        },
         "constraint_resolution": {"applied": applied or []},
+    }
+
+
+def _forecast_applicability() -> dict:
+    def window(name: str, start: str, end: str) -> dict:
+        return {
+            "name": name,
+            "target_date": "2026-08-29",
+            "ride_window": "09:00-13:00" if name == "morning" else "14:00-18:00",
+            "modeled_session": "09:00-11:00" if name == "morning" else "14:00-16:00",
+            "current_conditions_applicable": False,
+            "recheck": f"Recheck {name}",
+            "particle_forecast": {
+                "validation_state": "experimental_not_validated",
+                "mean_range_pm2_5_ug_m3": {
+                    "low": 20.0,
+                    "high": 90.0,
+                    "calibrated": False,
+                    "role": "conservative_persistence_envelope",
+                },
+                "upper_peak_pm2_5_ug_m3": 105.0,
+            },
+            "weather_forecast": {
+                "start_at_utc": start,
+                "end_at_utc": end,
+                "thunderstorm": {
+                    "level": "likely",
+                    "rank": 2,
+                    "label": "Thunderstorm signal elevated",
+                    "basis": "Issued convection supports a thunderstorm signal.",
+                    "used_for_decision": True,
+                },
+            },
+        }
+
+    return {
+        "status": "forecast_windows_time_unspecified",
+        "target_date": "2026-08-29",
+        "reason": "Morning and afternoon remain separate forecast candidates.",
+        "can_promote_training": False,
+        "preferred_window": "morning",
+        "preferred_window_relative_only": True,
+        "ride_approval": False,
+        "applicable_window_names": [],
+        "windows": [
+            window("morning", "2026-08-29T01:00:00Z", "2026-08-29T03:00:00Z"),
+            window("afternoon", "2026-08-29T06:00:00Z", "2026-08-29T08:00:00Z"),
+        ],
     }
 
 
@@ -236,9 +344,34 @@ def test_coach_packet_surfaces_compact_environment_signal_and_hold_cautions(tmp_
     assert signal["status"] == "current"
     assert signal["can_promote_training"] is False
     assert signal["value"]["can_promote_training"] is False
-    assert signal["value"]["current"]["pm2_5_ug_m3"] == 47.2
-    assert signal["value"]["provenance"]["evidence_id"] == "env-20260828-0130"
-    assert signal["value"]["provenance"]["sensor"]["provider"] == "AirGradient"
+    assert signal["value"]["evidence"]["current_pm2_5_ug_m3"] == 47.2
+    assert signal["value"]["evidence"]["evidence_id"] == "env-20260828-0130"
+    assert signal["value"]["contract"] == {
+        "schema_version": "1.6.0",
+        "revision": "sha256:test-contract",
+        "drift": [],
+        "revalidation_needed": False,
+        "freshness_independent": True,
+    }
+    assert signal["value"]["immediate"] == {
+        "arrival_at_utc": "2026-08-28T03:00:00Z",
+        "persistence_anchor_pm2_5_ug_m3": 47.2,
+        "arrival_decision_envelope_pm2_5_ug_m3": {
+            "low": 47.2,
+            "high": 81.4,
+            "calibrated": False,
+        },
+        "trail_decision_envelope_pm2_5_ug_m3": {
+            "low": 47.2,
+            "high": 85.0,
+            "calibrated": False,
+        },
+        "validation": {
+            "arrival": "experimental_not_validated",
+            "on_trail": "experimental_not_validated",
+        },
+        "recheck_minutes": 15,
+    }
     assert (
         packet["artifacts"]["source_environment_evidence"]
         == "snapshots/environment_evidence.json"
@@ -255,6 +388,227 @@ def test_coach_packet_surfaces_compact_environment_signal_and_hold_cautions(tmp_
         for item in packet["evidence"]["cautions"]
     )
     assert packet["today_call"]["stance"] == "aerobic_continuity"
+
+
+def test_coach_packet_surfaces_exact_date_forecast_without_turning_it_into_clearance(
+    tmp_path,
+):
+    environment = _environment_evidence()
+    packet = build_coach_packet(
+        tmp_path,
+        "2026-08-29",
+        state=_environment_packet_state(environment),
+        plan=_environment_packet_plan(applicability=_forecast_applicability()),
+    )
+
+    signal = next(
+        item
+        for item in packet["evidence"]["trusted"]
+        if item["name"] == "Bukit Kiara environment evidence"
+    )["value"]
+    morning, afternoon = signal["forecast_windows"]
+    assert morning["target_date"] == afternoon["target_date"] == "2026-08-29"
+    assert morning["weather_start_at_utc"] == "2026-08-29T01:00:00Z"
+    assert morning["mean_decision_envelope_pm2_5_ug_m3"]["high"] == 90.0
+    assert morning["upper_peak_pm2_5_ug_m3"] == 105.0
+    assert afternoon["heat_index_max_c"] == 38.2
+    assert morning["thunderstorm"]["level"] == "likely"
+    assert signal["comparison"]["preferred_window"] == "morning"
+    assert signal["comparison"]["relative_only"] is True
+    assert signal["comparison"]["ride_approval"] is False
+    assert any(
+        item["type"] == "environment_forecast_experimental_unvalidated"
+        for item in packet["evidence"]["cautions"]
+    )
+    assert any(
+        item["type"] == "environment_thunderstorm_hold"
+        for item in packet["evidence"]["cautions"]
+    )
+    assert packet["today_call"]["stance"] == "aerobic_continuity"
+
+
+def test_coach_packet_uses_planner_scope_for_denai_peladang_isolation(tmp_path):
+    for status in (
+        "venue_specific_evidence_unavailable",
+        "multi_venue_choice_unresolved",
+    ):
+        applicability = _forecast_applicability()
+        applicability.update(
+            {
+                "status": status,
+                "reason": (
+                    "The endpoint is direct Bukit Kiara/TTDI evidence; it cannot clear or "
+                    "close Denai Peladang or an unresolved Kiara/DP choice."
+                ),
+                "venue_applicability": {
+                    "bukit_kiara": "endpoint_evidence_available_subject_to_date",
+                    "denai_peladang": "venue_specific_evidence_unavailable",
+                },
+            }
+        )
+        packet = build_coach_packet(
+            tmp_path,
+            "2026-08-29",
+            state=_environment_packet_state(_environment_evidence()),
+            plan=_environment_packet_plan(applicability=applicability),
+        )
+
+        signal_entry = next(
+            item
+            for item in packet["evidence"]["trusted"]
+            if item["name"] == "Bukit Kiara environment evidence"
+        )
+        signal = signal_entry["value"]
+        assert "cannot clear or close Denai Peladang" in signal_entry["message"]
+        assert signal["forecast_windows"] == []
+        assert signal["immediate"] == {"status": "not_applicable"}
+        assert signal["decision"] == {
+            "status": "not_applicable",
+            "can_promote_training": False,
+        }
+        assert signal["comparison"] == {"status": "not_applicable"}
+        environment_caution_types = {
+            item["type"]
+            for item in packet["evidence"]["cautions"]
+            if item.get("source") == "environment_evidence"
+        }
+        assert environment_caution_types == {
+            "environment_scope_unavailable_for_venue"
+        }
+
+
+def test_thunderstorm_caution_requires_decision_use(tmp_path):
+    applicability = _forecast_applicability()
+    for window in applicability["windows"]:
+        window["weather_forecast"]["thunderstorm"]["used_for_decision"] = False
+
+    packet = build_coach_packet(
+        tmp_path,
+        "2026-08-29",
+        state=_environment_packet_state(_environment_evidence()),
+        plan=_environment_packet_plan(applicability=applicability),
+    )
+
+    assert not any(
+        item["type"] == "environment_thunderstorm_hold"
+        for item in packet["evidence"]["cautions"]
+    )
+
+
+def test_nearby_thunderstorm_caution_requires_fresh_evidence(tmp_path):
+    environment = _environment_evidence()
+    nearby = {
+        "fresh": False,
+        "level": "likely",
+        "rank": 2,
+        "label": "Nearby thunderstorm signal elevated",
+        "used_for_decision": True,
+    }
+    environment["last_known_good"]["weather"]["nearby_storm"] = nearby
+    state = _environment_packet_state(environment)
+    plan = _environment_packet_plan()
+
+    stale_packet = build_coach_packet(
+        tmp_path, "2026-08-28", state=state, plan=plan
+    )
+    assert not any(
+        item["type"] == "environment_thunderstorm_hold"
+        for item in stale_packet["evidence"]["cautions"]
+    )
+
+    nearby["fresh"] = True
+    fresh_packet = build_coach_packet(
+        tmp_path, "2026-08-28", state=state, plan=plan
+    )
+    assert any(
+        item["type"] == "environment_thunderstorm_hold"
+        for item in fresh_packet["evidence"]["cautions"]
+    )
+
+
+def test_coach_packet_suppresses_session_environment_cautions_for_rest(tmp_path):
+    plan = _environment_packet_plan(
+        applicability={
+            "status": "venue_specific_evidence_unavailable",
+            "target_date": "2026-08-28",
+            "reason": "No outdoor venue is selected.",
+            "can_promote_training": False,
+            "windows": [],
+        }
+    )
+    plan["session"] = {
+        "title": "Sabbath rest day",
+        "type": "scheduled_rest",
+        "duration_min": 0,
+        "intensity": "rest",
+    }
+
+    packet = build_coach_packet(
+        tmp_path,
+        "2026-08-28",
+        state=_environment_packet_state(
+            _environment_evidence(
+                gate="close_mtb_prolonged_endurance_high_ventilation",
+                severity="red",
+            )
+        ),
+        plan=plan,
+    )
+
+    assert not any(
+        item.get("source") == "environment_evidence"
+        for item in packet["evidence"]["cautions"]
+    )
+
+
+def test_coach_packet_surfaces_missing_exact_date_forecast(tmp_path):
+    applicability = {
+        "status": "forecast_unavailable_recheck",
+        "target_date": "2026-08-30",
+        "reason": "No exact structured Bukit Kiara forecast window matches this plan date.",
+        "can_promote_training": False,
+        "windows": [],
+    }
+    packet = build_coach_packet(
+        tmp_path,
+        "2026-08-30",
+        state=_environment_packet_state(_environment_evidence()),
+        plan=_environment_packet_plan(applicability=applicability),
+    )
+
+    assert any(
+        item["type"] == "environment_forecast_date_unavailable"
+        for item in packet["evidence"]["cautions"]
+    )
+
+
+def test_coach_packet_surfaces_environment_contract_drift(tmp_path):
+    environment = _environment_evidence()
+    environment["contract_state"].update(
+        {
+            "state": "changed_revalidation_needed",
+            "drift": ["live_revision_differs_from_configured"],
+            "revalidation_needed": True,
+        }
+    )
+    packet = build_coach_packet(
+        tmp_path,
+        "2026-08-28",
+        state=_environment_packet_state(environment),
+        plan=_environment_packet_plan(),
+    )
+
+    signal = next(
+        item
+        for item in packet["evidence"]["trusted"]
+        if item["name"] == "Bukit Kiara environment evidence"
+    )["value"]
+    assert signal["contract"]["drift"] == ["live_revision_differs_from_configured"]
+    assert signal["contract"]["revalidation_needed"] is True
+    assert any(
+        item["type"] == "environment_contract_revalidation_required"
+        for item in packet["evidence"]["cautions"]
+    )
 
 
 def test_coach_packet_cautions_for_unavailable_and_stale_environment(tmp_path):
