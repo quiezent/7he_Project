@@ -24,8 +24,45 @@ def test_summarize_activity_self_evaluation_from_activity_detail():
 
     assert summary["has_self_evaluation"] is True
     assert summary["feel_label"] == "normal"
+    assert summary["feel_out_of_5"] == 3
+    assert summary["feel_ordinal_display_out_of_10"] == 6
+    assert summary["feel_display_remap_semantics"] == (
+        "ordinal_display_only_not_comparable_to_rpe"
+    )
+    assert summary["feel_construct"] == "athlete_state_composite"
     assert summary["rpe_label"] == "somewhat_hard"
     assert summary["rpe_out_of_10"] == 4.0
+    assert summary["global_rpe_out_of_10"] == 4.0
+
+
+def test_self_evaluation_normalizes_clayton_reference_values_and_rejects_off_grid_feel():
+    strong = summarize_activity_self_evaluation(
+        {"summaryDTO": {"directWorkoutFeel": 75, "directWorkoutRpe": 30}}
+    )
+    off_grid = summarize_activity_self_evaluation(
+        {"summaryDTO": {"directWorkoutFeel": 74, "directWorkoutRpe": 30}}
+    )
+
+    assert strong["feel_out_of_5"] == 4
+    assert strong["feel_ordinal_display_out_of_10"] == 8
+    assert strong["global_rpe_out_of_10"] == 3.0
+    assert off_grid["feel_label"] == "score_74"
+    assert off_grid["feel_out_of_5"] is None
+    assert off_grid["feel_ordinal_display_out_of_10"] is None
+
+
+def test_self_evaluation_rejects_off_grid_or_out_of_range_rpe():
+    off_grid = summarize_activity_self_evaluation(
+        {"summaryDTO": {"directWorkoutFeel": 75, "directWorkoutRpe": 35}}
+    )
+    out_of_range = summarize_activity_self_evaluation(
+        {"summaryDTO": {"directWorkoutFeel": 75, "directWorkoutRpe": 101}}
+    )
+
+    assert off_grid["rpe_label"] is None
+    assert off_grid["global_rpe_out_of_10"] is None
+    assert out_of_range["rpe_label"] is None
+    assert out_of_range["global_rpe_out_of_10"] is None
 
 
 def test_self_evaluation_report_collects_recent_logged_rows(tmp_path):
@@ -45,6 +82,8 @@ def test_self_evaluation_report_collects_recent_logged_rows(tmp_path):
                     "has_self_evaluation": True,
                     "feel_score": 50.0,
                     "feel_label": "normal",
+                    "feel_out_of_5": 3,
+                    "feel_ordinal_display_out_of_10": 6,
                     "rpe_score": 40.0,
                     "rpe_label": "somewhat_hard",
                     "rpe_out_of_10": 4.0,
@@ -67,3 +106,9 @@ def test_self_evaluation_report_collects_recent_logged_rows(tmp_path):
     assert report["checked_activities"] == 2
     assert report["evaluated_activities"] == 1
     assert report["recent_self_evaluations"][0]["rpe_out_of_10"] == 4.0
+    assert report["recent_self_evaluations"][0]["feel_out_of_5"] == 3
+    assert report["evidence_ontology"]["garmin_feel"]["components"] == [
+        "clarity",
+        "strength",
+        "coordination",
+    ]

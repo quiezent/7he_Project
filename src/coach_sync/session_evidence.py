@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from functools import lru_cache
+from math import isfinite
 from pathlib import Path
 from typing import Any
 
 from .device_audit import (
+    is_external_standard_source,
     public_recording_device,
     read_standard_fit_device_sources,
     summarize_activity_devices,
@@ -25,6 +27,9 @@ POWER_CURVE_POINTS = {
 }
 DETAIL_TRACE_METRIC_LIMIT = 32
 BIKE_SESSION_CATEGORIES = {"mtb", "bike_indoor", "bike_outdoor"}
+TRACE_TIMING_TOLERANCE_SECONDS = 60.0
+TRACE_TIMING_TOLERANCE_FRACTION = 0.02
+MAX_PLAUSIBLE_SESSION_DURATION_SECONDS = 7 * 24 * 60 * 60
 
 
 def _round(value: Any, digits: int = 1) -> float | None:
@@ -191,6 +196,49 @@ def _normalized_device_summary(
             for item in sensors
             if isinstance(item, dict) and item.get("sensor_type")
         }
+        | {
+            str(item)
+            for item in (fit_sources or {}).get("sensor_types") or []
+            if item
+        }
+    )
+    external_speed_sensor_rows = [
+        item
+        for item in sensors
+        if isinstance(item, dict)
+        and item.get("sensor_type") == "BIKE_SPEED"
+        and is_external_standard_source(item.get("source_type"))
+    ]
+    metadata_external_speed_sensor = bool(external_speed_sensor_rows)
+    fit_external_speed_sensor = bool(
+        fit_sources and fit_sources.get("external_speed_sensor") is True
+    )
+    external_speed_sensor = metadata_external_speed_sensor or fit_external_speed_sensor
+    external_power_sensor_rows = [
+        item
+        for item in sensors
+        if isinstance(item, dict)
+        and item.get("sensor_type") == "BIKE_POWER"
+        and is_external_standard_source(item.get("source_type"))
+    ]
+    fit_external_power_sensor = "BIKE_POWER" in (
+        (fit_sources or {}).get("external_sensor_types") or []
+    )
+    external_power_sensor = bool(external_power_sensor_rows) or fit_external_power_sensor
+    speed_battery_statuses = sorted(
+        {
+            str(value).upper()
+            for value in (
+                [row.get("battery_status") for row in external_speed_sensor_rows]
+                + list(
+                    (fit_sources or {}).get(
+                        "external_speed_sensor_battery_statuses"
+                    )
+                    or []
+                )
+            )
+            if value
+        }
     )
     return {
         "status": status,
@@ -201,6 +249,42 @@ def _normalized_device_summary(
         "external_hr_battery_statuses": [
             str(item).upper() for item in summary.get("external_hr_battery_statuses") or []
         ],
+        "speed_measurement": {
+            "status": (
+                "external_bike_speed_sensor_in_standard_metadata"
+                if metadata_external_speed_sensor
+                else "external_bike_speed_sensor_in_preserved_standard_fit"
+                if fit_external_speed_sensor
+                else "no_external_bike_speed_sensor_in_standard_metadata"
+            ),
+            "external_speed_sensor": external_speed_sensor,
+            "source_surface": (
+                "garmin_devices_and_apps_standard_metadata"
+                if metadata_external_speed_sensor
+                else "preserved_standard_fit_device_info"
+                if fit_external_speed_sensor
+                else None
+            ),
+            "battery_statuses": speed_battery_statuses,
+            "ontology_entity": "measurement_provenance",
+            "interpretation_guardrail": (
+                "Standard metadata establishes that a BIKE_SPEED sensor contributed to the activity "
+                "device context. It improves speed/distance confidence under canopy but does not prove "
+                "wheel location, calibration, wheel circumference, per-sample accuracy, route identity, "
+                "technical execution, or manual lap-boundary accuracy."
+            ),
+        },
+        "power_measurement": {
+            "status": (
+                "external_bike_power_sensor_in_standard_metadata"
+                if external_power_sensor_rows
+                else "external_bike_power_sensor_in_preserved_standard_fit"
+                if fit_external_power_sensor
+                else "no_external_bike_power_sensor_in_standard_metadata"
+            ),
+            "external_power_sensor": external_power_sensor,
+            "ontology_entity": "measurement_provenance",
+        },
         "hr_source_classification": summary.get("hr_source_classification"),
         "hr_confidence": _device_hr_confidence(summary, fit_sources),
         "standard_fit_device_sources": fit_sources,
@@ -236,6 +320,13 @@ def _preserved_device_evidence(root: str | Path | None, activity_id: str) -> dic
 def _device_evidence(root: str | Path | None, activity_id: str) -> dict:
     row = _matching_index_row(root, "activity_device_index.json", activity_id)
     source = "snapshots/activity_device_index.json"
+    fit_path = _original_fit_path(root, activity_id)
+    fit_sources = read_standard_fit_device_sources(fit_path) if fit_path else None
+    usable_fit = (
+        fit_sources
+        if fit_sources and fit_sources.get("status") == "available"
+        else None
+    )
     if row is None:
         preserved = _preserved_device_evidence(root, activity_id)
         if preserved:
@@ -266,34 +357,161 @@ def _device_evidence(root: str | Path | None, activity_id: str) -> dict:
             else "available"
         ),
         source=source,
+        fit_sources=usable_fit,
+        fit_source_path=_relative_path(root, fit_path) if fit_path else None,
         latest_attempt=row.get("latest_attempt"),
     )
 
 
-def _self_evaluation(root: str | Path | None, activity_id: str) -> dict:
-    row = _matching_index_row(root, "activity_self_evaluation_index.json", activity_id)
+def _self_evaluation(
+    root: str | Path | None,
+    activity_id: str,
+    activity_date: str | date | None = None,
+) -> dict:
     source = "snapshots/activity_self_evaluation_index.json"
+    try:
+        fallback_activity_date = parse_date(activity_date)
+    except (TypeError, ValueError):
+        fallback_activity_date = None
+    candidates = [
+        row
+        for row in _index_rows(root, "activity_self_evaluation_index.json")
+        if str(row.get("activity_id") or row.get("id") or "") == activity_id
+    ]
+    row = None
+    if fallback_activity_date is not None:
+        for candidate in reversed(candidates):
+            try:
+                candidate_date = parse_date(candidate.get("date"))
+            except (TypeError, ValueError):
+                candidate_date = None
+            if candidate_date == fallback_activity_date:
+                row = candidate
+                break
+    if row is None and candidates:
+        row = candidates[-1]
     if row is None:
-        return {"status": "not_indexed", "source": source}
+        return {
+            "status": "not_indexed",
+            "activity_id": activity_id,
+            "date": None,
+            "source": source,
+        }
+    raw_row_date = row.get("date")
+    try:
+        row_date = parse_date(raw_row_date)
+    except (TypeError, ValueError):
+        row_date = None
+    matched_date = row_date or (fallback_activity_date if raw_row_date in (None, "") else None)
+    identity = {
+        "activity_id": str(row.get("activity_id") or row.get("id") or activity_id),
+        "date": matched_date.isoformat() if matched_date is not None else None,
+        "identity_status": (
+            "exact_match"
+            if matched_date is not None
+            and fallback_activity_date is not None
+            and matched_date == fallback_activity_date
+            else "date_mismatch"
+            if matched_date is not None and fallback_activity_date is not None
+            else "date_unverified"
+        ),
+        "identity_provenance": {
+            "activity_id": f"{source}.activities[].activity_id",
+            "date": (
+                f"{source}.activities[].date"
+                if row_date is not None
+                else "latest_session_evidence.activity.date"
+                if matched_date is not None
+                else None
+            ),
+            "raw_date": raw_row_date,
+        },
+    }
+    if identity["identity_status"] == "date_mismatch":
+        return {
+            "status": "identity_mismatch",
+            **identity,
+            "source": source,
+            "latest_attempt": row.get("latest_attempt"),
+            "interpretation_guardrail": (
+                "A self-evaluation row from another activity date is not attached to this session."
+            ),
+        }
     if row.get("detail_fetch_ok") is not True:
         return {
             "status": "fetch_failed" if row.get("detail_fetch_ok") is False else "unknown",
+            **identity,
             "source": source,
             "fetch_error": row.get("detail_fetch_error"),
+            "latest_attempt": row.get("latest_attempt"),
         }
     if not row.get("has_self_evaluation"):
-        return {"status": "not_logged", "source": source}
+        return {
+            "status": "not_logged",
+            **identity,
+            "source": source,
+            "latest_attempt": row.get("latest_attempt"),
+        }
+    feel_score = as_number(row.get("feel_score"))
+    derived_feel = (
+        int(feel_score / 25) + 1
+        if feel_score in {0, 25, 50, 75, 100}
+        else None
+    )
+    rpe_score = as_number(row.get("rpe_score"))
+    derived_rpe = (
+        rpe_score / 10.0
+        if rpe_score in {10, 20, 30, 40, 50, 60, 70, 80, 90, 100}
+        else None
+    )
+    if derived_feel is None and derived_rpe is None:
+        return {
+            "status": "unusable_invalid_categories",
+            **identity,
+            "feel_score": feel_score,
+            "rpe_score": rpe_score,
+            "invalid_category_fields": [
+                field
+                for field, invalid in (
+                    ("feel_score", feel_score is not None),
+                    ("rpe_score", rpe_score is not None),
+                )
+                if invalid
+            ],
+            "latest_attempt": row.get("latest_attempt"),
+            "source": source,
+            "interpretation_guardrail": (
+                "Garmin Feel and Perceived Effort are categorical surfaces. Off-grid raw values "
+                "are preserved for audit but cannot be treated as a valid subjective review."
+            ),
+        }
     return {
         "status": (
             "available_cached_after_refresh_failure"
             if _cached_after_refresh_failure(row)
             else "available"
         ),
+        **identity,
         "feel_score": row.get("feel_score"),
         "feel_label": row.get("feel_label"),
-        "rpe_score": row.get("rpe_score"),
-        "rpe_label": row.get("rpe_label"),
-        "rpe_out_of_10": row.get("rpe_out_of_10"),
+        "feel_out_of_5": derived_feel,
+        "feel_ordinal_display_out_of_10": (
+            derived_feel * 2 if derived_feel is not None else None
+        ),
+        "feel_display_remap": "ordinal_1_to_5_mapped_to_even_labels_2_to_10_not_interval_equivalence",
+        "feel_construct": row.get("feel_construct") or "athlete_state_composite",
+        "rpe_score": rpe_score,
+        "rpe_label": row.get("rpe_label") if derived_rpe is not None else None,
+        "rpe_out_of_10": derived_rpe,
+        "global_rpe_out_of_10": derived_rpe,
+        "ontology": {
+            "feel_entity": "athlete_state",
+            "rpe_entity": "delivered_session_effort",
+            "separation_rule": (
+                "Neither Garmin Feel nor Perceived Effort establishes technical execution, illness "
+                "absence, or a safety-contract outcome."
+            ),
+        },
         "latest_attempt": row.get("latest_attempt"),
         "source": source,
     }
@@ -304,6 +522,15 @@ def _matching_detail_call(
     activity_id: str,
     call_name: str,
 ) -> tuple[Any, str] | None:
+    result = _matching_detail_call_with_provenance(root, activity_id, call_name)
+    return (result[0], result[1]) if result else None
+
+
+def _matching_detail_call_with_provenance(
+    root: str | Path | None,
+    activity_id: str,
+    call_name: str,
+) -> tuple[Any, str, dict] | None:
     paths = (
         repo_root(root) / "activities" / "details" / f"garmin_{activity_id}_detail.json",
         snapshots_dir(root) / f"activity_detail_{activity_id}.json",
@@ -315,7 +542,33 @@ def _matching_detail_call(
         call = (payload.get("calls") or {}).get(call_name) or {}
         data = call.get("data") if call.get("ok") is True else None
         if isinstance(data, (dict, list)) and data:
-            return data, _relative_path(root, path) or path.name
+            latest_attempt = (
+                call.get("latest_attempt")
+                if isinstance(call.get("latest_attempt"), dict)
+                else None
+            )
+            bounded_attempt = (
+                {
+                    key: latest_attempt.get(key)
+                    for key in ("status", "attempted_at", "error", "label")
+                    if latest_attempt.get(key) is not None
+                }
+                if latest_attempt
+                else None
+            )
+            cached_after_failure = call.get("last_attempt_ok") is False
+            return (
+                data,
+                _relative_path(root, path) or path.name,
+                {
+                    "call_status": call.get("status"),
+                    "attempted_at": call.get("attempted_at"),
+                    "last_success_at": call.get("last_success_at"),
+                    "last_attempt_ok": call.get("last_attempt_ok"),
+                    "latest_attempt": bounded_attempt,
+                    "using_cached_after_refresh_failure": cached_after_failure,
+                },
+            )
     return None
 
 
@@ -427,62 +680,498 @@ def _detail_trace_evidence(
 def _detail_metric_rows(
     root: str | Path | None,
     activity_id: str,
-) -> tuple[list[dict], str] | None:
-    result = _matching_detail_call(root, activity_id, "details")
+) -> tuple[list[dict], str, dict[str, str | None], dict] | None:
+    result = _matching_detail_call_with_provenance(root, activity_id, "details")
     if not result or not isinstance(result[0], dict):
         return None
-    data, source = result
+    data, source, call_provenance = result
+    descriptor_rows = data.get("metricDescriptors")
+    sample_rows = data.get("activityDetailMetrics")
+    if not isinstance(descriptor_rows, list) or not isinstance(sample_rows, list):
+        return None
     descriptors = {}
-    for descriptor in data.get("metricDescriptors") or []:
+    descriptor_units: dict[str, str | None] = {}
+    for descriptor in descriptor_rows:
         if not isinstance(descriptor, dict) or descriptor.get("key") is None:
             continue
         index = descriptor.get("metricsIndex")
         if isinstance(index, int) and index >= 0:
-            descriptors[str(descriptor["key"])] = index
+            key = str(descriptor["key"])
+            descriptors[key] = index
+            unit = descriptor.get("unit")
+            descriptor_units[key] = (
+                str(unit.get("key"))
+                if isinstance(unit, dict) and unit.get("key") is not None
+                else None
+            )
     timestamp_index = descriptors.get("directTimestamp")
-    if timestamp_index is None:
+    elapsed_index = descriptors.get("sumElapsedDuration")
+    if timestamp_index is None and elapsed_index is None:
         return None
     rows = []
-    for sample in data.get("activityDetailMetrics") or []:
+    for sequence_index, sample in enumerate(sample_rows):
         metrics = sample.get("metrics") if isinstance(sample, dict) else None
-        if not isinstance(metrics, list) or timestamp_index >= len(metrics):
+        if not isinstance(metrics, list):
             continue
-        timestamp = as_number(metrics[timestamp_index])
-        if timestamp is None:
+        timestamp = (
+            _finite_scalar_number(metrics[timestamp_index])
+            if timestamp_index is not None and timestamp_index < len(metrics)
+            else None
+        )
+        elapsed = (
+            _finite_scalar_number(metrics[elapsed_index])
+            if elapsed_index is not None and elapsed_index < len(metrics)
+            else None
+        )
+        if timestamp is None and elapsed is None:
             continue
-        row = {"directTimestamp": timestamp}
+        row = {
+            "directTimestamp": timestamp,
+            "sumElapsedDuration": elapsed,
+            "_sequence_index": sequence_index,
+        }
         for key in (
             "sumDistance",
             "directSpeed",
             "directElevation",
             "directHeartRate",
+            "directPower",
+            "directBikeCadence",
+            "directPerformanceCondition",
         ):
             index = descriptors.get(key)
             row[key] = metrics[index] if index is not None and index < len(metrics) else None
         rows.append(row)
-    rows.sort(key=lambda row: row["directTimestamp"])
-    return (rows, source) if rows else None
+    if rows and all(
+        _finite_scalar_number(row.get("directTimestamp")) is not None for row in rows
+    ):
+        rows.sort(key=lambda row: row["directTimestamp"])
+    return (rows, source, descriptor_units, call_provenance) if rows else None
+
+
+def _finite_scalar_number(value: Any) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        return None
+    try:
+        number = float(value.strip()) if isinstance(value, str) else float(value)
+    except (OverflowError, TypeError, ValueError):
+        return None
+    return number if isfinite(number) else None
+
+
+def _positive_finite_seconds(value: Any) -> float | None:
+    seconds = _finite_scalar_number(value)
+    if seconds is None or seconds <= 0:
+        return None
+    return seconds
+
+
+def _select_session_duration_seconds(raw: dict) -> float | None:
+    candidates = [
+        duration
+        for duration in (
+            _positive_finite_seconds(raw.get("elapsedDuration")),
+            _positive_finite_seconds(raw.get("duration")),
+        )
+        if duration is not None
+        and duration <= MAX_PLAUSIBLE_SESSION_DURATION_SECONDS
+    ]
+    return max(candidates) if candidates else None
+
+
+def _trace_duration_ceiling(session_duration_sec: Any) -> float | None:
+    duration = _positive_finite_seconds(session_duration_sec)
+    if (
+        duration is None
+        or duration > MAX_PLAUSIBLE_SESSION_DURATION_SECONDS
+    ):
+        return None
+    tolerance = min(
+        TRACE_TIMING_TOLERANCE_SECONDS,
+        max(5.0, duration * TRACE_TIMING_TOLERANCE_FRACTION),
+    )
+    return duration + tolerance
+
+
+def _span_and_gaps_fit_session(
+    values: list[float],
+    *,
+    units_per_second: float,
+    session_duration_sec: Any,
+) -> bool:
+    ceiling = _trace_duration_ceiling(session_duration_sec)
+    if not values or ceiling is None:
+        return False
+    ordered = sorted(values)
+    gaps_sec = [
+        (value - ordered[index - 1]) / units_per_second
+        for index, value in enumerate(ordered[1:], start=1)
+    ]
+    span_sec = (ordered[-1] - ordered[0]) / units_per_second
+    return span_sec <= ceiling and all(gap <= ceiling for gap in gaps_sec)
+
+
+def _validated_elapsed_order(
+    rows: list[dict],
+    session_duration_sec: Any,
+) -> list[dict] | None:
+    ceiling = _trace_duration_ceiling(session_duration_sec)
+    if not rows or ceiling is None:
+        return None
+    source_order = sorted(rows, key=lambda row: row.get("_sequence_index", 0))
+    elapsed_values = [
+        _finite_scalar_number(row.get("sumElapsedDuration")) for row in source_order
+    ]
+    if any(
+        value is None or not isfinite(value) or value < 0
+        for value in elapsed_values
+    ):
+        return None
+    numeric = [float(value) for value in elapsed_values if value is not None]
+    if any(
+        value < numeric[index - 1]
+        for index, value in enumerate(numeric[1:], start=1)
+    ):
+        return None
+    if max(numeric) > ceiling or not _span_and_gaps_fit_session(
+        numeric,
+        units_per_second=1.0,
+        session_duration_sec=session_duration_sec,
+    ):
+        return None
+    return source_order
+
+
+def _epoch_units_per_second(values: list[float]) -> float | None:
+    if not values:
+        return None
+    minimum_magnitude = min(abs(value) for value in values)
+    maximum_magnitude = max(abs(value) for value in values)
+    if 100_000_000_000 <= minimum_magnitude and maximum_magnitude < 100_000_000_000_000:
+        return 1000.0
+    if 100_000_000 <= minimum_magnitude and maximum_magnitude < 100_000_000_000:
+        return 1.0
+    return None
+
+
+def _aligned_activity_begin_timestamp(
+    rows: list[dict],
+    timestamp_units_per_second: float,
+    activity_begin_timestamp: Any,
+    session_duration_sec: Any,
+) -> float | None:
+    begin = _finite_scalar_number(activity_begin_timestamp)
+    duration = _positive_finite_seconds(session_duration_sec)
+    ceiling = _trace_duration_ceiling(duration)
+    if begin is None or duration is None or ceiling is None:
+        return None
+    begin_units_per_second = _epoch_units_per_second([begin])
+    if begin_units_per_second is None:
+        return None
+    timestamps = [
+        _finite_scalar_number(row.get("directTimestamp")) for row in rows
+    ]
+    if any(value is None for value in timestamps):
+        return None
+    begin_epoch_sec = begin / begin_units_per_second
+    offsets_sec = [
+        float(value) / timestamp_units_per_second - begin_epoch_sec
+        for value in timestamps
+        if value is not None
+    ]
+    tolerance_sec = ceiling - duration
+    if min(offsets_sec) < -tolerance_sec or max(offsets_sec) > ceiling:
+        return None
+    return begin_epoch_sec * timestamp_units_per_second
+
+
+def _validated_gmt_units_per_second(
+    rows: list[dict],
+    timestamp_unit: str | None,
+    session_duration_sec: Any = None,
+    *,
+    allow_missing_unit: bool = False,
+) -> float | None:
+    """Infer epoch scale, optionally admitting a duration-bounded legacy missing unit."""
+    if timestamp_unit != "gmt" and not (
+        allow_missing_unit and timestamp_unit is None
+    ):
+        return None
+    if timestamp_unit is None and _positive_finite_seconds(session_duration_sec) is None:
+        return None
+    timestamps = [_finite_scalar_number(row.get("directTimestamp")) for row in rows]
+    if not timestamps or any(
+        value is None or not isfinite(value) for value in timestamps
+    ):
+        return None
+    numeric = [float(value) for value in timestamps if value is not None]
+    units_per_second = _epoch_units_per_second(numeric)
+    if units_per_second is None:
+        return None
+    if session_duration_sec is not None and not _span_and_gaps_fit_session(
+        numeric,
+        units_per_second=units_per_second,
+        session_duration_sec=session_duration_sec,
+    ):
+        return None
+    return units_per_second
+
+
+def _performance_condition_evidence(
+    root: str | Path | None,
+    activity_id: str,
+    gear_labels: list[str] | None = None,
+    *,
+    category: str | None = None,
+    power_context_basis: list[str] | None = None,
+    session_duration_sec: Any = None,
+    activity_begin_timestamp: Any = None,
+) -> dict:
+    if category not in BIKE_SESSION_CATEGORIES:
+        return {
+            "status": "not_applicable_non_cycling",
+            "ontology_entity": "physiological_response_context",
+            "source": None,
+        }
+    power_context_basis = list(power_context_basis or [])
+    if not power_context_basis:
+        return {
+            "status": "not_available_power_context_missing",
+            "ontology_entity": "physiological_response_context",
+            "power_context_basis": [],
+            "source": None,
+            "interpretation_guardrail": (
+                "Cycling Performance Condition is withheld without activity power or standard bike-power provenance."
+            ),
+        }
+    result = _detail_metric_rows(root, activity_id)
+    if not result:
+        return {
+            "status": "not_available",
+            "ontology_entity": "physiological_response_context",
+            "power_context_basis": power_context_basis,
+            "source": None,
+        }
+    rows, source, units, call_provenance = result
+    if units.get("directPerformanceCondition") != "dimensionless":
+        return {
+            "status": "not_available_invalid_metric_unit",
+            "ontology_entity": "physiological_response_context",
+            "power_context_basis": power_context_basis,
+            "source": source,
+            "metric_unit": units.get("directPerformanceCondition"),
+        }
+    elapsed_unit = units.get("sumElapsedDuration")
+    timestamp_unit = units.get("directTimestamp")
+    candidate_rows = []
+    for row in rows:
+        value = _finite_scalar_number(row.get("directPerformanceCondition"))
+        if value is None or not -20 <= value <= 20:
+            continue
+        candidate_rows.append(row)
+    if not candidate_rows:
+        return {
+            "status": "not_available",
+            "ontology_entity": "physiological_response_context",
+            "power_context_basis": power_context_basis,
+            "source": source,
+            "reason": "named_directPerformanceCondition_has_no_valid_values",
+        }
+
+    duration = _positive_finite_seconds(session_duration_sec)
+    elapsed_order = (
+        _validated_elapsed_order(candidate_rows, duration)
+        if elapsed_unit == "second"
+        else None
+    )
+    raw_timestamp_units_per_second = _validated_gmt_units_per_second(
+        rows, timestamp_unit
+    )
+    duration_bounded_timestamp_units_per_second = (
+        _validated_gmt_units_per_second(rows, timestamp_unit, duration)
+        if duration is not None
+        else None
+    )
+    aligned_begin_timestamp = (
+        _aligned_activity_begin_timestamp(
+            rows,
+            duration_bounded_timestamp_units_per_second,
+            activity_begin_timestamp,
+            duration,
+        )
+        if duration_bounded_timestamp_units_per_second is not None
+        else None
+    )
+    timestamp_units_per_second = (
+        duration_bounded_timestamp_units_per_second
+        if aligned_begin_timestamp is not None
+        else None
+    )
+    first_timestamp = None
+    if elapsed_order is not None:
+        ordered_rows = elapsed_order
+        timing_basis = "sumElapsedDuration_second"
+    elif timestamp_units_per_second is not None:
+        ordered_rows = sorted(
+            candidate_rows,
+            key=lambda row: (
+                _finite_scalar_number(row.get("directTimestamp")),
+                row.get("_sequence_index", 0),
+            ),
+        )
+        first_timestamp = aligned_begin_timestamp
+        timing_basis = (
+            "directTimestamp_gmt_epoch_milliseconds"
+            if timestamp_units_per_second == 1000.0
+            else "directTimestamp_gmt_epoch_seconds"
+        )
+    else:
+        ordered_rows = sorted(
+            candidate_rows, key=lambda row: row.get("_sequence_index", 0)
+        )
+        if duration is None:
+            timing_basis = "withheld_session_duration_unavailable"
+        elif (
+            duration_bounded_timestamp_units_per_second is not None
+            and aligned_begin_timestamp is None
+        ):
+            timing_basis = "withheld_timestamp_not_aligned_to_activity_begin"
+        elif raw_timestamp_units_per_second is not None:
+            timing_basis = "withheld_timestamp_span_or_gap_exceeds_session_duration"
+        else:
+            timing_basis = "withheld_missing_or_non_monotonic_elapsed"
+
+    observations = []
+    for row in ordered_rows:
+        value = _finite_scalar_number(row.get("directPerformanceCondition"))
+        elapsed = None
+        if elapsed_order is not None:
+            elapsed = _finite_scalar_number(row.get("sumElapsedDuration"))
+        elif timestamp_units_per_second is not None and first_timestamp is not None:
+            timestamp = _finite_scalar_number(row.get("directTimestamp"))
+            if timestamp is not None:
+                elapsed = (timestamp - first_timestamp) / timestamp_units_per_second
+        observations.append(
+            {
+                "elapsed_min": round(elapsed / 60.0, 2) if elapsed is not None else None,
+                "value": round(value, 1),
+            }
+        )
+
+    elapsed_values = [item["elapsed_min"] for item in observations]
+    if any(value is None for value in elapsed_values) or any(
+        value < 0 or (index > 0 and value < elapsed_values[index - 1])
+        for index, value in enumerate(elapsed_values)
+        if value is not None
+    ):
+        for item in observations:
+            item["elapsed_min"] = None
+        if timing_basis not in {
+            "withheld_session_duration_unavailable",
+            "withheld_timestamp_not_aligned_to_activity_begin",
+            "withheld_timestamp_span_or_gap_exceeds_session_duration",
+        }:
+            timing_basis = "withheld_missing_or_non_monotonic_elapsed"
+
+    state_points = []
+    previous = None
+    for item in observations:
+        if item["value"] == previous:
+            continue
+        state_points.append(item)
+        previous = item["value"]
+    state_point_count = len(state_points)
+    change_count = max(0, state_point_count - 1)
+    state_points_truncated = state_point_count > 16
+    state_points = state_points[:16]
+    values = [item["value"] for item in observations]
+    labels = [str(item).lower() for item in gear_labels or []]
+    matched_stumpjumper = any("stumpjumper" in item for item in labels)
+    return {
+        "status": (
+            "available_cached_after_refresh_failure"
+            if call_provenance.get("using_cached_after_refresh_failure")
+            else "available"
+        ),
+        "ontology_entity": "physiological_response_context",
+        "power_context_basis": power_context_basis,
+        "context_scope": (
+            "matched_stumpjumper_fitness_context"
+            if matched_stumpjumper
+            else "generic_cycling_physiological_context"
+        ),
+        "held_trace_observation_count": len(observations),
+        "state_point_count": state_point_count,
+        "change_count": change_count,
+        "first_value": observations[0]["value"],
+        "first_elapsed_min": observations[0]["elapsed_min"],
+        "final_value": observations[-1]["value"],
+        "last_elapsed_min": observations[-1]["elapsed_min"],
+        "minimum": min(values),
+        "maximum": max(values),
+        "change_final_minus_first": round(values[-1] - values[0], 1),
+        "state_points": state_points,
+        "state_points_truncated": state_points_truncated,
+        "timing_basis": timing_basis,
+        "descriptor_units": {
+            "directPerformanceCondition": units.get("directPerformanceCondition"),
+            "sumElapsedDuration": elapsed_unit,
+            "directTimestamp": timestamp_unit,
+        },
+        "source": source,
+        "provenance": call_provenance,
+        "interpretation_guardrail": (
+            "This bounded summary uses only Garmin's named directPerformanceCondition detail metric; "
+            "unknown/proprietary FIT fields are not promoted. For cycling it is a power/heart-rate "
+            "response relative to Garmin's fitness baseline. Repeated or held source-trace observations "
+            "at the collected cadence are not independent Garmin fitness estimates; the bounded state "
+            "points carry the useful changes. Compare "
+            "it only within similar bike, route, "
+            "heat, sensor and effort contexts; it does not establish coordination, technical execution, "
+            "illness absence, or safety."
+        ),
+    }
 
 
 def _trace_movement_timing(
     root: str | Path | None,
     activity_id: str,
     elapsed_min: float | None,
+    session_duration_sec: Any = None,
 ) -> dict | None:
     result = _detail_metric_rows(root, activity_id)
     if not result or elapsed_min is None or elapsed_min <= 0:
         return None
-    rows, source = result
-    if len(rows) < 30:
+    rows, source, units, call_provenance = result
+    timestamped_rows = sorted(
+        (
+            row
+            for row in rows
+            if _finite_scalar_number(row.get("directTimestamp")) is not None
+        ),
+        key=lambda row: row["directTimestamp"],
+    )
+    if len(timestamped_rows) < 30:
+        return None
+
+    timestamp_units_per_second = _validated_gmt_units_per_second(
+        timestamped_rows,
+        units.get("directTimestamp"),
+        session_duration_sec,
+        allow_missing_unit=True,
+    )
+    if timestamp_units_per_second is None:
         return None
 
     moving_sec = 0.0
     stopped_sec = 0.0
     unknown_sec = 0.0
     max_gap_sec = 0.0
-    for index, row in enumerate(rows[:-1]):
-        next_row = rows[index + 1]
-        duration_sec = (next_row["directTimestamp"] - row["directTimestamp"]) / 1000.0
+    for index, row in enumerate(timestamped_rows[:-1]):
+        next_row = timestamped_rows[index + 1]
+        duration_sec = (
+            next_row["directTimestamp"] - row["directTimestamp"]
+        ) / timestamp_units_per_second
         if duration_sec <= 0:
             continue
         max_gap_sec = max(max_gap_sec, duration_sec)
@@ -516,10 +1205,11 @@ def _trace_movement_timing(
         "stopped_min": round(stopped_sec / 60.0, 1),
         "nonmoving_or_stopped_estimate_min": round(stopped_sec / 60.0, 1),
         "unknown_min": round(unknown_sec / 60.0, 1),
-        "sample_count": len(rows),
+        "sample_count": len(timestamped_rows),
         "coverage_ratio": round(coverage_ratio, 3),
         "max_sample_gap_sec": round(max_gap_sec, 1),
         "source": source,
+        "provenance": call_provenance,
         "method": (
             "Derived from consecutive Garmin detail samples: moving when direct speed is at least "
             "0.5 m/s or cumulative distance advances at least 1 m."
@@ -531,9 +1221,16 @@ def _trace_movement_timing(
     }
 
 
-def _phase_stats(rows: list[dict], start_ms: float, end_ms: float) -> dict:
+def _phase_stats(
+    rows: list[dict],
+    start_timestamp: float,
+    end_timestamp: float,
+    timestamp_units_per_second: float,
+) -> dict:
     samples = [
-        row for row in rows if start_ms <= row["directTimestamp"] <= end_ms
+        row
+        for row in rows
+        if start_timestamp <= row["directTimestamp"] <= end_timestamp
     ]
     elevations = [as_number(row.get("directElevation")) for row in samples]
     elevations = [value for value in elevations if value is not None]
@@ -542,15 +1239,20 @@ def _phase_stats(rows: list[dict], start_ms: float, end_ms: float) -> dict:
     hr_weight = 0.0
     hr_seconds = 0.0
     for index, row in enumerate(rows[:-1]):
-        segment_start = max(start_ms, row["directTimestamp"])
-        segment_end = min(end_ms, rows[index + 1]["directTimestamp"])
+        segment_start = max(start_timestamp, row["directTimestamp"])
+        segment_end = min(end_timestamp, rows[index + 1]["directTimestamp"])
         heart_rate = as_number(row.get("directHeartRate"))
         if segment_end > segment_start and heart_rate is not None:
-            duration_sec = (segment_end - segment_start) / 1000.0
+            duration_sec = (segment_end - segment_start) / timestamp_units_per_second
             hr_weight += heart_rate * duration_sec
             hr_seconds += duration_sec
     return {
-        "duration_min": round(max(0.0, end_ms - start_ms) / 60000.0, 1),
+        "duration_min": round(
+            max(0.0, end_timestamp - start_timestamp)
+            / timestamp_units_per_second
+            / 60.0,
+            1,
+        ),
         "sample_count": len(samples),
         "start_elevation_m": _round(samples[0].get("directElevation"), 1) if samples else None,
         "end_elevation_m": _round(samples[-1].get("directElevation"), 1) if samples else None,
@@ -564,22 +1266,43 @@ def _phase_stats(rows: list[dict], start_ms: float, end_ms: float) -> dict:
 def _hike_phase_summary(
     root: str | Path | None,
     activity_id: str,
+    session_duration_sec: Any = None,
 ) -> dict:
     result = _detail_metric_rows(root, activity_id)
     if not result:
         return {"status": "not_available", "source": None}
-    rows, source = result
+    rows, source, units, call_provenance = result
+    timestamped_rows = sorted(
+        (
+            row
+            for row in rows
+            if _finite_scalar_number(row.get("directTimestamp")) is not None
+        ),
+        key=lambda row: row["directTimestamp"],
+    )
+    timestamp_units_per_second = _validated_gmt_units_per_second(
+        timestamped_rows,
+        units.get("directTimestamp"),
+        session_duration_sec,
+        allow_missing_unit=True,
+    )
+    if timestamp_units_per_second is None:
+        return {
+            "status": "invalid_or_unknown_timestamp_scale",
+            "source": source,
+            "provenance": call_provenance,
+        }
     valid_rows = [
         row
-        for row in rows
+        for row in timestamped_rows
         if as_number(row.get("directElevation")) is not None
         and as_number(row.get("directHeartRate")) is not None
     ]
-    valid_ratio = len(valid_rows) / len(rows) if rows else 0.0
+    valid_ratio = len(valid_rows) / len(timestamped_rows) if timestamped_rows else 0.0
     max_valid_gap_sec = max(
         (
             (valid_rows[index + 1]["directTimestamp"] - row["directTimestamp"])
-            / 1000.0
+            / timestamp_units_per_second
             for index, row in enumerate(valid_rows[:-1])
         ),
         default=0.0,
@@ -588,7 +1311,7 @@ def _hike_phase_summary(
         return {
             "status": "insufficient_trace_samples",
             "sample_count": len(valid_rows),
-            "trace_sample_count": len(rows),
+            "trace_sample_count": len(timestamped_rows),
             "valid_hr_elevation_sample_ratio": round(valid_ratio, 3),
             "max_valid_sample_gap_sec": round(max_valid_gap_sec, 1),
             "source": source,
@@ -623,7 +1346,7 @@ def _hike_phase_summary(
     return {
         "status": "available_derived",
         "sample_count": len(valid_rows),
-        "trace_sample_count": len(rows),
+        "trace_sample_count": len(timestamped_rows),
         "valid_hr_elevation_sample_ratio": round(valid_ratio, 3),
         "max_valid_sample_gap_sec": round(max_valid_gap_sec, 1),
         "trace_min_elevation_m": round(min_elevation, 1),
@@ -631,15 +1354,26 @@ def _hike_phase_summary(
         "top_band": {
             "floor_elevation_m": round(top_band_floor, 1),
             "rule": "within_8_m_of_trace_max",
-            "first_entry_offset_min": round((first_top_ms - start_ms) / 60000.0, 1),
-            "last_exit_offset_min": round((last_top_ms - start_ms) / 60000.0, 1),
+            "first_entry_offset_min": round(
+                (first_top_ms - start_ms) / timestamp_units_per_second / 60.0, 1
+            ),
+            "last_exit_offset_min": round(
+                (last_top_ms - start_ms) / timestamp_units_per_second / 60.0, 1
+            ),
         },
         "phases": {
-            "ascent_to_first_top_band_entry": _phase_stats(valid_rows, start_ms, first_top_ms),
-            "top_band_dwell": _phase_stats(valid_rows, first_top_ms, last_top_ms),
-            "descent_after_last_top_band_exit": _phase_stats(valid_rows, last_top_ms, end_ms),
+            "ascent_to_first_top_band_entry": _phase_stats(
+                valid_rows, start_ms, first_top_ms, timestamp_units_per_second
+            ),
+            "top_band_dwell": _phase_stats(
+                valid_rows, first_top_ms, last_top_ms, timestamp_units_per_second
+            ),
+            "descent_after_last_top_band_exit": _phase_stats(
+                valid_rows, last_top_ms, end_ms, timestamp_units_per_second
+            ),
         },
         "source": source,
+        "provenance": call_provenance,
         "derivation": (
             "Coach-stack phase reconstruction from persisted Garmin directTimestamp, "
             "directElevation, and directHeartRate samples; this is not a Garmin-native phase label."
@@ -656,9 +1390,22 @@ def _timing_evidence(
     category: str | None,
     trace_timing: dict | None,
 ) -> dict:
-    elapsed_min = _minutes(raw.get("elapsedDuration"))
-    if elapsed_min is None:
-        elapsed_min = _minutes(raw.get("duration"))
+    session_duration_sec = _select_session_duration_seconds(raw)
+    elapsed_min = (
+        round(session_duration_sec / 60.0, 1)
+        if session_duration_sec is not None
+        else None
+    )
+    selected_duration_field = next(
+        (
+            key
+            for key in ("elapsedDuration", "duration")
+            if _positive_finite_seconds(raw.get(key)) == session_duration_sec
+            and session_duration_sec is not None
+            and session_duration_sec <= MAX_PLAUSIBLE_SESSION_DURATION_SECONDS
+        ),
+        None,
+    )
     raw_moving_min = _minutes(raw.get("movingDuration"))
     raw_stopped_min = (
         round(max(0.0, elapsed_min - raw_moving_min), 1)
@@ -704,7 +1451,7 @@ def _timing_evidence(
             "moving_min": raw_moving_min,
             "implied_stopped_min": raw_stopped_min,
             "source_fields": {
-                "elapsed": "elapsedDuration" if raw.get("elapsedDuration") is not None else "duration",
+                "elapsed": selected_duration_field,
                 "moving": "movingDuration" if raw.get("movingDuration") is not None else None,
             },
         },
@@ -1150,11 +1897,23 @@ def build_latest_session_evidence(
         )
 
     detail_trace = _detail_trace_evidence(root, activity_id)
-    raw_elapsed_min = _minutes(raw.get("elapsedDuration")) or _minutes(raw.get("duration"))
-    trace_timing = _trace_movement_timing(root, activity_id, raw_elapsed_min)
+    session_duration_sec = _select_session_duration_seconds(raw)
+    raw_elapsed_min = (
+        round(session_duration_sec / 60.0, 1)
+        if session_duration_sec is not None
+        else None
+    )
+    trace_timing = _trace_movement_timing(
+        root,
+        activity_id,
+        raw_elapsed_min,
+        session_duration_sec,
+    )
     timing = _timing_evidence(raw, category, trace_timing)
     hike_phase_summary = (
-        _hike_phase_summary(root, activity_id) if category == "hike" else None
+        _hike_phase_summary(root, activity_id, session_duration_sec)
+        if category == "hike"
+        else None
     )
     detail_weather = _matching_detail_weather(root, activity_id)
     gym_detail = (
@@ -1181,7 +1940,23 @@ def build_latest_session_evidence(
         }
     )
     device = _device_evidence(root, activity_id)
-    self_evaluation = _self_evaluation(root, activity_id)
+    self_evaluation = _self_evaluation(root, activity_id, activity.get("date"))
+    power_context_basis = []
+    for key in ("avgPower", "normPower", "normalizedPower", "maxPower"):
+        power = _finite_scalar_number(raw.get(key))
+        if power is not None and power > 0:
+            power_context_basis.append(f"garmin_activity_summary.{key}")
+    if (device.get("power_measurement") or {}).get("external_power_sensor") is True:
+        power_context_basis.append("standard_external_bike_power_sensor_metadata")
+    performance_condition = _performance_condition_evidence(
+        root,
+        activity_id,
+        gear.get("labels") or [],
+        category=category,
+        power_context_basis=power_context_basis,
+        session_duration_sec=session_duration_sec,
+        activity_begin_timestamp=raw.get("beginTimestamp"),
+    )
     device_temperature = None
     if raw.get("minTemperature") is not None or raw.get("maxTemperature") is not None:
         device_temperature = {
@@ -1334,6 +2109,7 @@ def build_latest_session_evidence(
         or raw.get("maxBikingCadenceInRevPerMinute") is not None
         else None,
         "power": _power_evidence(raw),
+        "performance_condition": performance_condition,
         "detail_trace": detail_trace,
         "hike_phase_summary": hike_phase_summary,
         "environment": {

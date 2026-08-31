@@ -1,12 +1,16 @@
 from datetime import date, datetime, timedelta
 
+import pytest
+
 from coach_sync.context import load_context
 from coach_sync.io import read_json, write_json
 from coach_sync.planning import SESSION_CONTRACT_FIELDS
 from coach_sync.predictive_training import (
     _action_alignment,
     _apply_matched_2k_load_baseline,
+    _rpe_score_range,
     _risk_adjusted_expected_session,
+    _self_evaluation_for_date,
     _selected_training_load_expectation,
     _session_expectation,
     _simulate_activity_day,
@@ -25,6 +29,43 @@ MATCHED_2K_IDENTITY = {
     "access_key": "self_pedaled",
     "quality_descent_count": 3,
 }
+
+
+def test_predictive_self_evaluation_excludes_off_grid_garmin_categories(tmp_path):
+    day = date(2026, 8, 31)
+    write_json(
+        tmp_path / "snapshots" / "activity_self_evaluation_index.json",
+        {
+            "activities": [
+                {
+                    "activity_id": "bad",
+                    "date": day.isoformat(),
+                    "has_self_evaluation": True,
+                    "feel_score": 74,
+                    "rpe_score": 35,
+                },
+                {
+                    "activity_id": "good",
+                    "date": day.isoformat(),
+                    "has_self_evaluation": True,
+                    "feel_score": 75,
+                    "rpe_score": 30,
+                },
+            ]
+        },
+    )
+
+    result = _self_evaluation_for_date(tmp_path, day)
+
+    assert result["count"] == 1
+    assert result["avg_feel_score"] == 75
+    assert result["avg_rpe_score"] == 30
+    assert result["invalid_category_rows"] == [
+        {
+            "activity_id": "bad",
+            "invalid_fields": ["rpe_score", "feel_score"],
+        }
+    ]
 
 
 def _matched_2k_plan(*, session_type: str = "mtb_skill_familiar_capped", identity=True) -> dict:
@@ -1069,8 +1110,38 @@ def test_session_expectation_prefers_contract_whole_session_rpe_for_composite_in
         "source": "schema_v3_contract.expected_result.physiology",
         "raw_value": physiology,
         "expected_score_range": [50.0, 70.0],
-        "scale": "garmin_rpe_score_0_to_100",
+        "scale": "garmin_rpe_score_10_to_100",
     }
+
+
+@pytest.mark.parametrize(
+    ("raw_value", "expected_range"),
+    [
+        ([1, 10], [10.0, 100.0]),
+        ([10, 100], [10.0, 100.0]),
+        ({"range": [5, 7]}, [50.0, 70.0]),
+        ("whole-session RPE 5-7", [50.0, 70.0]),
+    ],
+)
+def test_contract_rpe_parser_accepts_only_canonical_garmin_categories(
+    raw_value, expected_range
+):
+    assert _rpe_score_range(raw_value, require_rpe_label=isinstance(raw_value, str)) == (
+        expected_range
+    )
+
+
+@pytest.mark.parametrize(
+    "raw_value",
+    [
+        [0, 2],
+        [3.5, 7],
+        [35, 70],
+        [10, 101],
+    ],
+)
+def test_contract_rpe_parser_rejects_zero_and_off_grid_categories(raw_value):
+    assert _rpe_score_range(raw_value) is None
 
 
 def test_session_expectation_prefers_structured_contract_rpe_and_simulates_contract_load():

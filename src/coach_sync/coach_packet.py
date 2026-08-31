@@ -37,6 +37,18 @@ def _dict(value: Any) -> dict:
     return value if isinstance(value, dict) else {}
 
 
+def _compact_attempt(value: Any) -> dict | None:
+    attempt = _dict(value)
+    if not attempt:
+        return None
+    compact = {
+        key: attempt.get(key)
+        for key in ("status", "attempted_at", "fetched_at", "error", "label")
+        if attempt.get(key) is not None
+    }
+    return compact or None
+
+
 def _environment_plan_input(plan: dict | None) -> dict:
     return _dict(_dict(_dict(plan).get("decision_inputs")).get("environment_evidence"))
 
@@ -699,6 +711,12 @@ def _compact_standard_fit_sources(sources: dict | None) -> dict | None:
         "status": sources.get("status"),
         "device_info_rows": sources.get("device_info_rows"),
         "source_types": sources.get("source_types"),
+        "sensor_types": sources.get("sensor_types"),
+        "external_sensor_types": sources.get("external_sensor_types"),
+        "external_speed_sensor": sources.get("external_speed_sensor"),
+        "external_speed_sensor_battery_statuses": sources.get(
+            "external_speed_sensor_battery_statuses"
+        ),
         "external_device_source_present": sources.get(
             "external_device_source_present"
         ),
@@ -713,6 +731,166 @@ def _compact_standard_fit_sources(sources: dict | None) -> dict | None:
             "source_type": creator.get("source_type"),
         },
         "interpretation_guardrail": sources.get("interpretation_guardrail"),
+    }
+
+
+def _compact_performance_condition(value: dict | None) -> dict | None:
+    if not isinstance(value, dict) or not value:
+        return None
+    state_points = [
+        {
+            "elapsed_min": item.get("elapsed_min"),
+            "value": item.get("value"),
+        }
+        for item in value.get("state_points") or []
+        if isinstance(item, dict)
+    ][:16]
+    return {
+        "status": value.get("status"),
+        "ontology_entity": value.get("ontology_entity"),
+        "power_context_basis": value.get("power_context_basis"),
+        "context_scope": value.get("context_scope"),
+        "held_trace_observation_count": value.get("held_trace_observation_count"),
+        "state_point_count": value.get("state_point_count"),
+        "change_count": value.get("change_count"),
+        "first_value": value.get("first_value"),
+        "first_elapsed_min": value.get("first_elapsed_min"),
+        "final_value": value.get("final_value"),
+        "last_elapsed_min": value.get("last_elapsed_min"),
+        "minimum": value.get("minimum"),
+        "maximum": value.get("maximum"),
+        "change_final_minus_first": value.get("change_final_minus_first"),
+        "state_points": state_points,
+        "state_points_truncated": bool(
+            value.get("state_points_truncated")
+            or len(value.get("state_points") or []) > len(state_points)
+        ),
+        "timing_basis": value.get("timing_basis"),
+        "descriptor_units": value.get("descriptor_units"),
+        "reason": value.get("reason"),
+        "provenance": {
+            "source_surface": "latest_session_evidence.performance_condition",
+            "named_metric": "directPerformanceCondition",
+            "detail_call": {
+                key: _dict(value.get("provenance")).get(key)
+                for key in (
+                    "call_status",
+                    "attempted_at",
+                    "last_success_at",
+                    "last_attempt_ok",
+                    "using_cached_after_refresh_failure",
+                )
+            },
+            "latest_attempt": _compact_attempt(
+                _dict(value.get("provenance")).get("latest_attempt")
+            ),
+        },
+        "interpretation_guardrail": value.get("interpretation_guardrail"),
+    }
+
+
+def _compact_speed_measurement(device: dict | None) -> dict | None:
+    device = device if isinstance(device, dict) else {}
+    value = device.get("speed_measurement")
+    if not isinstance(value, dict) or not value:
+        return None
+    battery_statuses = value.get("battery_statuses")
+    battery_statuses = (
+        list(battery_statuses)[:8]
+        if isinstance(battery_statuses, (list, tuple))
+        else []
+    )
+    return {
+        "status": value.get("status"),
+        "external_speed_sensor": value.get("external_speed_sensor"),
+        "battery_statuses": battery_statuses,
+        "source_surface": value.get("source_surface"),
+        "ontology_entity": value.get("ontology_entity"),
+        "provenance": {
+            "source_surface": "latest_session_evidence.device.speed_measurement",
+            "standard_sensor_type": "BIKE_SPEED",
+            "device_evidence_status": device.get("status"),
+            "device_source": device.get("source"),
+            "device_latest_attempt": _compact_attempt(device.get("latest_attempt")),
+        },
+        "interpretation_guardrail": value.get("interpretation_guardrail"),
+    }
+
+
+def _compact_self_evaluation(value: dict | None) -> dict | None:
+    if not isinstance(value, dict) or not value:
+        return None
+    ontology = value.get("ontology")
+    ontology = ontology if isinstance(ontology, dict) else {}
+    return {
+        "status": value.get("status"),
+        "activity_id": value.get("activity_id"),
+        "date": value.get("date"),
+        "identity_status": value.get("identity_status"),
+        "feel_score": value.get("feel_score"),
+        "feel_label": value.get("feel_label"),
+        "feel_out_of_5": value.get("feel_out_of_5"),
+        "feel_ordinal_display_out_of_10": value.get("feel_ordinal_display_out_of_10"),
+        "feel_display_remap": value.get("feel_display_remap"),
+        "feel_construct": value.get("feel_construct"),
+        "rpe_score": value.get("rpe_score"),
+        "rpe_label": value.get("rpe_label"),
+        "rpe_out_of_10": value.get("rpe_out_of_10"),
+        "global_rpe_out_of_10": value.get("global_rpe_out_of_10"),
+        "ontology": {
+            key: ontology.get(key)
+            for key in ("feel_entity", "rpe_entity", "separation_rule")
+        },
+        "provenance": {
+            "source_surface": "latest_session_evidence.self_evaluation",
+            "source": value.get("source"),
+            "identity": value.get("identity_provenance"),
+            "latest_attempt": _compact_attempt(value.get("latest_attempt")),
+        },
+    }
+
+
+def _compact_subjective_evaluation(value: dict | None) -> dict | None:
+    if not isinstance(value, dict) or not value:
+        return None
+    feel = value.get("garmin_feel")
+    feel = feel if isinstance(feel, dict) else {}
+    effort = value.get("garmin_perceived_effort")
+    effort = effort if isinstance(effort, dict) else {}
+    components = feel.get("components")
+    components = (
+        list(components)[:3] if isinstance(components, (list, tuple)) else []
+    )
+    return {
+        "status": value.get("status"),
+        "activity_id": value.get("activity_id"),
+        "date": value.get("date"),
+        "validation": value.get("validation"),
+        "garmin_feel": {
+            "raw_score_0_to_100": feel.get("raw_score_0_to_100"),
+            "out_of_5": feel.get("out_of_5"),
+            "ordinal_display_out_of_10": feel.get("ordinal_display_out_of_10"),
+            "display_remap": feel.get("display_remap"),
+            "construct": feel.get("construct"),
+            "components": components,
+        },
+        "garmin_perceived_effort": {
+            key: effort.get(key)
+            for key in (
+                "raw_score_10_to_100",
+                "global_rpe_0_to_10",
+                "construct",
+            )
+        },
+        "manual_global_rpe_0_to_10": value.get("manual_global_rpe_0_to_10"),
+        "rpe_resolution": value.get("rpe_resolution"),
+        "ontology_guardrail": value.get("ontology_guardrail"),
+        "provenance": {
+            "source_surface": "latest_session_response.subjective_evaluation",
+            "source": value.get("source"),
+            "field_sources": value.get("field_sources"),
+            "latest_attempt": _compact_attempt(value.get("latest_attempt")),
+        },
     }
 
 
@@ -748,6 +926,10 @@ def _compact_latest_session(evidence: dict) -> dict:
         },
         "technical_context": evidence.get("technical_context"),
         "gear": evidence.get("gear"),
+        "performance_condition": _compact_performance_condition(
+            evidence.get("performance_condition")
+        ),
+        "speed_measurement": _compact_speed_measurement(device),
         "hr_source": {
             "status": device.get("status"),
             "hr_confidence": device.get("hr_confidence"),
@@ -760,7 +942,7 @@ def _compact_latest_session(evidence: dict) -> dict:
             ),
             "interpretation_guardrail": device.get("interpretation_guardrail"),
         },
-        "self_evaluation": evidence.get("self_evaluation"),
+        "self_evaluation": _compact_self_evaluation(evidence.get("self_evaluation")),
         "gym": evidence.get("gym"),
         "matching_loop_analysis": _compact_loop_evidence(evidence.get("loop_analysis")),
         "recent_loop_analysis": _compact_loop_evidence(evidence.get("recent_loop_analysis")),
@@ -1946,15 +2128,55 @@ def _today_decision(state: dict, plan: dict, cautions: list[dict]) -> dict:
             "guardrail": "Programming direction is not same-day clearance; the resolved session and lowest safety ceiling still win.",
         },
         "latest_session_response": {
+            "date": latest_response.get("date"),
+            "activity_id": latest_response.get("activity_id"),
             "status": latest_response.get("status"),
             "classification": response_classification,
+            "decision_use": {
+                key: (latest_response.get("decision_use") or {}).get(key)
+                for key in (
+                    "classification_scope",
+                    "reasons",
+                    "routine_review_status",
+                    "duplicate_general_questionnaire",
+                    "illness_airway_caution",
+                    "review_summary",
+                )
+            },
             "global_rpe_0_to_10": latest_response.get("global_rpe_0_to_10"),
             "local_rpe_0_to_10": latest_response.get("local_rpe_0_to_10"),
+            "subjective_evaluation": _compact_subjective_evaluation(
+                latest_response.get("subjective_evaluation")
+            ),
+            "routine_review": latest_response.get("routine_review"),
+            "subjective_tolerance_policy": latest_response.get(
+                "subjective_tolerance_policy"
+            ),
+            "safety_contract_outcome": latest_response.get(
+                "safety_contract_outcome"
+            ),
+            "illness_airway": latest_response.get("illness_airway"),
+            "technical_execution": latest_response.get("technical_execution"),
+            "manual_feedback": latest_response.get("manual_feedback"),
             "stop_rule_outcome": latest_response.get("stop_rule_outcome"),
             "stop_rule_outcome_explicit": latest_response.get(
                 "stop_rule_outcome_explicit"
             ),
             "symptom": latest_response.get("symptom"),
+            "provenance": {
+                "target_date": (latest_response.get("provenance") or {}).get(
+                    "target_date"
+                ),
+                "requested_activity_id": (
+                    latest_response.get("provenance") or {}
+                ).get("requested_activity_id"),
+                "selected_activity_id": (
+                    latest_response.get("provenance") or {}
+                ).get("selected_activity_id"),
+                "selection_rule": (latest_response.get("provenance") or {}).get(
+                    "selection_rule"
+                ),
+            },
         },
         "why": [
             f"Readiness is {_value(readiness.get('readiness_level'))} at {_value(readiness.get('readiness_score'))}/100.",
@@ -1988,13 +2210,28 @@ def _next_data_needed(state: dict) -> list[str]:
         blockers = recommended_next_step.get("label") or "No explicit blocker label."
         if blockers:
             needed.append(f"Readiness blocker context: {blockers}")
-    needed.extend(
-        [
-            "Keep live Garmin wellness and activity sync current before hard-session decisions.",
-            "Label what the Fenix cannot see: ride purpose, trail condition, confidence, braking comfort, skill quality, fueling, and heat feel.",
-            "Label CNS/technical sharpness: brain fog, vision, braking timing, line choice, unclipping delay, confidence, and late-ride decision speed.",
-        ]
+    needed.append(
+        "Keep live Garmin wellness and activity sync current before hard-session decisions."
     )
+    latest_response = state.get("latest_session_response") or {}
+    routine_complete = (
+        (latest_response.get("routine_review") or {}).get("status") == "complete"
+    )
+    exact_familiar_reference = (
+        (
+            (latest_response.get("subjective_tolerance_policy") or {}).get(
+                "reference_action"
+            )
+            or {}
+        ).get("exact_identifier_match")
+        is True
+    )
+    if not (routine_complete and exact_familiar_reference):
+        needed.append(
+            "For a consequential technical session only, capture the decision-critical facts Garmin "
+            "cannot see: route/action drift, trail condition, braking and line quality, late skill fade, "
+            "CNS sharpness, fueling, and any possible stop-rule activation."
+        )
     if not (state.get("body_battery_model") or {}).get("samples"):
         needed.append("Collect more modern wellness rows before trusting Body Battery modeling.")
     if (state.get("training_predictor") or {}).get("validation", {}).get("utility") != "useful":

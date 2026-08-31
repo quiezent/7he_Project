@@ -1,7 +1,10 @@
 from coach_sync.coach_packet import build_coach_packet
 from coach_sync.context import load_context
-from coach_sync.io import write_json
-from coach_sync.session_evidence import build_latest_session_evidence
+from coach_sync.io import read_json, write_json
+from coach_sync.session_evidence import (
+    _select_session_duration_seconds,
+    build_latest_session_evidence,
+)
 from coach_sync.state import build_current_state
 
 
@@ -389,7 +392,765 @@ def test_latest_session_detail_trace_bounds_metric_descriptors(tmp_path):
     }
 
 
-def _write_hike_detail_trace(root, activity_id, include_external_hr=False):
+def test_latest_session_surfaces_bounded_named_performance_condition_and_speed_provenance(tmp_path):
+    activity_id = 205
+    day = "2026-08-31"
+    _write_activity(
+        tmp_path,
+        activity_id,
+        f"{day} 10:53:32",
+        activityName="Kuala Lumpur Mountain Biking",
+        avgPower=96,
+    )
+    _write_metadata(tmp_path, activity_id, day)
+    device_index = tmp_path / "snapshots" / "activity_device_index.json"
+    device = read_json(device_index, {})
+    device["activities"][0]["sensors"].append(
+        {
+            "sensor_type": "BIKE_SPEED",
+            "source_type": "ANTPLUS",
+            "battery_status": "GOOD",
+        }
+    )
+    write_json(device_index, device)
+    write_json(
+        tmp_path / "activities" / "details" / f"garmin_{activity_id}_detail.json",
+        {
+            "activity_id": str(activity_id),
+            "calls": {
+                "details": {
+                    "ok": True,
+                    "status": "success",
+                    "data": {
+                        "metricDescriptors": [
+                            {"metricsIndex": 0, "key": "directTimestamp", "unit": {"key": "gmt"}},
+                            {"metricsIndex": 1, "key": "sumElapsedDuration", "unit": {"key": "second"}},
+                            {"metricsIndex": 2, "key": "directPerformanceCondition", "unit": {"key": "dimensionless"}},
+                            {"metricsIndex": 3, "key": "directPower", "unit": {"key": "watt"}},
+                        ],
+                        "activityDetailMetrics": [
+                            {"metrics": [1_000_000, 0, None, 100]},
+                            {"metrics": [1_429_000, 429, 0, 177]},
+                            {"metrics": [2_624_000, 1624, -1, 106]},
+                            {"metrics": [3_084_000, 2084, -2, 190]},
+                            {"metrics": [3_770_000, 2770, -3, 106]},
+                            {"metrics": [4_503_000, 3503, -3, 19]},
+                        ],
+                    },
+                }
+            },
+        },
+    )
+
+    evidence = build_latest_session_evidence(tmp_path, day)
+    pc = evidence["performance_condition"]
+
+    assert pc["status"] == "available"
+    assert pc["context_scope"] == "matched_stumpjumper_fitness_context"
+    assert pc["held_trace_observation_count"] == 5
+    assert pc["state_point_count"] == 4
+    assert pc["change_count"] == 3
+    assert pc["timing_basis"] == "sumElapsedDuration_second"
+    assert pc["power_context_basis"] == ["garmin_activity_summary.avgPower"]
+    assert pc["first_value"] == 0
+    assert pc["first_elapsed_min"] == 7.15
+    assert pc["final_value"] == -3
+    assert pc["change_final_minus_first"] == -3
+    assert [item["value"] for item in pc["state_points"]] == [0, -1, -2, -3]
+    assert "activityDetailMetrics" not in str(pc)
+    assert evidence["device"]["speed_measurement"]["external_speed_sensor"] is True
+    assert evidence["device"]["speed_measurement"]["ontology_entity"] == (
+        "measurement_provenance"
+    )
+
+
+def test_performance_condition_is_not_applied_to_non_cycling_activity(tmp_path):
+    activity_id = 206
+    day = "2026-08-31"
+    _write_activity(
+        tmp_path,
+        activity_id,
+        f"{day} 08:00:00",
+        activity_type="hiking",
+        avgPower=100,
+    )
+
+    evidence = build_latest_session_evidence(tmp_path, day)
+
+    assert evidence["performance_condition"]["status"] == (
+        "not_applicable_non_cycling"
+    )
+
+
+def test_performance_condition_accepts_valid_epoch_seconds_without_elapsed_metric(tmp_path):
+    activity_id = 2061
+    day = "2026-08-31"
+    _write_activity(
+        tmp_path,
+        activity_id,
+        f"{day} 08:00:00",
+        elapsedDuration=-1,
+        duration=5400,
+        beginTimestamp=1_788_000_000_000,
+        normPower=140,
+    )
+    _write_metadata(tmp_path, activity_id, day)
+    write_json(
+        tmp_path / "activities" / "details" / f"garmin_{activity_id}_detail.json",
+        {
+            "activity_id": str(activity_id),
+            "calls": {
+                "details": {
+                    "ok": True,
+                    "status": "success",
+                    "data": {
+                        "metricDescriptors": [
+                            {
+                                "metricsIndex": 0,
+                                "key": "directTimestamp",
+                                "unit": {"key": "gmt"},
+                            },
+                            {
+                                "metricsIndex": 1,
+                                "key": "directPerformanceCondition",
+                                "unit": {"key": "dimensionless"},
+                            },
+                        ],
+                        "activityDetailMetrics": [
+                            {"metrics": [1_788_000_000, 0]},
+                            {"metrics": [1_788_000_060, -1]},
+                        ],
+                    },
+                }
+            },
+        },
+    )
+
+    pc = build_latest_session_evidence(tmp_path, day)["performance_condition"]
+
+    assert pc["status"] == "available"
+    assert pc["timing_basis"] == "directTimestamp_gmt_epoch_seconds"
+    assert pc["last_elapsed_min"] == 1.0
+    assert pc["change_count"] == 1
+
+
+def test_performance_condition_timestamp_elapsed_requires_activity_begin_alignment(tmp_path):
+    activity_id = 20609
+    day = "2026-08-31"
+    _write_activity(
+        tmp_path,
+        activity_id,
+        f"{day} 08:00:00",
+        beginTimestamp=1_700_000_000_000,
+        normPower=140,
+    )
+    _write_metadata(tmp_path, activity_id, day)
+    write_json(
+        tmp_path / "activities" / "details" / f"garmin_{activity_id}_detail.json",
+        {
+            "activity_id": str(activity_id),
+            "calls": {
+                "details": {
+                    "ok": True,
+                    "data": {
+                        "metricDescriptors": [
+                            {"metricsIndex": 0, "key": "directTimestamp", "unit": {"key": "gmt"}},
+                            {"metricsIndex": 1, "key": "directPerformanceCondition", "unit": {"key": "dimensionless"}},
+                        ],
+                        "activityDetailMetrics": [
+                            {"metrics": [1_788_000_000, 0]},
+                            {"metrics": [1_788_000_060, -1]},
+                        ],
+                    },
+                }
+            },
+        },
+    )
+
+    pc = build_latest_session_evidence(tmp_path, day)["performance_condition"]
+
+    assert pc["timing_basis"] == "withheld_timestamp_not_aligned_to_activity_begin"
+    assert pc["first_elapsed_min"] is None
+    assert pc["last_elapsed_min"] is None
+
+
+def test_performance_condition_rejects_non_monotonic_elapsed_source_sequence(tmp_path):
+    activity_id = 206091
+    day = "2026-08-31"
+    _write_activity(tmp_path, activity_id, f"{day} 08:00:00", elapsedDuration=180, normPower=140)
+    _write_metadata(tmp_path, activity_id, day)
+    write_json(
+        tmp_path / "activities" / "details" / f"garmin_{activity_id}_detail.json",
+        {
+            "activity_id": str(activity_id),
+            "calls": {
+                "details": {
+                    "ok": True,
+                    "data": {
+                        "metricDescriptors": [
+                            {"metricsIndex": 0, "key": "sumElapsedDuration", "unit": {"key": "second"}},
+                            {"metricsIndex": 1, "key": "directPerformanceCondition", "unit": {"key": "dimensionless"}},
+                        ],
+                        "activityDetailMetrics": [
+                            {"metrics": [0, 0]},
+                            {"metrics": [120, -1]},
+                            {"metrics": [60, -2]},
+                        ],
+                    },
+                }
+            },
+        },
+    )
+
+    pc = build_latest_session_evidence(tmp_path, day)["performance_condition"]
+
+    assert pc["timing_basis"] == "withheld_missing_or_non_monotonic_elapsed"
+    assert [item["value"] for item in pc["state_points"]] == [0, -1, -2]
+    assert all(item["elapsed_min"] is None for item in pc["state_points"])
+
+
+def test_performance_condition_uses_robust_max_valid_session_duration(tmp_path):
+    activity_id = 206092
+    day = "2026-08-31"
+    _write_activity(
+        tmp_path,
+        activity_id,
+        f"{day} 08:00:00",
+        elapsedDuration=1,
+        duration=5400,
+        beginTimestamp=1_788_000_000_000,
+        normPower=140,
+    )
+    _write_metadata(tmp_path, activity_id, day)
+    write_json(
+        tmp_path / "activities" / "details" / f"garmin_{activity_id}_detail.json",
+        {
+            "activity_id": str(activity_id),
+            "calls": {
+                "details": {
+                    "ok": True,
+                    "data": {
+                        "metricDescriptors": [
+                            {"metricsIndex": 0, "key": "directTimestamp", "unit": {"key": "gmt"}},
+                            {"metricsIndex": 1, "key": "directPerformanceCondition", "unit": {"key": "dimensionless"}},
+                        ],
+                        "activityDetailMetrics": [
+                            {"metrics": [1_788_000_000, 0]},
+                            {"metrics": [1_788_000_060, -1]},
+                        ],
+                    },
+                }
+            },
+        },
+    )
+
+    evidence = build_latest_session_evidence(tmp_path, day)
+    pc = evidence["performance_condition"]
+
+    assert pc["timing_basis"] == "directTimestamp_gmt_epoch_seconds"
+    assert pc["last_elapsed_min"] == 1.0
+    assert evidence["timing"]["garmin_reported"]["source_fields"]["elapsed"] == (
+        "duration"
+    )
+    assert _select_session_duration_seconds(
+        {"elapsedDuration": 10**12, "duration": 5400}
+    ) == 5400
+
+
+def test_performance_condition_keeps_missing_timestamp_unit_strict(tmp_path):
+    activity_id = 20610
+    day = "2026-08-31"
+    _write_activity(tmp_path, activity_id, f"{day} 08:00:00", normPower=140)
+    _write_metadata(tmp_path, activity_id, day)
+    write_json(
+        tmp_path / "activities" / "details" / f"garmin_{activity_id}_detail.json",
+        {
+            "activity_id": str(activity_id),
+            "calls": {
+                "details": {
+                    "ok": True,
+                    "status": "success",
+                    "data": {
+                        "metricDescriptors": [
+                            {
+                                "metricsIndex": 0,
+                                "key": "directTimestamp",
+                            },
+                            {
+                                "metricsIndex": 1,
+                                "key": "directPerformanceCondition",
+                                "unit": {"key": "dimensionless"},
+                            },
+                        ],
+                        "activityDetailMetrics": [
+                            {"metrics": [1_788_000_000, 0]},
+                            {"metrics": [1_788_000_060, -1]},
+                        ],
+                    },
+                }
+            },
+        },
+    )
+
+    pc = build_latest_session_evidence(tmp_path, day)["performance_condition"]
+
+    assert pc["status"] == "available"
+    assert pc["timing_basis"] == "withheld_missing_or_non_monotonic_elapsed"
+    assert pc["first_elapsed_min"] is None
+    assert pc["last_elapsed_min"] is None
+
+
+def test_performance_condition_huge_integer_timestamp_fails_closed(tmp_path):
+    activity_id = 206101
+    day = "2026-08-31"
+    _write_activity(tmp_path, activity_id, f"{day} 08:00:00", normPower=140)
+    _write_metadata(tmp_path, activity_id, day)
+    write_json(
+        tmp_path / "activities" / "details" / f"garmin_{activity_id}_detail.json",
+        {
+            "activity_id": str(activity_id),
+            "calls": {
+                "details": {
+                    "ok": True,
+                    "status": "success",
+                    "data": {
+                        "metricDescriptors": [
+                            {
+                                "metricsIndex": 0,
+                                "key": "directTimestamp",
+                                "unit": {"key": "gmt"},
+                            },
+                            {
+                                "metricsIndex": 1,
+                                "key": "directPerformanceCondition",
+                                "unit": {"key": "dimensionless"},
+                            },
+                        ],
+                        "activityDetailMetrics": [
+                            {"metrics": [10**400, 0]},
+                            {"metrics": [10**400 + 1, -1]},
+                        ],
+                    },
+                }
+            },
+        },
+    )
+
+    pc = build_latest_session_evidence(tmp_path, day)["performance_condition"]
+
+    assert pc["status"] == "not_available"
+
+
+def test_performance_condition_prefers_valid_elapsed_order_over_timestamp_order(tmp_path):
+    activity_id = 20611
+    day = "2026-08-31"
+    _write_activity(
+        tmp_path,
+        activity_id,
+        f"{day} 08:00:00",
+        elapsedDuration=180,
+        duration=180,
+        normPower=140,
+    )
+    _write_metadata(tmp_path, activity_id, day)
+    write_json(
+        tmp_path / "activities" / "details" / f"garmin_{activity_id}_detail.json",
+        {
+            "activity_id": str(activity_id),
+            "calls": {
+                "details": {
+                    "ok": True,
+                    "status": "success",
+                    "data": {
+                        "metricDescriptors": [
+                            {
+                                "metricsIndex": 0,
+                                "key": "directTimestamp",
+                                "unit": {"key": "gmt"},
+                            },
+                            {
+                                "metricsIndex": 1,
+                                "key": "sumElapsedDuration",
+                                "unit": {"key": "second"},
+                            },
+                            {
+                                "metricsIndex": 2,
+                                "key": "directPerformanceCondition",
+                                "unit": {"key": "dimensionless"},
+                            },
+                        ],
+                        "activityDetailMetrics": [
+                            {"metrics": [1_788_000_000, 0, None]},
+                            {"metrics": [1_788_000_120, 60, 2]},
+                            {"metrics": [1_788_000_060, 120, -1]},
+                        ],
+                    },
+                }
+            },
+        },
+    )
+
+    pc = build_latest_session_evidence(tmp_path, day)["performance_condition"]
+
+    assert pc["status"] == "available"
+    assert pc["timing_basis"] == "sumElapsedDuration_second"
+    assert pc["first_value"] == 2
+    assert pc["first_elapsed_min"] == 1.0
+    assert pc["final_value"] == -1
+    assert pc["last_elapsed_min"] == 2.0
+
+
+def test_performance_condition_withholds_epoch_elapsed_when_span_exceeds_session(tmp_path):
+    activity_id = 20612
+    day = "2026-08-31"
+    _write_activity(tmp_path, activity_id, f"{day} 08:00:00", normPower=140)
+    _write_metadata(tmp_path, activity_id, day)
+    write_json(
+        tmp_path / "activities" / "details" / f"garmin_{activity_id}_detail.json",
+        {
+            "activity_id": str(activity_id),
+            "calls": {
+                "details": {
+                    "ok": True,
+                    "status": "success",
+                    "data": {
+                        "metricDescriptors": [
+                            {
+                                "metricsIndex": 0,
+                                "key": "directTimestamp",
+                                "unit": {"key": "gmt"},
+                            },
+                            {
+                                "metricsIndex": 1,
+                                "key": "directPerformanceCondition",
+                                "unit": {"key": "dimensionless"},
+                            },
+                        ],
+                        "activityDetailMetrics": [
+                            {"metrics": [1_756_000_000, 0]},
+                            {"metrics": [1_788_000_000, -1]},
+                        ],
+                    },
+                }
+            },
+        },
+    )
+
+    pc = build_latest_session_evidence(tmp_path, day)["performance_condition"]
+
+    assert pc["status"] == "available"
+    assert pc["timing_basis"] == (
+        "withheld_timestamp_span_or_gap_exceeds_session_duration"
+    )
+    assert pc["first_elapsed_min"] is None
+    assert pc["last_elapsed_min"] is None
+    assert all(item["elapsed_min"] is None for item in pc["state_points"])
+
+
+def test_performance_condition_surfaces_cached_trace_refresh_failure(tmp_path):
+    activity_id = 2062
+    day = "2026-08-31"
+    _write_activity(tmp_path, activity_id, f"{day} 08:00:00", avgPower=100)
+    _write_metadata(tmp_path, activity_id, day)
+    write_json(
+        tmp_path / "activities" / "details" / f"garmin_{activity_id}_detail.json",
+        {
+            "activity_id": str(activity_id),
+            "calls": {
+                "details": {
+                    "ok": True,
+                    "status": "success",
+                    "last_attempt_ok": False,
+                    "last_success_at": f"{day}T09:00:00+08:00",
+                    "latest_attempt": {
+                        "status": "failed",
+                        "attempted_at": f"{day}T10:00:00+08:00",
+                        "error": "temporary Garmin failure",
+                        "data": "must_not_leak",
+                    },
+                    "data": {
+                        "metricDescriptors": [
+                            {
+                                "metricsIndex": 0,
+                                "key": "sumElapsedDuration",
+                                "unit": {"key": "second"},
+                            },
+                            {
+                                "metricsIndex": 1,
+                                "key": "directPerformanceCondition",
+                                "unit": {"key": "dimensionless"},
+                            },
+                        ],
+                        "activityDetailMetrics": [
+                            {"metrics": [0, 0]},
+                            {"metrics": [60, -1]},
+                        ],
+                    },
+                }
+            },
+        },
+    )
+
+    pc = build_latest_session_evidence(tmp_path, day)["performance_condition"]
+
+    assert pc["status"] == "available_cached_after_refresh_failure"
+    assert pc["provenance"]["last_attempt_ok"] is False
+    assert pc["provenance"]["latest_attempt"]["status"] == "failed"
+    assert "must_not_leak" not in str(pc)
+
+
+def test_performance_condition_requires_positive_power_or_external_power_provenance(tmp_path):
+    activity_id = 2063
+    day = "2026-08-31"
+    _write_activity(
+        tmp_path,
+        activity_id,
+        f"{day} 08:00:00",
+        avgPower=0,
+        normPower="not-a-number",
+        maxPower=0,
+    )
+    _write_metadata(tmp_path, activity_id, day)
+
+    pc = build_latest_session_evidence(tmp_path, day)["performance_condition"]
+
+    assert pc["status"] == "not_available_power_context_missing"
+
+
+def test_performance_condition_power_gate_rejects_huge_and_junk_scalars(tmp_path):
+    activity_id = 20631
+    day = "2026-08-31"
+    _write_activity(
+        tmp_path,
+        activity_id,
+        f"{day} 08:00:00",
+        avgPower=[140],
+        normPower="watts 140",
+        normalizedPower=10**400,
+        maxPower={"watts": 500},
+    )
+    _write_metadata(tmp_path, activity_id, day)
+
+    pc = build_latest_session_evidence(tmp_path, day)["performance_condition"]
+
+    assert pc["status"] == "not_available_power_context_missing"
+    assert pc["power_context_basis"] == []
+
+
+def test_performance_condition_malformed_detail_lists_fail_closed(tmp_path):
+    for index, malformed_field in enumerate(
+        ("metricDescriptors", "activityDetailMetrics"), start=1
+    ):
+        root = tmp_path / malformed_field
+        activity_id = 20640 + index
+        day = "2026-08-31"
+        _write_activity(root, activity_id, f"{day} 08:00:00", avgPower=100)
+        _write_metadata(root, activity_id, day)
+        data = {
+            "metricDescriptors": [],
+            "activityDetailMetrics": [],
+        }
+        data[malformed_field] = 10**400
+        write_json(
+            root / "activities" / "details" / f"garmin_{activity_id}_detail.json",
+            {
+                "activity_id": str(activity_id),
+                "calls": {"details": {"ok": True, "data": data}},
+            },
+        )
+
+        pc = build_latest_session_evidence(root, day)["performance_condition"]
+
+        assert pc["status"] == "not_available"
+
+
+def test_performance_condition_withholds_elapsed_when_units_or_sequence_are_invalid(tmp_path):
+    activity_id = 207
+    day = "2026-08-31"
+    _write_activity(
+        tmp_path,
+        activity_id,
+        f"{day} 08:00:00",
+        avgPower=100,
+    )
+    _write_metadata(tmp_path, activity_id, day)
+    write_json(
+        tmp_path / "activities" / "details" / f"garmin_{activity_id}_detail.json",
+        {
+            "activity_id": str(activity_id),
+            "calls": {
+                "details": {
+                    "ok": True,
+                    "data": {
+                        "metricDescriptors": [
+                            {"metricsIndex": 0, "key": "directTimestamp", "unit": {"key": "unknown"}},
+                            {"metricsIndex": 1, "key": "sumElapsedDuration", "unit": {"key": "minute"}},
+                            {"metricsIndex": 2, "key": "directPerformanceCondition", "unit": {"key": "dimensionless"}},
+                        ],
+                        "activityDetailMetrics": [
+                            {"metrics": [1_000_000, 7, 1]},
+                            {"metrics": [1_060_000, 6, 0]},
+                        ],
+                    },
+                }
+            },
+        },
+    )
+
+    pc = build_latest_session_evidence(tmp_path, day)["performance_condition"]
+
+    assert pc["status"] == "available"
+    assert pc["timing_basis"] == "withheld_missing_or_non_monotonic_elapsed"
+    assert all(item["elapsed_min"] is None for item in pc["state_points"])
+
+
+def test_self_evaluation_carries_and_validates_activity_identity(tmp_path):
+    activity_id = 208
+    day = "2026-08-31"
+    _write_activity(tmp_path, activity_id, f"{day} 08:00:00")
+    _write_metadata(tmp_path, activity_id, day)
+
+    matched = build_latest_session_evidence(tmp_path, day)["self_evaluation"]
+    assert matched["activity_id"] == str(activity_id)
+    assert matched["date"] == day
+    assert matched["identity_status"] == "exact_match"
+
+    index_path = tmp_path / "snapshots" / "activity_self_evaluation_index.json"
+    index = read_json(index_path, {})
+    conflicting = dict(index["activities"][0])
+    conflicting["date"] = "2026-08-30"
+    conflicting["feel_score"] = 25
+    index["activities"].append(conflicting)
+    write_json(index_path, index)
+
+    exact_preferred = build_latest_session_evidence(tmp_path, day)["self_evaluation"]
+    assert exact_preferred["identity_status"] == "exact_match"
+    assert exact_preferred["feel_score"] == 75
+
+    index["activities"] = [conflicting]
+    write_json(index_path, index)
+
+    mismatched = build_latest_session_evidence(tmp_path, day)["self_evaluation"]
+    assert mismatched["status"] == "identity_mismatch"
+    assert mismatched["identity_status"] == "date_mismatch"
+    assert "feel_score" not in mismatched
+
+
+def test_session_self_evaluation_fails_closed_when_both_categories_are_off_grid(tmp_path):
+    activity_id = 2081
+    day = "2026-08-31"
+    _write_activity(tmp_path, activity_id, f"{day} 08:00:00")
+    _write_metadata(tmp_path, activity_id, day)
+    path = tmp_path / "snapshots" / "activity_self_evaluation_index.json"
+    index = read_json(path, {})
+    index["activities"][0].update(
+        {
+            "has_self_evaluation": True,
+            "feel_score": 74,
+            "rpe_score": 35,
+        }
+    )
+    write_json(path, index)
+
+    subjective = build_latest_session_evidence(tmp_path, day)["self_evaluation"]
+
+    assert subjective["status"] == "unusable_invalid_categories"
+    assert subjective["invalid_category_fields"] == ["feel_score", "rpe_score"]
+    assert "feel_out_of_5" not in subjective
+
+
+def test_session_self_evaluation_surfaces_cached_refresh_failure(tmp_path):
+    activity_id = 2082
+    day = "2026-08-31"
+    _write_activity(tmp_path, activity_id, f"{day} 08:00:00")
+    _write_metadata(tmp_path, activity_id, day)
+    path = tmp_path / "snapshots" / "activity_self_evaluation_index.json"
+    index = read_json(path, {})
+    index["activities"][0].update(
+        {
+            "last_attempt_ok": False,
+            "latest_attempt": {
+                "status": "failed",
+                "fetched_at": f"{day}T10:00:00+08:00",
+                "error": "temporary Garmin failure",
+            },
+        }
+    )
+    write_json(path, index)
+
+    subjective = build_latest_session_evidence(tmp_path, day)["self_evaluation"]
+
+    assert subjective["status"] == "available_cached_after_refresh_failure"
+    assert subjective["latest_attempt"]["status"] == "failed"
+
+
+def test_session_speed_provenance_does_not_trust_stale_external_boolean(tmp_path):
+    activity_id = 209
+    day = "2026-08-31"
+    _write_activity(tmp_path, activity_id, f"{day} 08:00:00")
+    _write_metadata(tmp_path, activity_id, day)
+    path = tmp_path / "snapshots" / "activity_device_index.json"
+    index = read_json(path, {})
+    row = index["activities"][0]
+    row["external_speed_sensor"] = True
+    row["external_speed_sensor_battery_statuses"] = ["GOOD"]
+    row["sensors"].append(
+        {
+            "sensor_type": "BIKE_SPEED",
+            "source_type": "LOCAL",
+            "battery_status": "GOOD",
+        }
+    )
+    write_json(path, index)
+
+    speed = build_latest_session_evidence(tmp_path, day)["device"]["speed_measurement"]
+
+    assert speed["external_speed_sensor"] is False
+    assert speed["battery_statuses"] == []
+
+
+def test_session_speed_provenance_can_use_preserved_standard_fit_fallback(
+    tmp_path,
+    monkeypatch,
+):
+    activity_id = 210
+    day = "2026-08-31"
+    _write_activity(tmp_path, activity_id, f"{day} 08:00:00")
+    _write_metadata(tmp_path, activity_id, day)
+    fit_path = (
+        tmp_path
+        / "activities"
+        / "fit"
+        / f"garmin_{activity_id}_original.fit"
+    )
+    fit_path.parent.mkdir(parents=True, exist_ok=True)
+    fit_path.write_bytes(b"FIT")
+    monkeypatch.setattr(
+        "coach_sync.session_evidence.read_standard_fit_device_sources",
+        lambda _path: {
+            "status": "available",
+            "sensor_types": ["BIKE_SPEED"],
+            "external_sensor_types": ["BIKE_SPEED"],
+            "external_speed_sensor": True,
+            "external_speed_sensor_battery_statuses": ["OK"],
+        },
+    )
+
+    device = build_latest_session_evidence(tmp_path, day)["device"]
+
+    assert device["speed_measurement"]["status"] == (
+        "external_bike_speed_sensor_in_preserved_standard_fit"
+    )
+    assert device["speed_measurement"]["external_speed_sensor"] is True
+    assert device["speed_measurement"]["battery_statuses"] == ["OK"]
+
+
+def _write_hike_detail_trace(
+    root,
+    activity_id,
+    include_external_hr=False,
+    timestamp_unit="gmt",
+):
     interval_sec = 176
     rows = []
     distance = 0.0
@@ -428,6 +1189,12 @@ def _write_hike_detail_trace(root, activity_id, include_external_hr=False):
         if include_external_hr
         else None
     )
+    timestamp_descriptor = {
+        "key": "directTimestamp",
+        "metricsIndex": 0,
+    }
+    if timestamp_unit is not None:
+        timestamp_descriptor["unit"] = {"key": timestamp_unit}
     write_json(
         root / "activities" / "details" / f"garmin_{activity_id}_detail.json",
         {
@@ -455,7 +1222,7 @@ def _write_hike_detail_trace(root, activity_id, include_external_hr=False):
                     "status": "success",
                     "data": {
                         "metricDescriptors": [
-                            {"key": "directTimestamp", "metricsIndex": 0},
+                            timestamp_descriptor,
                             {"key": "sumDistance", "metricsIndex": 1},
                             {"key": "directSpeed", "metricsIndex": 2},
                             {"key": "directElevation", "metricsIndex": 3},
@@ -538,6 +1305,85 @@ def test_latest_hike_replaces_implausible_moving_duration_from_trace_and_surface
     assert phases["phases"]["ascent_to_first_top_band_entry"]["average_hr_bpm"] > 120
     assert phases["phases"]["descent_after_last_top_band_exit"]["max_hr_bpm"] == 95.0
     assert "does not infer SpO2" in phases["interpretation_guardrail"]
+
+
+def test_latest_hike_accepts_duration_bounded_epoch_trace_with_missing_timestamp_unit(
+    tmp_path,
+):
+    activity_id = 2501
+    day = "2026-08-04"
+    _write_activity(
+        tmp_path,
+        activity_id,
+        f"{day} 09:21:03",
+        activity_type="hiking",
+        activityName="Cached steep mountain hike",
+        duration=10384,
+        elapsedDuration=10384,
+        movingDuration=1804,
+        distance=3090,
+        elevationGain=344,
+        elevationLoss=337,
+        averageHR=106,
+        maxHR=151,
+    )
+    _write_hike_detail_trace(
+        tmp_path,
+        activity_id,
+        timestamp_unit=None,
+    )
+
+    evidence = build_latest_session_evidence(tmp_path, day)
+
+    assert evidence["timing"]["stopped_derivation"] == (
+        "derived_detail_trace_movement_timeline"
+    )
+    assert evidence["timing"]["moving_min"] > 120
+    assert evidence["hike_phase_summary"]["status"] == "available_derived"
+    assert evidence["hike_phase_summary"]["top_band"][
+        "first_entry_offset_min"
+    ] > 60
+
+
+def test_latest_hike_skips_elapsed_only_row_with_missing_timestamp(tmp_path):
+    activity_id = 2502
+    day = "2026-08-04"
+    _write_activity(
+        tmp_path,
+        activity_id,
+        f"{day} 09:21:03",
+        activity_type="hiking",
+        duration=10384,
+        elapsedDuration=10384,
+        movingDuration=1804,
+        distance=3090,
+        elevationGain=344,
+    )
+    _write_hike_detail_trace(tmp_path, activity_id)
+    detail_path = (
+        tmp_path / "activities" / "details" / f"garmin_{activity_id}_detail.json"
+    )
+    payload = read_json(detail_path, {})
+    data = payload["calls"]["details"]["data"]
+    data["metricDescriptors"].append(
+        {
+            "key": "sumElapsedDuration",
+            "metricsIndex": 5,
+            "unit": {"key": "second"},
+        }
+    )
+    for index, sample in enumerate(data["activityDetailMetrics"]):
+        sample["metrics"].append(index * 176)
+    data["activityDetailMetrics"][0]["metrics"][0] = None
+    write_json(detail_path, payload)
+
+    evidence = build_latest_session_evidence(tmp_path, day)
+
+    assert evidence["timing"]["stopped_derivation"] == (
+        "derived_detail_trace_movement_timeline"
+    )
+    assert evidence["hike_phase_summary"]["status"] == "available_derived"
+    assert evidence["hike_phase_summary"]["trace_sample_count"] == 59
 
 
 def test_latest_hike_withholds_implausible_stopped_time_without_credible_trace(tmp_path):

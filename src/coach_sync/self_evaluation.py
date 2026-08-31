@@ -31,6 +31,24 @@ RPE_LABELS = {
     100: "maximum",
 }
 
+GARMIN_FEEL_COMPONENTS = ["clarity", "strength", "coordination"]
+
+
+def _feel_out_of_5(value: float | None) -> int | None:
+    """Map Garmin's categorical 0/25/50/75/100 values to its 1-5 display scale.
+
+    Fail closed for off-grid values instead of truncating a value into a category.
+    """
+    if value is None or value not in FEEL_LABELS:
+        return None
+    return int(value / 25) + 1
+
+
+def _feel_ordinal_display_out_of_10(value: float | None) -> int | None:
+    """Return Clayton's requested 1-5 to 2-10 display remap, not an interval score."""
+    display = _feel_out_of_5(value)
+    return display * 2 if display is not None else None
+
 
 def _summary(payload: dict) -> dict:
     summary = payload.get("summaryDTO")
@@ -51,21 +69,19 @@ def _number(value: Any) -> float | None:
 def _feel_label(value: float | None) -> str | None:
     if value is None:
         return None
-    return FEEL_LABELS.get(int(value), f"score_{value:g}")
+    return FEEL_LABELS.get(value, f"score_{value:g}")
 
 
 def _rpe_out_of_10(value: float | None) -> float | None:
-    if value is None:
+    if value is None or value not in RPE_LABELS:
         return None
-    if 0 <= value <= 100:
-        return round(value / 10, 1)
-    return value
+    return round(value / 10, 1)
 
 
 def _rpe_label(value: float | None) -> str | None:
     if value is None:
         return None
-    return RPE_LABELS.get(int(value), f"score_{value:g}")
+    return RPE_LABELS.get(value)
 
 
 def summarize_activity_self_evaluation(payload: dict) -> dict:
@@ -76,9 +92,14 @@ def summarize_activity_self_evaluation(payload: dict) -> dict:
         "has_self_evaluation": feel is not None or rpe is not None,
         "feel_score": feel,
         "feel_label": _feel_label(feel),
+        "feel_out_of_5": _feel_out_of_5(feel),
+        "feel_ordinal_display_out_of_10": _feel_ordinal_display_out_of_10(feel),
+        "feel_display_remap_semantics": "ordinal_display_only_not_comparable_to_rpe",
+        "feel_construct": "athlete_state_composite",
         "rpe_score": rpe,
         "rpe_label": _rpe_label(rpe),
         "rpe_out_of_10": _rpe_out_of_10(rpe),
+        "global_rpe_out_of_10": _rpe_out_of_10(rpe),
     }
 
 
@@ -138,6 +159,10 @@ def build_self_evaluation_report(
         act_date = parse_date(row.get("date") or activity.get("date"))
         if not act_date or act_date < start or act_date > target:
             continue
+        feel_score = _number(row.get("feel_score"))
+        rpe_score = _number(row.get("rpe_score"))
+        feel_out_of_5 = _feel_out_of_5(feel_score)
+        rpe_out_of_10 = _rpe_out_of_10(rpe_score)
         normalized = {
             "activity_id": activity_id,
             "date": act_date.isoformat(),
@@ -149,12 +174,17 @@ def build_self_evaluation_report(
             "fetch": row.get("fetch"),
             "latest_attempt": row.get("latest_attempt"),
             "last_success_at": row.get("last_success_at"),
-            "has_self_evaluation": bool(row.get("has_self_evaluation")),
-            "feel_score": row.get("feel_score"),
-            "feel_label": row.get("feel_label"),
-            "rpe_score": row.get("rpe_score"),
-            "rpe_label": row.get("rpe_label"),
-            "rpe_out_of_10": row.get("rpe_out_of_10"),
+            "has_self_evaluation": feel_out_of_5 is not None or rpe_out_of_10 is not None,
+            "feel_score": feel_score,
+            "feel_label": _feel_label(feel_score),
+            "feel_out_of_5": feel_out_of_5,
+            "feel_ordinal_display_out_of_10": _feel_ordinal_display_out_of_10(feel_score),
+            "feel_display_remap_semantics": "ordinal_display_only_not_comparable_to_rpe",
+            "feel_construct": row.get("feel_construct") or "athlete_state_composite",
+            "rpe_score": rpe_score,
+            "rpe_label": _rpe_label(rpe_score),
+            "rpe_out_of_10": rpe_out_of_10,
+            "global_rpe_out_of_10": rpe_out_of_10,
         }
         rows.append(normalized)
 
@@ -223,6 +253,30 @@ def build_self_evaluation_report(
         "generated_at": iso_now(DEFAULT_TIMEZONE),
         "source_index": "snapshots/activity_self_evaluation_index.json",
         "lookback_days": lookback_days,
+        "evidence_ontology": {
+            "garmin_feel": {
+                "entity": "athlete_state",
+                "construct": "one_indivisible_composite",
+                "components": GARMIN_FEEL_COMPONENTS,
+                "raw_to_display_scale": {"0": 1, "25": 2, "50": 3, "75": 4, "100": 5},
+                "optional_out_of_10_display_remap": (
+                    "Map 1-5 to even labels 2-10 only for Clayton's requested display; this is ordinal "
+                    "and must not be compared numerically with RPE or treated as an interval scale."
+                ),
+                "illness_boundary": (
+                    "Illness is separate evidence. Garmin Feel cannot prove illness absence, and a contrary "
+                    "athlete illness report overrides a favorable Feel value."
+                ),
+            },
+            "garmin_perceived_effort": {
+                "entity": "delivered_session_effort",
+                "construct": "whole_session_global_rpe",
+                "normalization": "directWorkoutRpe divided by 10",
+            },
+            "separation_rule": (
+                "Feel and Perceived Effort do not establish technical execution or a safety-contract outcome."
+            ),
+        },
         "checked_activities": len(rows),
         "evaluated_activities": len(evaluated),
         "coverage": {

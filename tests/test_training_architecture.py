@@ -168,6 +168,18 @@ def _context():
             "rider_category": {"current": "experienced", "target": "expert"},
         },
         "goal_progression": {"current_phase": "base_rebuild"},
+        "coaching_evidence_ontology": {
+            "version": 1,
+            "entities": {
+                "athlete_state": {"primary_surface": "Garmin directWorkoutFeel"},
+                "delivered_session_effort": {"primary_surface": "Garmin directWorkoutRpe"},
+                "physiological_response_context": {"primary_surface": "directPerformanceCondition"},
+                "measurement_provenance": {"primary_surface": "standard sensor metadata"},
+                "action_route_boundaries": {"primary_surface": "manual laps"},
+                "technical_execution": {"primary_surface": "technical notes"},
+                "safety_contract_outcome": {"primary_surface": "explicit stop outcome"},
+            },
+        },
         "training_rules": {
             "bike_specific_continuity": {
                 "primary_outdoor_fitness_equipment_key": "specialized_stumpjumper",
@@ -202,6 +214,16 @@ def test_training_architecture_builds_config_and_snapshot(tmp_path):
 
     assert artifact["architecture_type"] == "clayton_specific_enduro_training_architecture"
     assert artifact["schema_version"] == 3
+    assert artifact["evidence_ontology"]["version"] == 1
+    assert set(artifact["evidence_ontology"]["entities"]) == {
+        "athlete_state",
+        "delivered_session_effort",
+        "physiological_response_context",
+        "measurement_provenance",
+        "action_route_boundaries",
+        "technical_execution",
+        "safety_contract_outcome",
+    }
     adaptive = artifact["adaptive_programming"]
     assert adaptive["boundary"]["garmin_mcp"].startswith("Direct live perception")
     assert adaptive["progression_ladders"]["tempo_torque"][:3] == [
@@ -274,6 +296,9 @@ def test_training_architecture_builds_config_and_snapshot(tmp_path):
     assert "environment_evidence" in artifact["artifact_contract"]
     assert artifact["session_contract"]["required_fields"][0] == "purpose"
     assert "stop_rule_outcome" in artifact["session_contract"]["post_session_review"]
+    assert "without a duplicate general questionnaire" in artifact["session_contract"][
+        "post_session_review"
+    ]
     assert artifact["athlete_model"]["highest_return_sequence"][0] == "bike-specific continuity"
     assert artifact["equipment_model"]["trainer"]["model"] == "Elite Suito"
     event = artifact["event_model"]["upcoming_events"][0]

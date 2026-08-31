@@ -139,6 +139,7 @@ After editable install, the same stack is available through:
 - After the session and next-day Garmin sync, run:
   `python tools/predictive_review.py --date <YYYY-MM-DD>`
 - The review separates four learning lanes instead of reducing the session to one eligible/ineligible verdict: nominal-contract validation, delivered-action response, execution-boundary learning, and safety-adherence learning. Nominal validation requires more than a matched Garmin load: modality, session count, and duration must match; the schema v3 review fields must be complete; stop-rule outcome must be explicit; and MTB sessions must document technical quality and late-session skill fade.
+- An incomplete nominal-contract lane does not erase the other lanes. Activity/lap evidence may still characterize the delivered action and physiological response, while explicit boundary or safety evidence may still improve execution and adherence rules at the confidence each lane supports.
 - A `triggered_but_continued` outcome permanently rejects nominal validation, but structured rep/lap evidence can still update the execution boundary and safety-adherence lanes. After next-day wellness arrives, the delivered action may become a reduced-weight out-of-policy response observation; a good morning never proves the stop-rule override was safe or reveals the unobserved rule-compliant counterfactual.
 - If a stored session explicitly has `optional: true`, performing no session is `allowed_optional_skip`, not adherence drift; because no action-response pair exists, it remains non-calibratable. Legacy reviews may recover an omitted optional flag only from an exact same-date match to the recorded `input_planned_session` source, without mutating the stored prediction.
 - Record the manual evidence either at the top level of `input/feedback_YYYY-MM-DD.json` or in a matching `entries[]` item. A minimal MTB example is:
@@ -198,6 +199,17 @@ After editable install, the same stack is available through:
 
 The wear-state layer never fills missing samples or interprets them as rest. It keeps endpoint health, optical-HR measurement availability, physical wear state, and cause attribution separate. Direct `get_heart_rates` sample transitions can confirm that wrist-HR measurement was unavailable, but cannot prove the watch was physically removed or distinguish dress-watch use, a loose strap, showering, charging, or another cause. Exact dated athlete reports may assign physical removal and cause only to their matching interval. The layer cannot raise readiness, CNS status, technical consequence, or the written session. Positive low-stress use additionally requires dense valid target-date samples from near midnight through a declared cutoff at or after 18:00, with credible Garmin cadence and no uncovered tail. A recurring habit remains context only and does not soften an unexplained gap.
 
+## Coaching Evidence Ontology
+
+- `athlete_state`: Garmin `directWorkoutFeel` is Clayton's one indivisible composite of clarity, strength, and coordination. Raw `0/25/50/75/100` maps to display `1/2/3/4/5`. Clayton's optional `2/4/6/8/10` expression is an ordinal display remap only, not a scale comparable with RPE. Illness is separate athlete-reported evidence, so favorable Feel never proves illness absence.
+- `delivered_session_effort`: Garmin `directWorkoutRpe` is whole-session global RPE; divide raw `10-100` by 10 for display `1-10`. It does not replace local muscular RPE when a focal or unusually high local response matters.
+- `physiological_response_context`: only Garmin's named `directPerformanceCondition` activity-detail metric may populate Performance Condition. Use its bounded state points and change count as Stumpjumper power/HR response context only after matching route, heat, sensors, interruptions, and effort; repeated/held trace observations are not independent fitness estimates, and the metric does not prove fitness change, coordination, technical quality, illness absence, or safety.
+- `measurement_provenance`: standard Garmin Devices & Apps or FIT device metadata may establish an external `BIKE_SPEED` sensor and raise speed/distance confidence under canopy. Sensor position such as front-wheel placement remains athlete-reported, and sensor presence does not prove calibration, wheel circumference, per-sample accuracy, or route identity.
+- `action_route_boundaries`: athlete-confirmed manual lap presses define the intended action, while stops, obstructions, route deviations, and boundary differences decide whether elapsed-time comparisons are valid.
+- `technical_execution`: braking, line choice, front tracking, posture, jump quality, and late skill fade require athlete notes, coach observation, or directly relevant structured evidence. Feel, RPE, speed, Flow, Grit, load, and Performance Condition cannot independently prove them. Missing/questionnaire-policy prose stays `unknown`, while an explicit indoor/non-MTB marker stays `not_applicable`; neither is counted as an observation.
+- `safety_contract_outcome`: `stop_rule_outcome` remains an explicit athlete report. Never infer `not_triggered` from completion, favorable Feel/RPE, clean objective data, or silence; missing stays unknown and limits nominal-contract calibration without erasing delivered-action learning.
+- For a familiar low-consequence session, activity-matched Garmin Feel/RPE plus objective Garmin evidence are the routine post-session review. Do not request a duplicate general questionnaire; ask only targeted questions when symptoms, action drift, novelty, setup testing, technical consequence, possible stop-rule activation, or nominal calibration requires evidence Garmin cannot supply.
+
 ## Context Updates
 - Set goal phase:
   `python tools/update_context.py set-goal-phase --phase base_rebuild --note "Training focus updated."`
@@ -215,6 +227,8 @@ The wear-state layer never fills missing samples or interprets them as rest. It 
   - braking fatigue, upper-body fatigue, late-ride skill drop, and aggression/confidence
   - carbs, sodium, fluid, caffeine, and gut tolerance
   - travel, stress, schedule constraints, unusual session feel
+
+For familiar low-consequence sessions, activity-matched Garmin Feel/RPE and objective evidence are sufficient for the routine review. Use this log or a targeted follow-up only for missing evidence that could change the coaching interpretation; do not recreate a second general post-session questionnaire.
 
 Blank template fields are ignored.
 
@@ -262,19 +276,20 @@ Blank template fields are ignored.
 - `snapshots/activity_device_index.json`
   - recent Garmin Devices & Apps metadata fetched from `get_activity`
 - `snapshots/device_audit.json` / `snapshots/device_audit.txt`
-  - HR source confidence audit, including MTB rides without an external HEART_RATE sensor and partial-index coverage
+  - HR and speed-source confidence audit, including MTB rides without an external `HEART_RATE` sensor, standard external `BIKE_SPEED` provenance where present, battery status, and partial-index coverage
 - `snapshots/activity_self_evaluation_index.json`
   - recent Garmin post-activity feel and RPE metadata fetched from activity details
 - `snapshots/self_evaluation_report.json` / `snapshots/self_evaluation_report.txt`
   - recent self-evaluation rows for interpreting whether load felt costly, sustainable, or misleading
-  - `directWorkoutFeel`: 0 very weak, 50 normal, 100 very strong
-  - `directWorkoutRpe`: 10 very light, 50 hard, 90 extremely hard, 100 maximum
+  - `directWorkoutFeel`: Garmin categorical raw `0/25/50/75/100` maps to display `1/2/3/4/5`; for Clayton it is one indivisible clarity/strength/coordination composite, not three fabricated scores
+  - `directWorkoutRpe`: Garmin raw `10-100` divided by 10 maps to whole-session global RPE `1-10`
+  - illness remains separate athlete-reported evidence, and routine familiar low-consequence reviews do not require a duplicate general questionnaire
 - `snapshots/modality_load_rollups.json`
   - 7/14/28/42-day load by modality
 - `snapshots/data_quality_report.json`
   - source coverage, missing fields, and privacy/redaction checks
 - `snapshots/current_state.json:latest_session_evidence`
-  - bounded latest-session block joining raw timing, terrain, load, power, environment, Gear, HR source, self-evaluation, Garmin gym set/rep/rest detail, and matching/recent loop evidence with explicit provenance and confidence
+  - bounded latest-session block joining raw timing, terrain, load, power, named Garmin Performance Condition, environment, Gear, HR and speed-sensor provenance, self-evaluation, Garmin gym set/rep/rest detail, and matching/recent loop evidence with explicit provenance and confidence
 - `snapshots/body_battery_model_report.json`
   - simple pure-Python decision tree for good wake Body Battery
 - `snapshots/body_battery_decision_tree.json`
@@ -286,7 +301,7 @@ Blank template fields are ignored.
 - `snapshots/predictive_session_plan.json` / `snapshots/predictive_session_YYYY-MM-DD.json`
   - pre-session digital-twin expectation for planned duration, load, RPE, next-day response, execution-risk drift, and coaching-adjusted strain response
 - `snapshots/predictive_session_review.json` / `snapshots/predictive_session_review_YYYY-MM-DD.json`
-  - post-session comparison of expected versus actual Garmin load, action alignment, self-evaluation, technical/stop-rule evidence, next-day response, and calibration eligibility
+  - post-session comparison of expected versus actual Garmin load, action alignment, self-evaluation, technical/stop-rule evidence, and next-day response across distinct nominal-contract, delivered-action, execution-boundary, and safety-adherence learning lanes
 - `snapshots/predictive_training.json`
   - current predictive loop: today's prescription plus the latest completed-session calibration review
 - `snapshots/predictive_backtest_10_dates.json`
@@ -326,6 +341,8 @@ Blank template fields are ignored.
 - Predictive loop answers: what response was expected from the prescribed session, what actually happened, and whether the miss was execution, external stress, or model error.
 - Surface manifest answers: what Garmin endpoint was configured, attempted, empty, failed, unsupported, or not attempted; what fields survived normalization; and which coaching surface consumes them.
 - Latest-session evidence answers: what the most recent load physically represented, while keeping weather units, HR source, Garmin water estimates, loop estimates, steep-hike moving-time plausibility, and old power values inside their stated confidence boundaries.
+- The coaching evidence ontology answers: which claims belong to athlete state, delivered effort, physiological response, measurement provenance, route/action boundaries, technical execution, or safety outcome, and which tempting cross-axis inferences are forbidden.
+- Named Garmin Performance Condition is matched physiological context rather than a technical or safety score. External `BIKE_SPEED` metadata raises under-canopy speed/distance confidence but does not prove sensor placement, calibration, wheel circumference, route identity, or clean comparability.
 - Rest/recharge evidence answers whether a reported intraday rest window worked. It never rewrites the wake anchor, treats a missing Garmin nap label as proof of no nap, or raises physical, CNS, technical, or written-session ceilings.
 - Weekly planner answers: what the week is trying to buy before daily readiness gates adjust execution.
 - Session contract answers: what adaptation the session is buying, what the dose is, when to stop, and what must be reviewed afterward.

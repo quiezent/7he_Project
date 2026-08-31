@@ -665,15 +665,15 @@
     "full_range": {
       "activity_end": "2026-08-31",
       "activity_start": "2021-06-18",
-      "counted_sessions": 1397,
-      "duration_min": 106564.5,
+      "counted_sessions": 1398,
+      "duration_min": 106622.9,
       "elliptical_load": 7241.4,
       "elliptical_sessions": 71,
       "indoor_bike_load": 38694.8,
       "indoor_bike_sessions": 607,
-      "mtb_load": 99547.7,
-      "mtb_sessions": 493,
-      "training_load": 161188.5
+      "mtb_load": 99714.2,
+      "mtb_sessions": 494,
+      "training_load": 161355.0
     },
     "hypothesis_support": {
       "bike_specificity": "weak",
@@ -717,19 +717,19 @@
       "note": "Use the upper end in Kuala Lumpur heat or when skill quality drops late; gut-train before race day."
     },
     "recent_28d": {
-      "bike_specific_load": 1349.1,
-      "bike_specific_ratio": 0.963,
+      "bike_specific_load": 1515.6,
+      "bike_specific_ratio": 0.967,
       "elliptical_ratio": 0.0,
       "indoor_bike_sessions": 8,
-      "mtb_sessions": 7,
-      "training_load": 1400.3
+      "mtb_sessions": 8,
+      "training_load": 1566.8
     },
     "recent_7d": {
-      "bike_specific_load": 229.1,
+      "bike_specific_load": 395.6,
       "bike_specific_ratio": 1.0,
       "indoor_bike_sessions": 4,
-      "mtb_sessions": 0,
-      "training_load": 229.1
+      "mtb_sessions": 1,
+      "training_load": 395.6
     },
     "weekly_continuity_blocks": {
       "current_rebuild_apr_to_may_2026": {
@@ -773,6 +773,119 @@
       }
     }
   },
+  "evidence_ontology": {
+    "entities": {
+      "action_route_boundaries": {
+        "boundary": "Manual boundaries define the intended action. Stops, obstructions, route deviations, and different start/end presses determine whether elapsed time is comparable.",
+        "primary_surfaces": [
+          "athlete-confirmed manual lap presses",
+          "Garmin lap timing and trace movement"
+        ]
+      },
+      "athlete_state": {
+        "clayton_semantics": "One indivisible composite of clarity, strength, and coordination.",
+        "illness_boundary": "Illness is separate athlete-reported evidence. A favorable Feel value does not prove illness absence, and any contrary illness or airway report overrides it.",
+        "illness_status_vocabulary": {
+          "aliases": {
+            "active": "present",
+            "none": "absent",
+            "recovering": "present",
+            "suspected": "present"
+          },
+          "canonical_presence": [
+            "absent",
+            "present",
+            "unknown"
+          ],
+          "phase_preservation": "When suspected, active, or recovering is reported, retain that word as illness_phase while applying the canonical present caution."
+        },
+        "optional_display_remap": "Clayton may describe 1-5 as even labels 2-10 (for example 3/5 as 6/10), but this remains an ordinal display remap and is not numerically comparable with RPE.",
+        "primary_surface": "Garmin directWorkoutFeel",
+        "raw_to_display_1_to_5": {
+          "0": 1,
+          "100": 5,
+          "25": 2,
+          "50": 3,
+          "75": 4
+        }
+      },
+      "delivered_session_effort": {
+        "boundary": "Global RPE does not replace local muscular RPE when a focal or unusually high local response matters.",
+        "normalization": "Garmin categorical raw 10-100 divided by 10 yields whole-session global RPE 1-10; off-grid values fail closed.",
+        "primary_surface": "Garmin directWorkoutRpe"
+      },
+      "measurement_provenance": {
+        "bike_speed_rule": "A standard BIKE_SPEED sensor increases speed and distance confidence under dense tree cover. Front-wheel placement remains athlete-reported, and sensor presence does not prove calibration, wheel circumference, per-sample accuracy, or route identity.",
+        "primary_surfaces": [
+          "Garmin Devices & Apps standard sensor metadata",
+          "preserved standard FIT device information"
+        ]
+      },
+      "physiological_response_context": {
+        "boundary": "Performance Condition does not measure coordination, braking, line choice, technical precision, illness absence, or safety. Repeated or held trace observations are not independent Garmin fitness estimates; treat the initial value as a state point and count only subsequent value changes. Never promote an unnamed proprietary FIT field into this ontology.",
+        "primary_surface": "Garmin named directPerformanceCondition detail metric",
+        "stumpjumper_use": "Use as matched Stumpjumper power-heart-rate response context across similar route, heat, sensor, interruption, and effort conditions."
+      },
+      "safety_contract_outcome": {
+        "boundary": "Never infer not_triggered from completion, favorable Feel/RPE, clean objective data, or silence. Missing remains unknown and limits nominal-contract calibration without erasing delivered-action learning.",
+        "primary_surface": "Explicit athlete-reported stop_rule_outcome"
+      },
+      "technical_execution": {
+        "boundary": "Feel, RPE, speed, Flow, Grit, load, and Performance Condition cannot independently prove braking, line choice, front tracking, posture, jump quality, skill fade, or a clean technical outcome.",
+        "missingness_rule": "Questionnaire-policy prose and sentinels such as unknown, not reported, not collected, or not applicable never become observed technical evidence.",
+        "observation_status_vocabulary": [
+          "observed",
+          "unknown",
+          "not_applicable"
+        ],
+        "primary_surfaces": [
+          "athlete technical notes",
+          "coach observation",
+          "structured lap evidence where it directly supports the claim"
+        ]
+      }
+    },
+    "garmin_subjective_review_policy": {
+      "above_reference_promotion": {
+        "guardrail": "4/5 is necessary retrospective absorption evidence, not sufficient same-day clearance. Fresh physical readiness, CNS, symptoms, environment, density, and consequence still govern the next prescription.",
+        "increases_requiring_4_of_5": [
+          "duration",
+          "descent count",
+          "attack intent or speed",
+          "novel route or technical consequence",
+          "setup testing",
+          "Enduro or new-course work",
+          "structured intensity"
+        ],
+        "minimum_retrospective_feel_1_to_5": 4
+      },
+      "reference_action": {
+        "action": "Two controlled familiar full-2K descents with no novelty, setup change, jump progression, speed hunt, or third quality run.",
+        "activity_id": "24179129115",
+        "bike_key": "specialized_stumpjumper",
+        "date": "2026-08-31",
+        "interpretation": "A 3/5 normal Feel is sufficient evidence that this exact reference action was subjectively tolerable; it does not mean the physiological cost was low.",
+        "minimum_retrospective_feel_1_to_5": 3,
+        "not_above_reference_scope": "A later session may use the same 3/5 threshold only after the coach explicitly classifies it as the same familiar Stumpjumper/2K action with no increase in duration, descent count, attack intent, speed, novelty, technical consequence, setup variables, or structured intensity. The software must not infer equivalence merely because a session looks easier."
+      },
+      "routine_default": "For a familiar low-consequence session, activity-matched Garmin Feel and Perceived Effort plus objective Garmin evidence are the default post-session review; do not request a duplicate general questionnaire.",
+      "targeted_follow_up_only_when": [
+        "symptoms or illness are reported or objective evidence is discordant",
+        "the delivered action drifted materially from the contract",
+        "novelty, setup testing, speed, jumps, consequence, or a race-specific progression requires technical proof",
+        "a stop rule may have triggered or nominal digital-twin calibration requires its explicit outcome"
+      ]
+    },
+    "purpose": "Keep evidence types distinct so Garmin automation can reduce athlete reporting burden without inventing technical, illness, route, or safety conclusions.",
+    "relations": [
+      "athlete_state and delivered_session_effort describe subjective response to a delivered action",
+      "measurement_provenance qualifies confidence in objective measurements",
+      "action_route_boundaries determine whether lap comparisons are valid",
+      "physiological_response_context can support fitness interpretation only after action and provenance matching",
+      "technical_execution and safety_contract_outcome remain independent evidence axes"
+    ],
+    "version": 1
+  },
   "fueling_architecture": {
     "daily": {
       "carbs_match_training": "Use higher carbs on MTB, tempo, race-simulation, and heat-heavy days.",
@@ -812,7 +925,7 @@
     "heat_rule": "In Kuala Lumpur, treat fuel/hydration as skill protection: sloppy braking, weak pumping, timid jumps, or poor line choice late can be carb/sodium/heat failure.",
     "range_selection_rule": "Choose within the canonical band from same-day heat/humidity, actual sweat response, session consequence, and gut tolerance. Previous-session weather is not a forecast, and Garmin heat acclimation never reduces the target by itself."
   },
-  "generated_at": "2026-08-31T00:11:07+08:00",
+  "generated_at": "2026-08-31T18:53:34+08:00",
   "integrated_coaching_model": {
     "cns_readiness_model": {
       "decision_role": "Use CNS readiness as a technical-consequence ceiling after Sabbath and physical readiness, not as a replacement for Garmin readiness.",
@@ -1408,7 +1521,7 @@
     "dose": "Specify duration, repeats, descents/stages, load cap, RPE/HR/power cap where useful, and what makes the session complete.",
     "execution_rules": "Describe how to ride the session and what not to chase.",
     "expected_result": "Store expected Garmin load/range, high-intensity minutes, RPE/feel, and next-day readiness expectation before training when the predictive loop is used.",
-    "post_session_review": "Record the required review fields after the session. For nominal-contract validation, record an explicit stop_rule_outcome. MTB/technical work must also record technical_quality_notes and late_session_skill_fade; a triggered-but-continued stop rule permanently rejects nominal validation, while still permitting separately labelled execution-boundary, safety-adherence, and later delivered-action learning when the evidence is adequate.",
+    "post_session_review": "Use activity-matched Garmin Feel and Perceived Effort plus objective activity evidence as the routine subjective review, without a duplicate general questionnaire. Ask only targeted questions for symptoms, material action drift, novel/high-consequence technical proof, or a possible safety event. For nominal-contract validation, an explicit stop_rule_outcome remains required; missing stays unknown without erasing delivered-action learning. MTB/technical work needs technical-quality evidence only when the session's progression or calibration claim depends on it. A triggered-but-continued stop rule permanently rejects nominal validation while retaining separately labelled execution-boundary, safety-adherence, and later delivered-action learning when evidence is adequate.",
     "purpose": "Every prescription must state exactly what adaptation it is buying: continuity, torque/threshold, repeatability, braking durability, fork setup, jump timing, wet-tech confidence, or recovery.",
     "required_fields": [
       "purpose",

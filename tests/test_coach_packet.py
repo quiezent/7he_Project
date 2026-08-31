@@ -1069,6 +1069,15 @@ def test_latest_session_compaction_keeps_hike_timing_phases_and_safe_fit_sources
             "device": {
                 "status": "available",
                 "hr_confidence": "onboard_likely",
+                "speed_measurement": {
+                    "status": "external_bike_speed_sensor_in_standard_metadata",
+                    "external_speed_sensor": True,
+                    "battery_statuses": ["GOOD"],
+                    "ontology_entity": "measurement_provenance",
+                    "interpretation_guardrail": (
+                        "A BIKE_SPEED sensor is present, but wheel location is not inferred."
+                    ),
+                },
                 "standard_fit_device_sources": {
                     "status": "available",
                     "device_info_rows": 3,
@@ -1086,6 +1095,57 @@ def test_latest_session_compaction_keeps_hike_timing_phases_and_safe_fit_sources
                     },
                 },
                 "interpretation_guardrail": "Onboard is likely, not proven wrist HR.",
+            },
+            "performance_condition": {
+                "status": "available",
+                "ontology_entity": "physiological_response_context",
+                "power_context_basis": ["garmin_activity_summary.avgPower"],
+                "context_scope": "matched_stumpjumper_fitness_context",
+                "held_trace_observation_count": 5,
+                "state_point_count": 4,
+                "change_count": 3,
+                "first_value": 0,
+                "first_elapsed_min": 7.15,
+                "final_value": -3,
+                "last_elapsed_min": 58.38,
+                "minimum": -3,
+                "maximum": 0,
+                "change_final_minus_first": -3,
+                "state_points": [
+                    {"elapsed_min": 7.15, "value": 0},
+                    {"elapsed_min": 27.07, "value": -1},
+                    {"elapsed_min": 34.73, "value": -2},
+                    {"elapsed_min": 46.15, "value": -3},
+                ],
+                "state_points_truncated": False,
+                "timing_basis": "sumElapsedDuration_second",
+                "descriptor_units": {
+                    "directPerformanceCondition": "dimensionless",
+                    "sumElapsedDuration": "second",
+                    "directTimestamp": "gmt",
+                },
+                "source": "activities/details/garmin_PRIVATE_ID_detail.json",
+                "interpretation_guardrail": "Physiological context only.",
+            },
+            "self_evaluation": {
+                "status": "available",
+                "feel_score": 75,
+                "feel_label": "strong",
+                "feel_out_of_5": 4,
+                "feel_ordinal_display_out_of_10": 8,
+                "feel_display_remap": "ordinal_display_only_not_comparable_to_rpe",
+                "feel_construct": "athlete_state_composite",
+                "rpe_score": 30,
+                "rpe_label": "moderate",
+                "rpe_out_of_10": 3,
+                "global_rpe_out_of_10": 3,
+                "ontology": {
+                    "feel_entity": "athlete_state",
+                    "rpe_entity": "delivered_session_effort",
+                    "separation_rule": "No safety outcome is inferred.",
+                },
+                "latest_attempt": {"status": "success", "private": "omit"},
+                "source": "snapshots/activity_self_evaluation_index.json",
             },
             "hike_phase_summary": {
                 "status": "available_derived",
@@ -1122,9 +1182,185 @@ def test_latest_session_compaction_keeps_hike_timing_phases_and_safe_fit_sources
     assert compact["hr_source"]["standard_fit_device_sources"][
         "local_or_onboard_only"
     ] is True
+    assert compact["performance_condition"]["first_value"] == 0
+    assert compact["performance_condition"]["final_value"] == -3
+    assert compact["performance_condition"]["power_context_basis"] == [
+        "garmin_activity_summary.avgPower"
+    ]
+    assert compact["performance_condition"]["provenance"]["source_surface"] == (
+        "latest_session_evidence.performance_condition"
+    )
+    assert compact["performance_condition"]["provenance"]["named_metric"] == (
+        "directPerformanceCondition"
+    )
+    assert compact["speed_measurement"]["external_speed_sensor"] is True
+    assert compact["speed_measurement"]["provenance"]["standard_sensor_type"] == (
+        "BIKE_SPEED"
+    )
+    assert compact["self_evaluation"]["feel_out_of_5"] == 4
+    assert compact["self_evaluation"]["global_rpe_out_of_10"] == 3
+    assert compact["self_evaluation"]["provenance"]["latest_attempt"] == {
+        "status": "success"
+    }
     serialized = json.dumps(compact)
     assert "PRIVATE_ID" not in serialized
     assert "PRIVATE_SERIAL" not in serialized
+    assert '"private"' not in serialized
+
+
+def test_coach_packet_surfaces_bounded_subjective_evaluation_without_inferring_safety(
+    tmp_path,
+):
+    state = {
+        "date": "2026-08-31",
+        "readiness": {
+            "readiness_level": "green",
+            "readiness_score": 80,
+            "confidence": "medium",
+            "reasons": [],
+        },
+        "data_freshness": {
+            "status": "current",
+            "activity_data": {"status": "current"},
+            "hard_session_limiters": [],
+        },
+        "phase": {"name": "base_rebuild"},
+        "cns_readiness": {},
+        "training_status_current": {},
+        "latest_session_response": {
+            "date": "2026-08-31",
+            "activity_id": "24179129115",
+            "status": "garmin_self_evaluation_only",
+            "global_rpe_0_to_10": 3,
+            "local_rpe_0_to_10": None,
+            "subjective_evaluation": {
+                "status": "available",
+                "activity_id": "24179129115",
+                "date": "2026-08-31",
+                "validation": {"status": "matched", "usable": True},
+                "garmin_feel": {
+                    "raw_score_0_to_100": 75,
+                    "out_of_5": 4,
+                    "ordinal_display_out_of_10": 8,
+                    "display_remap": "ordinal_display_only_not_comparable_to_rpe",
+                    "construct": "athlete_state_composite",
+                    "components": ["clarity", "strength", "coordination"],
+                },
+                "garmin_perceived_effort": {
+                    "raw_score_10_to_100": 30,
+                    "global_rpe_0_to_10": 3,
+                    "construct": "delivered_session_effort",
+                },
+                "ontology_guardrail": (
+                    "Illness, technical execution, and safety remain separate."
+                ),
+                "source": "snapshots/activity_self_evaluation_index.json",
+            },
+            "routine_review": {
+                "status": "complete",
+                "duplicate_general_questionnaire_required": False,
+            },
+            "subjective_tolerance_policy": {
+                "reference_action": {
+                    "threshold_met": True,
+                    "exact_identifier_match": True,
+                },
+                "above_reference_prerequisite": {
+                    "threshold_met": True,
+                    "necessary_not_sufficient": True,
+                },
+            },
+            "safety_contract_outcome": {
+                "status": "unknown",
+                "outcome": None,
+                "explicit_canonical_outcome": False,
+            },
+            "illness_airway": {
+                "status": "observed",
+                "illness_status": "absent",
+                "airway_symptoms": {"sore_throat": "present"},
+            },
+            "technical_execution": {"status": "unknown"},
+            "manual_feedback": {"status": "feedback_missing"},
+            "stop_rule_outcome": None,
+            "stop_rule_outcome_explicit": False,
+            "symptom": {"character": "unknown"},
+            "decision_use": {
+                "classification": (
+                    "subjective_session_response_available_safety_unknown"
+                ),
+                "classification_scope": "symptom_response",
+                "illness_airway_caution": {
+                    "status": "present",
+                    "reasons": ["airway_symptom_present_sore_throat"],
+                    "training_promotion_allowed": False,
+                    "guardrail": (
+                        "Reported airway symptoms remain a caution even when Garmin Feel is favorable."
+                    ),
+                },
+                "review_summary": {
+                    "routine_review": "complete",
+                    "illness_airway": "observed",
+                    "technical_execution": "unknown",
+                    "safety_contract_outcome": "unknown",
+                },
+            },
+            "provenance": {
+                "target_date": "2026-08-31",
+                "requested_activity_id": "24179129115",
+                "selected_activity_id": "24179129115",
+                "selection_rule": "activity_id_then_latest_timestamp",
+            },
+        },
+    }
+    plan = {
+        "date": "2026-08-31",
+        "session": {
+            "title": "Post-session rest",
+            "type": "scheduled_recovery",
+            "duration_min": 0,
+            "intensity": "rest",
+        },
+        "decision_inputs": {},
+        "constraint_resolution": {"applied": []},
+    }
+
+    packet = build_coach_packet(tmp_path, "2026-08-31", state=state, plan=plan)
+    response = packet["today_call"]["latest_session_response"]
+
+    assert response["subjective_evaluation"]["garmin_feel"]["out_of_5"] == 4
+    assert response["date"] == "2026-08-31"
+    assert response["activity_id"] == "24179129115"
+    assert (
+        response["subjective_evaluation"]["garmin_perceived_effort"][
+            "global_rpe_0_to_10"
+        ]
+        == 3
+    )
+    assert response["subjective_evaluation"]["provenance"]["source_surface"] == (
+        "latest_session_response.subjective_evaluation"
+    )
+    assert response["routine_review"]["status"] == "complete"
+    assert response["safety_contract_outcome"]["status"] == "unknown"
+    assert response["illness_airway"]["illness_status"] == "absent"
+    assert response["decision_use"]["illness_airway_caution"] == {
+        "status": "present",
+        "reasons": ["airway_symptom_present_sore_throat"],
+        "training_promotion_allowed": False,
+        "guardrail": (
+            "Reported airway symptoms remain a caution even when Garmin Feel is favorable."
+        ),
+    }
+    assert response["subjective_tolerance_policy"]["above_reference_prerequisite"][
+        "necessary_not_sufficient"
+    ] is True
+    assert response["stop_rule_outcome"] is None
+    assert response["stop_rule_outcome_explicit"] is False
+    assert not any(
+        "Label what the Fenix cannot see" in item
+        or "Label CNS/technical sharpness" in item
+        for item in packet["next_data_needed"]
+    )
 
 
 def test_coach_packet_labels_executed_contract_as_post_session_review(tmp_path):

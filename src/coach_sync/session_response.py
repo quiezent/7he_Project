@@ -11,7 +11,516 @@ from .paths import input_dir, repo_root
 from .time_utils import parse_date, today_local
 
 
-SESSION_RESPONSE_VERSION = "session_response_v1"
+SESSION_RESPONSE_VERSION = "session_response_v2"
+CANONICAL_STOP_RULE_OUTCOMES = frozenset(
+    {
+        "not_triggered",
+        "triggered_and_stopped",
+        "triggered_and_downshifted",
+        "triggered_but_continued",
+    }
+)
+_UNKNOWN_STOP_RULE_OUTCOMES = frozenset(
+    {"unknown", "not_reported", "unreported", "not_observed", "na", "n_a"}
+)
+_UNKNOWN_OBSERVATION_TEXT = frozenset(
+    {
+        "unknown",
+        "not reported",
+        "not yet reported",
+        "not yet reported today",
+        "unreported",
+        "not collected",
+        "questionnaire not collected",
+        "no questionnaire collected",
+        "no questionnaire was collected",
+    }
+)
+_NOT_APPLICABLE_OBSERVATION_TEXT = frozenset(
+    {
+        "n a",
+        "na",
+        "not applicable",
+        "not applicable indoor cycling",
+        "not applicable indoor ride",
+        "not applicable non mtb session",
+    }
+)
+
+
+def _safe_parse_date(value: Any) -> date | None:
+    try:
+        return parse_date(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _garmin_field_source(payload: dict, field: str) -> str | None:
+    if payload.get(field) in (None, ""):
+        return None
+    return f"latest_session_evidence.self_evaluation.{field}"
+
+
+def _garmin_category_derivation_source(
+    payload: dict,
+    *,
+    normalized_field: str,
+    raw_field: str,
+    derivation: str,
+) -> dict | None:
+    normalized_path = _garmin_field_source(payload, normalized_field)
+    raw_path = _garmin_field_source(payload, raw_field)
+    if normalized_path is None and raw_path is None:
+        return None
+    return {
+        "path": normalized_path
+        or f"latest_session_response.subjective_evaluation.{normalized_field}",
+        "derived_from": raw_path,
+        "derivation": derivation if raw_path is not None else "upstream_normalized_category",
+    }
+
+
+def _garmin_subjective_evaluation(
+    value: dict | None,
+    *,
+    target: date,
+    requested_activity_id: str | None,
+) -> dict:
+    payload = value if isinstance(value, dict) else {}
+    upstream_status = str(payload.get("status") or "not_supplied")
+    upstream_available = upstream_status.startswith("available")
+    observed_activity_id = (
+        str(payload.get("activity_id")) if payload.get("activity_id") not in (None, "") else None
+    )
+    observed_date = _safe_parse_date(payload.get("date"))
+    validation_reasons: list[str] = []
+    if not payload:
+        validation_reasons.append("self_evaluation_not_supplied")
+    elif not upstream_available:
+        validation_reasons.append("upstream_self_evaluation_not_available")
+    if requested_activity_id is None:
+        validation_reasons.append("requested_activity_id_missing")
+    elif observed_activity_id != requested_activity_id:
+        validation_reasons.append(
+            "self_evaluation_activity_id_missing"
+            if observed_activity_id is None
+            else "self_evaluation_activity_id_mismatch"
+        )
+    if observed_date is None:
+        validation_reasons.append("self_evaluation_date_missing_or_malformed")
+    elif observed_date != target:
+        validation_reasons.append("self_evaluation_date_mismatch")
+    identity_matched = (
+        upstream_available
+        and requested_activity_id is not None
+        and observed_activity_id == requested_activity_id
+        and observed_date == target
+    )
+
+    feel_score = as_number(payload.get("feel_score"))
+    supplied_feel_out_of_5 = as_number(payload.get("feel_out_of_5"))
+    feel_out_of_5 = None
+    feel_source_field = None
+    if feel_score in {0, 25, 50, 75, 100}:
+        feel_out_of_5 = int(feel_score / 25) + 1
+        feel_source_field = "feel_score"
+    elif feel_score is None and supplied_feel_out_of_5 in {1, 2, 3, 4, 5}:
+        feel_out_of_5 = supplied_feel_out_of_5
+        feel_source_field = "feel_out_of_5"
+    if feel_score is not None and feel_out_of_5 is None:
+        validation_reasons.append("garmin_feel_category_invalid")
+
+    raw_rpe = as_number(payload.get("rpe_score"))
+    global_rpe = None
+    rpe_source_field = None
+    if raw_rpe in {10, 20, 30, 40, 50, 60, 70, 80, 90, 100}:
+        global_rpe = raw_rpe / 10.0
+        rpe_source_field = "rpe_score"
+    elif raw_rpe is None:
+        for field in ("global_rpe_out_of_10", "rpe_out_of_10"):
+            candidate = as_number(payload.get(field))
+            if candidate in {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}:
+                global_rpe = float(candidate)
+                rpe_source_field = field
+                break
+    if raw_rpe is not None and global_rpe is None:
+        validation_reasons.append("garmin_rpe_category_invalid")
+
+    score_available = feel_out_of_5 is not None or global_rpe is not None
+    if identity_matched and score_available:
+        status = "available"
+    elif not payload or not upstream_available:
+        status = "not_available"
+    else:
+        status = "unusable"
+    return {
+        "status": status,
+        "upstream_status": upstream_status,
+        "activity_id": observed_activity_id,
+        "date": observed_date.isoformat() if observed_date is not None else None,
+        "validation": {
+            "status": "matched" if identity_matched else "unusable",
+            "usable": identity_matched,
+            "reasons": validation_reasons,
+            "expected": {
+                "activity_id": requested_activity_id,
+                "date": target.isoformat(),
+            },
+            "observed": {
+                "activity_id": observed_activity_id,
+                "date": observed_date.isoformat() if observed_date is not None else None,
+                "raw_date": payload.get("date"),
+            },
+        },
+        "garmin_feel": {
+            "raw_score_0_to_100": feel_score,
+            "out_of_5": int(feel_out_of_5) if feel_out_of_5 is not None else None,
+            "ordinal_display_out_of_10": (
+                int(feel_out_of_5) * 2 if feel_out_of_5 is not None else None
+            ),
+            "display_remap": "ordinal_1_to_5_mapped_to_even_labels_2_to_10_not_interval_equivalence",
+            "construct": "athlete_state_composite",
+            "components": ["clarity", "strength", "coordination"],
+        },
+        "garmin_perceived_effort": {
+            "raw_score_10_to_100": raw_rpe,
+            "global_rpe_0_to_10": global_rpe,
+            "construct": "delivered_session_effort",
+        },
+        "field_sources": {
+            "garmin_feel_raw_score": _garmin_field_source(payload, "feel_score"),
+            "garmin_feel_out_of_5": (
+                _garmin_category_derivation_source(
+                    payload,
+                    normalized_field="feel_out_of_5",
+                    raw_field="feel_score",
+                    derivation="strict_map_0_25_50_75_100_to_1_2_3_4_5",
+                )
+                if feel_source_field is not None
+                else None
+            ),
+            "global_rpe_0_to_10": (
+                _garmin_category_derivation_source(
+                    payload,
+                    normalized_field="global_rpe_out_of_10",
+                    raw_field="rpe_score",
+                    derivation="strict_map_10_20_through_100_to_1_2_through_10",
+                )
+                if rpe_source_field is not None
+                else None
+            ),
+        },
+        "ontology_guardrail": (
+            "Garmin Feel is Clayton's indivisible clarity-strength-coordination composite, not three "
+            "fabricated component scores. Illness, technical execution, and safety outcome remain "
+            "separate evidence."
+        ),
+        "source": payload.get("source"),
+        "latest_attempt": payload.get("latest_attempt"),
+    }
+
+
+def _routine_review(garmin: dict) -> dict:
+    feel_available = (garmin.get("garmin_feel") or {}).get("out_of_5") is not None
+    rpe_available = (
+        (garmin.get("garmin_perceived_effort") or {}).get("global_rpe_0_to_10")
+        is not None
+    )
+    identity_matched = (garmin.get("validation") or {}).get("usable") is True
+    complete = identity_matched and feel_available and rpe_available
+    if complete:
+        status = "complete"
+    elif identity_matched and (feel_available or rpe_available):
+        status = "partial"
+    elif garmin.get("status") == "unusable":
+        status = "unusable"
+    else:
+        status = "not_available"
+    return {
+        "status": status,
+        "basis": "activity_and_date_matched_garmin_feel_plus_global_rpe",
+        "activity_and_date_matched": identity_matched,
+        "feel_available": feel_available if identity_matched else False,
+        "global_rpe_available": rpe_available if identity_matched else False,
+        "duplicate_general_questionnaire": (
+            "suppressed" if complete else "not_suppressed_by_complete_garmin_review"
+        ),
+        "duplicate_general_questionnaire_required": False if complete else None,
+        "targeted_follow_up_only": complete,
+        "guardrail": (
+            "A complete matched Garmin Feel and Perceived Effort review replaces a duplicate general "
+            "questionnaire. It does not establish illness absence, technical execution, or a safety-contract "
+            "outcome; ask only a targeted question when one of those facts is decision-critical."
+        ),
+    }
+
+
+def _subjective_policy_evaluation(
+    policy: dict | None,
+    *,
+    target: date,
+    requested_activity_id: str | None,
+    garmin: dict,
+) -> dict:
+    canonical = policy if isinstance(policy, dict) else {}
+    reference = canonical.get("reference_action") if isinstance(canonical.get("reference_action"), dict) else {}
+    above = (
+        canonical.get("above_reference_promotion")
+        if isinstance(canonical.get("above_reference_promotion"), dict)
+        else {}
+    )
+    reference_date = _safe_parse_date(reference.get("date"))
+    reference_activity_id = (
+        str(reference.get("activity_id"))
+        if reference.get("activity_id") not in (None, "")
+        else None
+    )
+    reference_minimum = as_number(reference.get("minimum_retrospective_feel_1_to_5"))
+    above_minimum = as_number(above.get("minimum_retrospective_feel_1_to_5"))
+    policy_valid = (
+        reference_date is not None
+        and reference_activity_id is not None
+        and reference_minimum in {1, 2, 3, 4, 5}
+        and above_minimum in {1, 2, 3, 4, 5}
+    )
+    exact_match = bool(
+        policy_valid
+        and requested_activity_id is not None
+        and target == reference_date
+        and requested_activity_id == reference_activity_id
+    )
+    feel = (
+        (garmin.get("garmin_feel") or {}).get("out_of_5")
+        if garmin.get("status") == "available"
+        else None
+    )
+
+    def threshold_result(minimum: float | None) -> tuple[str, bool | None]:
+        if not policy_valid or not exact_match:
+            return "not_applicable", None
+        if feel is None or minimum is None:
+            return "unavailable", None
+        met = float(feel) >= float(minimum)
+        return ("met" if met else "not_met"), met
+
+    reference_status, reference_met = threshold_result(reference_minimum)
+    above_status, above_met = threshold_result(above_minimum)
+    return {
+        "status": "available" if policy_valid else "canonical_policy_missing_or_invalid",
+        "reference_action": {
+            "date": reference_date.isoformat() if reference_date is not None else reference.get("date"),
+            "activity_id": reference_activity_id,
+            "bike_key": reference.get("bike_key"),
+            "action": reference.get("action"),
+            "exact_identifier_match": exact_match,
+            "match_basis": ["date", "activity_id"],
+            "action_equivalence_inferred": False,
+            "minimum_retrospective_feel_1_to_5": (
+                int(reference_minimum) if reference_minimum is not None else None
+            ),
+            "threshold_status": reference_status,
+            "threshold_met": reference_met,
+            "guardrail": (
+                "The 3/5 threshold applies only when the canonical reference date and activity ID match. "
+                "No other session is inferred to be equivalent, easier, or harder."
+            ),
+        },
+        "above_reference_prerequisite": {
+            "minimum_retrospective_feel_1_to_5": (
+                int(above_minimum) if above_minimum is not None else None
+            ),
+            "threshold_status": above_status,
+            "threshold_met": above_met,
+            "evaluated_from_exact_reference_only": exact_match,
+            "action_classification_for_other_sessions": "not_inferred",
+            "increases_requiring_prerequisite": above.get("increases_requiring_4_of_5") or [],
+            "necessary_not_sufficient": True,
+            "same_day_clearance_granted": False,
+            "guardrail": (
+                "Meeting 4/5 is only a retrospective prerequisite for considering more than the exact "
+                "reference action. It is never sufficient clearance; readiness, CNS, symptoms, environment, "
+                "density, and consequence still govern."
+            ),
+        },
+    }
+
+
+def _attach_response_axes(
+    response: dict,
+    *,
+    garmin: dict,
+    policy_evaluation: dict,
+    stop_audit: dict | None = None,
+    illness_airway: dict | None = None,
+    technical_execution: dict | None = None,
+) -> dict:
+    merged = dict(response)
+    routine = _routine_review(garmin)
+    merged["routine_review"] = routine
+    merged["subjective_evaluation"] = garmin
+    merged["subjective_tolerance_policy"] = policy_evaluation
+    outcome = merged.get("stop_rule_outcome")
+    merged["safety_contract_outcome"] = {
+        "status": "observed" if outcome is not None else "unknown",
+        "outcome": outcome,
+        "explicit_canonical_outcome": outcome is not None,
+        "audit": stop_audit,
+        "nominal_stop_evidence_complete": outcome is not None,
+    }
+    merged["illness_airway"] = illness_airway or {
+        "status": "unknown",
+        "illness_status": "unknown",
+        "illness_phase": None,
+        "airway_symptoms": {},
+        "guardrail": (
+            "Illness and airway status remain separate athlete-reported evidence and are never inferred "
+            "from Garmin Feel, RPE, Body Battery, or a completed activity."
+        ),
+    }
+    merged["technical_execution"] = technical_execution or {
+        "status": "unknown",
+        "technical_quality_notes": None,
+        "late_session_skill_fade": None,
+        "field_observation_status": {
+            "technical_quality_notes": "unknown",
+            "late_session_skill_fade": "unknown",
+        },
+        "guardrail": (
+            "Garmin Feel, RPE, and objective activity data do not independently establish technical execution."
+        ),
+    }
+    decision_use = dict(merged.get("decision_use") or {})
+    decision_use["routine_review_status"] = routine.get("status")
+    decision_use["duplicate_general_questionnaire"] = routine.get(
+        "duplicate_general_questionnaire"
+    )
+    decision_use["classification_scope"] = "symptom_response"
+    reasons = list(decision_use.get("reasons") or [])
+    if decision_use.get("classification") == "insufficient_evidence" and not reasons:
+        if (merged.get("symptom") or {}).get("character") == "unknown":
+            reasons.append("symptom_response_fields_unknown")
+        if outcome is None:
+            reasons.append("safety_contract_outcome_unknown")
+    illness_caution_reasons: list[str] = []
+    illness_axis = merged["illness_airway"]
+    if illness_axis.get("illness_status") == "present":
+        illness_caution_reasons.append("illness_present")
+        illness_phase = illness_axis.get("illness_phase")
+        if illness_phase in {"suspected", "active", "recovering"}:
+            illness_caution_reasons.append(f"illness_{illness_phase}")
+    for symptom_name, symptom_status in sorted(
+        (illness_axis.get("airway_symptoms") or {}).items()
+    ):
+        if symptom_status == "present":
+            normalized_name = _normalized_text_key(str(symptom_name)) or "unspecified"
+            illness_caution_reasons.append(
+                f"airway_symptom_present_{normalized_name.replace(' ', '_')}"
+            )
+    for reason in illness_caution_reasons:
+        if reason not in reasons:
+            reasons.append(reason)
+    decision_use["reasons"] = reasons
+    decision_use["illness_airway_caution"] = {
+        "status": (
+            "present"
+            if illness_caution_reasons
+            else "not_present_in_reported_fields"
+            if illness_axis.get("status") == "observed"
+            else "unknown"
+        ),
+        "reasons": illness_caution_reasons,
+        "training_promotion_allowed": False if illness_caution_reasons else None,
+        "guardrail": (
+            "Reported illness or airway symptoms remain a caution even when Garmin Feel is favorable. "
+            "Absence of a reported caution is not general medical clearance."
+        ),
+    }
+    decision_use["review_summary"] = {
+        "routine_review": routine.get("status"),
+        "illness_airway": merged["illness_airway"].get("status"),
+        "technical_execution": merged["technical_execution"].get("status"),
+        "safety_contract_outcome": merged["safety_contract_outcome"].get("status"),
+    }
+    merged["decision_use"] = decision_use
+    return merged
+
+
+def _merge_garmin_only_response(
+    base: dict,
+    garmin: dict,
+    *,
+    policy_evaluation: dict,
+) -> dict:
+    merged = dict(base)
+    merged["manual_feedback"] = {
+        "status": base.get("status"),
+        "reasons": list((base.get("decision_use") or {}).get("reasons") or []),
+        "source": (base.get("provenance") or {}).get("source"),
+    }
+    garmin_available = garmin.get("status") == "available"
+    rpe = (
+        (garmin.get("garmin_perceived_effort") or {}).get("global_rpe_0_to_10")
+        if garmin_available
+        else None
+    )
+    if garmin_available:
+        # Preserve wrong-date and wrong-activity manual feedback statuses for audit.
+        if merged.get("status") == "feedback_missing":
+            merged["status"] = "garmin_self_evaluation_only"
+        merged["global_rpe_0_to_10"] = rpe
+    provenance = dict(merged.get("provenance") or {})
+    provenance["garmin_self_evaluation_source"] = garmin.get("source")
+    provenance["garmin_self_evaluation_upstream_status"] = garmin.get("upstream_status")
+    provenance["garmin_self_evaluation_latest_attempt"] = garmin.get("latest_attempt")
+    provenance["garmin_self_evaluation_validation"] = garmin.get("validation")
+    provenance["field_sources"] = {
+        "global_rpe_0_to_10": (garmin.get("field_sources") or {}).get(
+            "global_rpe_0_to_10"
+        ) if garmin_available else None,
+        "garmin_feel": (garmin.get("field_sources") or {}).get(
+            "garmin_feel_out_of_5"
+        ) if garmin_available else None,
+        "stop_rule_outcome": None,
+    }
+    merged["provenance"] = provenance
+    if garmin_available and base.get("status") == "feedback_missing":
+        merged["decision_use"] = {
+            "classification": "subjective_session_response_available_safety_unknown",
+            "reasons": ["garmin_self_evaluation_available", "manual_symptom_and_stop_fields_unknown"],
+            "guardrail": (
+                "Garmin Feel and Perceived Effort satisfy the routine subjective session review without "
+                "a duplicate questionnaire. They do not prove illness absence, technical quality, or that "
+                "a stop rule was not triggered; those fields remain unknown unless separately observed."
+            ),
+        }
+    return _attach_response_axes(
+        merged,
+        garmin=garmin,
+        policy_evaluation=policy_evaluation,
+    )
+
+
+def _normalize_stop_rule_outcome(raw: Any, source: str | None) -> tuple[str | None, dict]:
+    if isinstance(raw, str):
+        normalized = raw.strip().lower().replace("-", "_").replace(" ", "_")
+    else:
+        normalized = None
+    if normalized in CANONICAL_STOP_RULE_OUTCOMES:
+        return normalized, {
+            "validation": "canonical",
+            "raw_value": raw,
+            "source": source,
+        }
+    if normalized in _UNKNOWN_STOP_RULE_OUTCOMES or raw in (None, ""):
+        validation = "not_reported_sentinel" if normalized else "missing"
+    else:
+        validation = "invalid"
+    return None, {
+        "validation": validation,
+        "raw_value": raw,
+        "source": source,
+        "allowed_values": sorted(CANONICAL_STOP_RULE_OUTCOMES),
+    }
 
 
 def _relative_path(root: str | Path | None, path: Path) -> str:
@@ -24,6 +533,170 @@ def _relative_path(root: str | Path | None, path: Path) -> str:
 def _review(entry: dict) -> dict:
     value = entry.get("session_contract_review")
     return value if isinstance(value, dict) else {}
+
+
+def _normalized_text_key(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    normalized = re.sub(r"[^a-z0-9]+", " ", value.strip().casefold())
+    normalized = " ".join(normalized.split())
+    return normalized or None
+
+
+def _typed_presence(value: Any) -> str | None:
+    normalized = _normalized_text_key(value)
+    if normalized in {"absent", "none", "no", "not present"}:
+        return "absent"
+    if normalized in {"present", "yes"}:
+        return "present"
+    if normalized in _UNKNOWN_OBSERVATION_TEXT:
+        return "unknown"
+    return None
+
+
+def _typed_illness_presence(value: Any) -> tuple[str | None, str | None]:
+    normalized = _normalized_text_key(value)
+    if normalized in {"suspected", "active", "recovering"}:
+        return "present", normalized
+    return _typed_presence(value), None
+
+
+def _optional_observation_text(value: Any) -> tuple[str | None, str]:
+    if value in (None, ""):
+        return None, "unknown"
+    text = str(value).strip()
+    if not text:
+        return None, "unknown"
+    normalized = _normalized_text_key(text)
+    if normalized in _UNKNOWN_OBSERVATION_TEXT:
+        return None, "unknown"
+    if (
+        normalized in _NOT_APPLICABLE_OBSERVATION_TEXT
+        or (normalized is not None and normalized.startswith(("not applicable ", "n a ")))
+        or (
+            normalized is not None
+            and re.search(
+                r"\b(?:mtb )?technical (?:field|fields|execution) (?:is|are) not applicable\b",
+                normalized,
+            )
+        )
+    ):
+        return None, "not_applicable"
+    return text, "observed"
+
+
+def _illness_airway_axis(reported: dict) -> dict:
+    payload = reported.get("airway_and_illness")
+    if not isinstance(payload, dict):
+        return {
+            "status": "unknown",
+            "illness_status": "unknown",
+            "illness_phase": None,
+            "airway_symptoms": {},
+            "provenance": {
+                "source": "entries[].reported_context.airway_and_illness",
+                "validation": "typed_object_not_reported",
+            },
+            "guardrail": (
+                "Free prose is not converted into illness clearance. Use typed athlete-reported illness "
+                "and airway fields when the distinction is decision-critical."
+            ),
+        }
+    raw_illness_status = payload.get("illness_status")
+    illness_status, illness_phase = _typed_illness_presence(raw_illness_status)
+    symptoms_payload = (
+        payload.get("airway_symptoms")
+        if isinstance(payload.get("airway_symptoms"), dict)
+        else {}
+    )
+    symptoms = {
+        str(name): status
+        for name, raw in symptoms_payload.items()
+        if (status := _typed_presence(raw)) is not None
+    }
+    observed = illness_status in {"absent", "present"} or any(
+        status in {"absent", "present"} for status in symptoms.values()
+    )
+    return {
+        "status": "observed" if observed else "unknown",
+        "illness_status": illness_status or "unknown",
+        "illness_phase": illness_phase,
+        "airway_symptoms": symptoms,
+        "context_note": payload.get("context_note"),
+        "provenance": {
+            "source": "entries[].reported_context.airway_and_illness",
+            "reported_by": payload.get("reported_by") or "athlete",
+            "validation": "typed_fields_only",
+            "raw_illness_status": raw_illness_status,
+            "field_sources": {
+                "illness_status": (
+                    "entries[].reported_context.airway_and_illness.illness_status"
+                    if illness_status is not None
+                    else None
+                ),
+                "airway_symptoms": {
+                    name: (
+                        "entries[].reported_context.airway_and_illness."
+                        f"airway_symptoms.{name}"
+                    )
+                    for name in symptoms
+                },
+            },
+        },
+        "guardrail": (
+            "This is explicit athlete-reported illness/airway evidence, separate from Garmin Feel. "
+            "It does not diagnose disease or generalize beyond the reported session context."
+        ),
+    }
+
+
+def _technical_execution_axis(review: dict) -> dict:
+    nested = (
+        review.get("technical_execution")
+        if isinstance(review.get("technical_execution"), dict)
+        else {}
+    )
+    notes = nested.get("technical_quality_notes")
+    notes_source = "entries[].session_contract_review.technical_execution.technical_quality_notes"
+    if notes in (None, ""):
+        notes = review.get("technical_quality_notes")
+        notes_source = "entries[].session_contract_review.technical_quality_notes"
+    fade = nested.get("late_session_skill_fade")
+    fade_source = "entries[].session_contract_review.technical_execution.late_session_skill_fade"
+    if fade in (None, ""):
+        fade = review.get("late_session_skill_fade")
+        fade_source = "entries[].session_contract_review.late_session_skill_fade"
+    raw_notes = notes
+    raw_fade = fade
+    notes, notes_status = _optional_observation_text(raw_notes)
+    fade, fade_status = _optional_observation_text(raw_fade)
+    field_statuses = {notes_status, fade_status}
+    if "observed" in field_statuses:
+        axis_status = "observed"
+    elif "not_applicable" in field_statuses:
+        axis_status = "not_applicable"
+    else:
+        axis_status = "unknown"
+    return {
+        "status": axis_status,
+        "technical_quality_notes": notes,
+        "late_session_skill_fade": fade,
+        "field_observation_status": {
+            "technical_quality_notes": notes_status,
+            "late_session_skill_fade": fade_status,
+        },
+        "provenance": {
+            "validation": "explicit_structured_fields_with_missing_sentinel_normalization",
+            "field_sources": {
+                "technical_quality_notes": notes_source if raw_notes not in (None, "") else None,
+                "late_session_skill_fade": fade_source if raw_fade not in (None, "") else None,
+            },
+        },
+        "guardrail": (
+            "Only explicit structured technical fields populate this axis. General effort prose, Garmin "
+            "Feel/RPE, speed, load, Flow, Grit, and Performance Condition cannot substitute for them."
+        ),
+    }
 
 
 def _nested_dict(value: Any, *keys: str) -> dict:
@@ -298,6 +971,8 @@ def build_latest_session_response(
     target_date: date | str | None = None,
     *,
     activity_id: str | int | None = None,
+    self_evaluation: dict | None = None,
+    subjective_review_policy: dict | None = None,
 ) -> dict:
     """Normalize the target date's latest (or activity-matched) explicit session feedback.
 
@@ -309,6 +984,17 @@ def build_latest_session_response(
     if target is None:
         raise ValueError(f"Invalid target date: {target_date!r}")
     requested_activity_id = str(activity_id) if activity_id is not None else None
+    garmin_subjective = _garmin_subjective_evaluation(
+        self_evaluation,
+        target=target,
+        requested_activity_id=requested_activity_id,
+    )
+    policy_evaluation = _subjective_policy_evaluation(
+        subjective_review_policy,
+        target=target,
+        requested_activity_id=requested_activity_id,
+        garmin=garmin_subjective,
+    )
     path = input_dir(root) / f"feedback_{target.isoformat()}.json"
     provenance = {
         "source": _relative_path(root, path),
@@ -317,37 +1003,56 @@ def build_latest_session_response(
     }
     payload = read_json(path, None)
     if not isinstance(payload, dict):
-        return _unavailable_response(
-            target=target,
-            activity_id=requested_activity_id,
-            status="feedback_missing",
-            reason="feedback_missing",
-            provenance=provenance,
+        return _merge_garmin_only_response(
+            _unavailable_response(
+                target=target,
+                activity_id=requested_activity_id,
+                status="feedback_missing",
+                reason="feedback_missing",
+                provenance=provenance,
+            ),
+            garmin_subjective,
+            policy_evaluation=policy_evaluation,
         )
 
-    payload_date = parse_date(payload.get("date"))
+    payload_date = _safe_parse_date(payload.get("date"))
     provenance["payload_date"] = payload_date.isoformat() if payload_date else None
+    provenance["payload_date_raw"] = payload.get("date")
     if payload_date != target:
         # Keep a complete but explicitly unusable surface without falling back to another date.
-        return _unavailable_response(
-            target=target,
-            activity_id=requested_activity_id,
-            status="feedback_wrong_date",
-            reason="payload_date_mismatch",
-            provenance=provenance,
-            guardrail="Feedback from another date must not drive the target-date coaching call.",
+        return _merge_garmin_only_response(
+            _unavailable_response(
+                target=target,
+                activity_id=requested_activity_id,
+                status="feedback_wrong_date",
+                reason=(
+                    "payload_date_malformed"
+                    if payload.get("date") not in (None, "") and payload_date is None
+                    else "payload_date_mismatch"
+                ),
+                provenance=provenance,
+                guardrail="Feedback from another or malformed date must not drive the target-date coaching call.",
+            ),
+            garmin_subjective,
+            policy_evaluation=policy_evaluation,
         )
 
     entries = payload.get("entries") if isinstance(payload.get("entries"), list) else []
-    eligible_entries = [
-        entry
-        for entry in entries
-        if isinstance(entry, dict)
-        and (
-            parse_date(entry.get("date")) is None
-            or parse_date(entry.get("date")) == target
-        )
-    ]
+    eligible_entries = []
+    malformed_entry_dates = 0
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        raw_entry_date = entry.get("date")
+        if raw_entry_date in (None, ""):
+            eligible_entries.append(entry)
+            continue
+        entry_date = _safe_parse_date(raw_entry_date)
+        if entry_date is None:
+            malformed_entry_dates += 1
+        elif entry_date == target:
+            eligible_entries.append(entry)
+    provenance["malformed_entry_date_count"] = malformed_entry_dates
     selected, selection_rule = _select_entry(eligible_entries, requested_activity_id)
     provenance["selection_rule"] = selection_rule
     provenance["eligible_entry_count"] = len(eligible_entries)
@@ -357,20 +1062,26 @@ def build_latest_session_response(
             if selection_rule == "requested_activity_id_not_found"
             else "no_eligible_entry"
         )
-        return _unavailable_response(
-            target=target,
-            activity_id=requested_activity_id,
-            status="feedback_has_no_matching_entry",
-            reason=reason,
-            provenance=provenance,
-            guardrail=(
-                "Feedback for another activity must not be attached to the requested session; "
-                "a missing explicit stop-rule outcome remains unknown."
+        return _merge_garmin_only_response(
+            _unavailable_response(
+                target=target,
+                activity_id=requested_activity_id,
+                status="feedback_has_no_matching_entry",
+                reason=reason,
+                provenance=provenance,
+                guardrail=(
+                    "Feedback for another activity must not be attached to the requested session; "
+                    "a missing explicit stop-rule outcome remains unknown."
+                ),
             ),
+            garmin_subjective,
+            policy_evaluation=policy_evaluation,
         )
 
     review = _review(selected)
     reported = selected.get("reported_context") if isinstance(selected.get("reported_context"), dict) else {}
+    illness_airway = _illness_airway_axis(reported)
+    technical_execution = _technical_execution_axis(review)
     symptom_record = _nested_dict(review, "symptom")
     records = (
         ("entries[].session_contract_review.symptom", symptom_record),
@@ -417,13 +1128,45 @@ def build_latest_session_response(
     )
 
     explicit_stop, explicit_stop_source = _first_present(records, ("stop_rule_outcome",))
-    stop_outcome = explicit_stop.strip() if isinstance(explicit_stop, str) and explicit_stop.strip() else explicit_stop
-    if stop_outcome in (None, ""):
-        stop_outcome = None
+    stop_outcome, stop_audit = _normalize_stop_rule_outcome(
+        explicit_stop,
+        explicit_stop_source,
+    )
+
+    manual_global_rpe = _bounded_rpe(global_raw)
+    garmin_global_rpe = (
+        (garmin_subjective.get("garmin_perceived_effort") or {}).get(
+            "global_rpe_0_to_10"
+        )
+        if garmin_subjective.get("status") == "available"
+        else None
+    )
+    global_rpe = manual_global_rpe if manual_global_rpe is not None else garmin_global_rpe
+    if manual_global_rpe is not None and garmin_global_rpe is not None:
+        rpe_resolution = (
+            "matched"
+            if abs(manual_global_rpe - garmin_global_rpe) < 0.05
+            else "manual_and_garmin_disagree_manual_retained"
+        )
+    elif manual_global_rpe is not None:
+        rpe_resolution = "manual_only"
+    elif garmin_global_rpe is not None:
+        rpe_resolution = "garmin_only"
+    else:
+        rpe_resolution = "unknown"
 
     field_sources = {
-        "global_rpe_0_to_10": global_source,
+        "global_rpe_0_to_10": (
+            global_source
+            if manual_global_rpe is not None
+            else (garmin_subjective.get("field_sources") or {}).get("global_rpe_0_to_10")
+            if garmin_global_rpe is not None
+            else None
+        ),
         "local_rpe_0_to_10": local_source,
+        "garmin_feel": (garmin_subjective.get("field_sources") or {}).get(
+            "garmin_feel_out_of_5"
+        ),
         "symptom_distribution": distribution_source or (text_sources if distribution != "unknown" else None),
         "symptom_character": character_source or (text_sources if character != "unknown" else None),
         "mechanics_altered": mechanics_source or (text_sources if mechanics != "unknown" else None),
@@ -444,14 +1187,20 @@ def build_latest_session_response(
         }
     )
 
-    return {
+    combined_subjective = {
+        **garmin_subjective,
+        "manual_global_rpe_0_to_10": manual_global_rpe,
+        "rpe_resolution": rpe_resolution,
+    }
+    response = {
         "artifact_type": "latest_session_response",
         "version": SESSION_RESPONSE_VERSION,
         "date": target.isoformat(),
         "status": "available",
         "activity_id": provenance["selected_activity_id"],
-        "global_rpe_0_to_10": _bounded_rpe(global_raw),
+        "global_rpe_0_to_10": global_rpe,
         "local_rpe_0_to_10": _bounded_rpe(local_raw),
+        "subjective_evaluation": combined_subjective,
         "stop_rule_outcome": stop_outcome,
         "stop_rule_outcome_explicit": stop_outcome is not None,
         "symptom": {
@@ -478,3 +1227,16 @@ def build_latest_session_response(
         },
         "provenance": provenance,
     }
+    response["manual_feedback"] = {
+        "status": "available",
+        "reasons": [],
+        "source": provenance.get("source"),
+    }
+    return _attach_response_axes(
+        response,
+        garmin=combined_subjective,
+        policy_evaluation=policy_evaluation,
+        stop_audit=stop_audit,
+        illness_airway=illness_airway,
+        technical_execution=technical_execution,
+    )

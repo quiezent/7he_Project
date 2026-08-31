@@ -230,6 +230,15 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             "performance_goal": "Build the physical and technical ability to absorb a chill Saturday practice day and still attack Sunday-style race efforts.",
             "north_star_metric": "Can Clayton ride the final descent of the day with the same aggression, braking precision, and corner-exit speed as the first one?",
         },
+        "evidence_ontology": context.get("coaching_evidence_ontology") or {
+            "version": 1,
+            "status": "canonical_context_missing",
+            "entities": {},
+            "boundary": (
+                "Do not collapse athlete state, delivered effort, physiological response, measurement "
+                "provenance, action boundaries, technical execution, or safety outcome."
+            ),
+        },
         "integrated_coaching_model": {
             "purpose": "Combine directive enduro-specific coaching with Garmin-backed N-of-1 verification.",
             "style_blend": {
@@ -667,7 +676,7 @@ def _architecture(context: dict, profile: dict, hypotheses: dict, audit: dict, t
             "adaptation_hypothesis": "State what should improve and what next-day response would mean the dose was absorbed.",
             "execution_rules": "Describe how to ride the session and what not to chase.",
             "expected_result": "Store expected Garmin load/range, high-intensity minutes, RPE/feel, and next-day readiness expectation before training when the predictive loop is used.",
-            "post_session_review": "Record the required review fields after the session. For nominal-contract validation, record an explicit stop_rule_outcome. MTB/technical work must also record technical_quality_notes and late_session_skill_fade; a triggered-but-continued stop rule permanently rejects nominal validation, while still permitting separately labelled execution-boundary, safety-adherence, and later delivered-action learning when the evidence is adequate.",
+            "post_session_review": "Use activity-matched Garmin Feel and Perceived Effort plus objective activity evidence as the routine subjective review, without a duplicate general questionnaire. Ask only targeted questions for symptoms, material action drift, novel/high-consequence technical proof, or a possible safety event. For nominal-contract validation, an explicit stop_rule_outcome remains required; missing stays unknown without erasing delivered-action learning. MTB/technical work needs technical-quality evidence only when the session's progression or calibration claim depends on it. A triggered-but-continued stop rule permanently rejects nominal validation while retaining separately labelled execution-boundary, safety-adherence, and later delivered-action learning when evidence is adequate.",
             "stop_rules": [
                 "End technical work if braking timing gets lazy or line choice becomes reactive.",
                 "End DH/jump quality if arm pump changes grip, brake modulation, or body position.",

@@ -1,0 +1,108 @@
+{
+  "date": "2026-08-31",
+  "entries": [
+    {
+      "timestamp_local": "2026-08-31T16:40:00+08:00",
+      "source": "athlete_post_session_report_with_garmin_self_evaluation",
+      "activity_id": "24179129115",
+      "reported_context": {
+        "session_intent": "Stay within the prescribed low-consequence Stumpjumper dose of two controlled 2K descents.",
+        "athlete_response": "The session was rather easy and the athlete deliberately did not exceed the prescription.",
+        "airway_and_illness": {
+          "illness_status": "absent",
+          "airway_symptoms": {
+            "sore_throat": "absent",
+            "runny_nose": "absent"
+          },
+          "context_note": "The haze had cleared before the ride.",
+          "reported_by": "athlete"
+        },
+        "manual_lap_context": "Laps 2 and 4 are the 2K trail, with the lap button pressed manually at the same boundaries. Lap 2 included a brief stop for riders doing trail seasoning to pass.",
+        "speed_provenance": "A front-wheel speed sensor was installed for this activity because GPS speed and distance can be unreliable under dense tree cover. Garmin standard device metadata confirms a BIKE_SPEED sensor for the activity."
+      },
+      "session_contract_review": {
+        "actual_duration_min": 58.4,
+        "global_session_rpe_0_to_10": 3,
+        "workout_feel_athlete_semantics": "Garmin Feel 4/5 (strong): athlete composite of clarity, strength and coordination, with no illness reported.",
+        "fueling_and_hydration": "800 ml 100Plus Active and one 15 g honey sachet. The original report said 800L; this record normalizes the clearly implausible unit to 800 ml and remains athlete-correctable.",
+        "fueling_carbs_g_per_hour": 51.1,
+        "fluid_ml_per_hour": 821.9,
+        "sodium_mg_per_hour": 357.9
+      },
+      "objective_session_evidence": {
+        "source": "Garmin activity 24179129115, standard activity/split/device/self-evaluation surfaces and preserved detail trace",
+        "summary": {
+          "distance_km": 8.53,
+          "elapsed_duration_min": 58.4,
+          "moving_duration_min": 52.7,
+          "elevation_gain_m": 268.2,
+          "average_hr_bpm": 146,
+          "max_hr_bpm": 175,
+          "average_power_w": 96,
+          "normalized_power_w": 149,
+          "garmin_training_load": 166.5,
+          "aerobic_training_effect": 3.4,
+          "anaerobic_training_effect": 2.7,
+          "garmin_workout_feel_0_to_100": 75,
+          "garmin_perceived_effort_0_to_10": 3
+        },
+        "sensors": [
+          "BIKE_POWER",
+          "BIKE_SPEED",
+          "HEART_RATE"
+        ],
+        "lap_2_2k": {
+          "elapsed_time_s": 272.3,
+          "moving_time_s": 236,
+          "stopped_time_s": 36.3,
+          "distance_m": 1249.2,
+          "average_moving_speed_kmh": 19.06,
+          "max_speed_kmh": 35.04,
+          "average_hr_bpm": 162,
+          "average_power_w": 55,
+          "interpretation": "The athlete-reported obstruction is visible as approximately 36 seconds of non-moving time; elapsed time is not a clean trail-speed benchmark."
+        },
+        "lap_4_2k": {
+          "elapsed_time_s": 230.0,
+          "moving_time_s": 227,
+          "stopped_time_s": 3.0,
+          "distance_m": 1239.1,
+          "average_moving_speed_kmh": 19.65,
+          "max_speed_kmh": 32.82,
+          "average_hr_bpm": 165,
+          "average_power_w": 70,
+          "interpretation": "The second 2K lap is the clean timing reference for this controlled session."
+        },
+        "performance_condition": {
+          "first_value": 0,
+          "first_value_elapsed_s": 429,
+          "final_value": -3,
+          "transitions": [
+            {
+              "elapsed_s": 429,
+              "value": 0
+            },
+            {
+              "elapsed_s": 1624,
+              "value": -1
+            },
+            {
+              "elapsed_s": 2084,
+              "value": -2
+            },
+            {
+              "elapsed_s": 2770,
+              "value": -3
+            }
+          ],
+          "interpretation_guardrail": "Performance Condition is a power/heart-rate relative-to-baseline physiological context signal. On variable-terrain MTB it is not a direct measure of technical execution and should be compared within matched Stumpjumper routes, sensor configuration, temperature and effort."
+        }
+      },
+      "review_policy": {
+        "stop_rule_outcome_status": "not_reported",
+        "guardrail": "Do not infer not_triggered. No further athlete questionnaire is required for this familiar, low-consequence session; the missing outcome only prevents nominal stop-rule contract validation.",
+        "athlete_preference": "Use Garmin Feel and Perceived Effort as the default subjective review, and use Stumpjumper Performance Condition as additional physiological context when present."
+      }
+    }
+  ]
+}

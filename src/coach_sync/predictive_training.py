@@ -14,6 +14,7 @@ from .io import read_json, write_json, write_text
 from .load_model import build_activity_summary_index
 from .paths import activities_dir, input_dir, snapshots_dir
 from .planning import SESSION_CONTRACT_FIELDS, _nutrition_block, build_today_plan
+from .self_evaluation import FEEL_LABELS, RPE_LABELS
 from .state import build_current_state
 from .time_utils import DEFAULT_TIMEZONE, iso_now, parse_date, today_local
 from .training_predictor import (
@@ -798,7 +799,10 @@ def _rpe_score_range(
     if low is None or high is None or low < 0 or high < low or high > 100:
         return None
     scale = 10.0 if high <= 10 else 1.0
-    return [_round(low * scale), _round(high * scale)]
+    normalized_range = [_round(low * scale), _round(high * scale)]
+    if any(score not in RPE_LABELS for score in normalized_range):
+        return None
+    return normalized_range
 
 
 def _contract_rpe_expectation(expected: dict) -> dict | None:
@@ -826,7 +830,7 @@ def _contract_rpe_expectation(expected: dict) -> dict | None:
                 "source": f"schema_v3_contract.expected_result.{key}",
                 "raw_value": raw_value,
                 "expected_score_range": expected_range,
-                "scale": "garmin_rpe_score_0_to_100",
+                "scale": "garmin_rpe_score_10_to_100",
             }
 
     physiology = expected_result.get("physiology")
@@ -841,7 +845,7 @@ def _contract_rpe_expectation(expected: dict) -> dict | None:
                     "source": f"schema_v3_contract.expected_result.physiology.{key}",
                     "raw_value": raw_value,
                     "expected_score_range": expected_range,
-                    "scale": "garmin_rpe_score_0_to_100",
+                    "scale": "garmin_rpe_score_10_to_100",
                 }
     elif isinstance(physiology, str):
         expected_range = _rpe_score_range(
@@ -853,7 +857,7 @@ def _contract_rpe_expectation(expected: dict) -> dict | None:
                 "source": "schema_v3_contract.expected_result.physiology",
                 "raw_value": physiology,
                 "expected_score_range": expected_range,
-                "scale": "garmin_rpe_score_0_to_100",
+                "scale": "garmin_rpe_score_10_to_100",
             }
     return None
 
@@ -1907,6 +1911,7 @@ def _actual_activity_summary(root: str | Path | None, target: date) -> dict:
 def _self_evaluation_for_date(root: str | Path | None, target: date) -> dict:
     index = read_json(snapshots_dir(root) / "activity_self_evaluation_index.json", {})
     rows = []
+    invalid_category_rows = []
     for row in (index.get("activities") if isinstance(index, dict) else []) or []:
         if not isinstance(row, dict) or not row.get("has_self_evaluation"):
             continue
@@ -1914,15 +1919,48 @@ def _self_evaluation_for_date(root: str | Path | None, target: date) -> dict:
             row_date = parse_date(row.get("date"))
         except (TypeError, ValueError):
             row_date = None
-        if row_date == target:
+        if row_date != target:
+            continue
+        rpe = as_number(row.get("rpe_score"))
+        feel = as_number(row.get("feel_score"))
+        valid_rpe = rpe in RPE_LABELS
+        valid_feel = feel in FEEL_LABELS
+        if valid_rpe or valid_feel:
             rows.append(row)
-    rpes = [_number(row.get("rpe_score"), default=0.0) for row in rows if row.get("rpe_score") is not None]
-    feels = [_number(row.get("feel_score"), default=0.0) for row in rows if row.get("feel_score") is not None]
+        if (rpe is not None and not valid_rpe) or (feel is not None and not valid_feel):
+            invalid_category_rows.append(
+                {
+                    "activity_id": str(row.get("activity_id") or row.get("id") or ""),
+                    "invalid_fields": [
+                        field
+                        for field, invalid in (
+                            ("rpe_score", rpe is not None and not valid_rpe),
+                            ("feel_score", feel is not None and not valid_feel),
+                        )
+                        if invalid
+                    ],
+                }
+            )
+    rpes = [
+        float(value)
+        for row in rows
+        if (value := as_number(row.get("rpe_score"))) in RPE_LABELS
+    ]
+    feels = [
+        float(value)
+        for row in rows
+        if (value := as_number(row.get("feel_score"))) in FEEL_LABELS
+    ]
     return {
         "count": len(rows),
         "max_rpe_score": max(rpes) if rpes else None,
         "avg_rpe_score": _round(sum(rpes) / len(rpes), 1) if rpes else None,
         "avg_feel_score": _round(sum(feels) / len(feels), 1) if feels else None,
+        "invalid_category_rows": invalid_category_rows,
+        "category_guardrail": (
+            "Garmin Feel and Perceived Effort contribute only from their canonical categorical grids; "
+            "off-grid raw values are excluded rather than averaged into predictions."
+        ),
         "rows": rows,
     }
 

@@ -308,6 +308,12 @@ def build_current_state(
         root,
         parse_date(latest_session_activity.get("date")) or target_date,
         activity_id=latest_session_activity.get("activity_id"),
+        self_evaluation=latest_session_evidence.get("self_evaluation"),
+        subjective_review_policy=(
+            (context.get("coaching_evidence_ontology") or {}).get(
+                "garmin_subjective_review_policy"
+            )
+        ),
     )
     phase = determine_phase(context, target_date)
     wellness_date, wellness = load_latest_wellness(root, target_date)
