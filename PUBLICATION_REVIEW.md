@@ -1,34 +1,31 @@
-# Publication review — journal edition
+# Publication record
 
-Date: 21 September 2026, Asia/Kuala_Lumpur.
+## 21 September 2026 — Public, first-person coach edition
 
-**Personal-data consent resolved; journal prepared for owner publication.** Clayton explicitly authorized relevant named health/activity examples, repository reorganization and the platform story, and said he will make the repository public himself. This prospectively supersedes the earlier consent-related BLOCKED notice. It is not a complete security certification and does not assert that visibility has changed.
+The repository owner reports completing the public-visibility change. A fresh GitHub repository metadata read returned `private: false` and `visibility: public`. The previously published statement that visibility awaited the owner is superseded. A separate unauthenticated web fetch returned a cache miss, so no independent browser-render check is claimed.
 
-## What this edition does
+This edition changes the homepage and three essays into the AI coach's own first-person account of learning and adapting. It removes co-authored diary framing, direct athlete dialogue and repeated permission narration from those pages. Relevant observations remain source-qualified. Historical feedback, contracts, the legacy implementation and earlier commits are not rewritten to make the story cleaner.
 
-The front page is a reader-facing journal. It links the coaching reflection, a documented platform-migration account and concrete cases with a source register. Current method documents and agent/editorial guidance reflect the expanded consent. The old June local implementation is preserved under `legacy/`, with its original source trees and historical guides, rather than deleted to make the story look cleaner. The initial September reference code, synthetic tests and minimal exporter remain separate.
+Read baseline: main at `105530d4af4432a6d2b168b1cb48559d354e5b3e`, relevant published pages, current Coach Core and the source records already inspected for the preceding journal edition. This is an editorial revision, not a new Garmin or physiological review. The operating-model JSON changes publication metadata only; no Python code, test or legacy data change is intended. No fresh test-suite execution is claimed for this prose revision.
 
-No raw cloud-document export, credentials, private network endpoints, full race-results PDF, new Garmin activity dump, Pages service, posting schedule or license is added. Published health/activity examples are selected to explain the coaching. The private cloud coaching master is unchanged in ownership and access.
+The private cloud coaching master remains unchanged in ownership and access. No separate site, GitHub Pages deployment, publishing schedule, Garmin change, live cloud export, new license or broad security audit is added.
 
-## Verified review scope
+## Preserved scope of the preceding journal review
 
-Read current Core, the prior dated canonical Reviews content from this publication conversation, the September 6 handoff and office design, the cutover receipt, and the targeted portable-design sections of the authorized handoff archive. Read current main and root tree, relevant existing guides and source objects. Existing main before this edition is e9c39a76ec55160ad2e4a56137e851e27beb9bc3.
+The preceding edition inspected current Core, dated canonical Reviews content, the September 6 handoff and office design, the cutover receipt and targeted portable-design sections of the handoff archive. It read relevant repository guides and source objects. Its branch listing returned main and three Codex development branches; the Actions listing returned zero runs and the release listing was empty. These are earlier scoped observations, not newly verified listings or claims about every repository surface now.
 
-GitHub's branch listing returned four branches: main and three codex development branches. The Actions run listing returned total_count 0; the release listing returned an empty list. Those are scoped endpoint observations at this review, not a promise about future runs. A keyword code search returned no results and is not treated as proof of absent credentials.
+That edition recorded 26 passing offline continuity tests against matching code/test hashes. It preserved the June source/configuration/test trees under `legacy/` by object identity. Those are historical verification results, not a fresh run or proof of relocated runtime compatibility. The complete legacy suite and exporter tests were not rerun for that edition.
 
-The existing 26 offline continuity tests were rerun locally and passed. Code/test Git blob hashes match the retained repository objects. Legacy source/configuration/test trees are reused by object identity in the archive; that proves byte preservation, not runtime compatibility after relocation. The complete legacy suite and existing exporter tests were not rerun for this edition.
+## Consent and security are different questions
 
-## Remaining security coverage limits
+Relevant named health/activity examples and the platform story are owner-authorized. The later request selects the coach as the sole narrative voice. I use that permission selectively; it does not cover credentials, private infrastructure, unrelated accounts, other people's private information or live cloud access links.
 
-No complete all-ref, all-history secret scan or line-by-line review of every old blob was performed. The three development branches and commit history remain; relocation does not sanitize them. Issue/PR discussions and attachments, wiki/Pages surfaces, all metadata and externally retained copies were not comprehensively inspected. No credential was established as present by the targeted review, but absence of a finding is not proof of absence.
+No complete all-ref, all-history secret scan or line-by-line inspection of every old blob has been performed. Development branches, commit history and externally retained copies are not sanitized by a prose rewrite. Issue/PR discussions and attachments and every other repository surface have not been comprehensively audited. No credential was established as present by the targeted review; that is not proof of absence.
 
-Clayton's authorization resolves the known objection to relevant personal health/activity disclosure; it does not authorize credentials or third-party private data. Any discovered live secret needs separate remediation, not merely another README edit. This edition does not claim those unchecked surfaces are empty or safe.
+A discovered live secret requires appropriate revocation and remediation, not just another README edit. Public visibility is a verified repository setting here, not a security certificate or proof that a separate website was deployed.
 
-## Owner action
+## Historical technical references
 
-The repository is deliberately left private for Clayton's visibility change. The journal is ready to read as GitHub Markdown; no site deployment is required. Once visibility changes, repository metadata/public access should be checked before claiming publication succeeded. That later action is not performed by this content revision.
+The preceding edition checked GitHub's [visibility documentation](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility) and [sensitive-data removal guidance](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository). They remain references to that review; this first-person edit does not claim a new documentation review.
 
-GitHub documents that making a repository public exposes code and Actions history/logs and permits forks. Its sensitive-data guidance explains why historical copies and references can survive cleanup and why an exposed secret should be revoked or rotated. Sources checked 21 September 2026:
-
-- [Setting repository visibility](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility)
-- [Removing sensitive data from a repository](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository)
+[Editorial commitments](EDITORIAL_POLICY.md) · [Source register](journal/SOURCES.md) · [Publication history](CHANGELOG.md)

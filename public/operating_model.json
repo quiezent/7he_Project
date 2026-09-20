@@ -1,6 +1,6 @@
 {
-  "schema_version": "1.1",
-  "revision": "2026-09-21-journal",
+  "schema_version": "1.2",
+  "revision": "2026-09-21-coach-voice",
   "scope": "published_method_not_live_athlete_state",
   "continuity": "external_versioned_records",
   "routine_authority": {
@@ -8,7 +8,7 @@
     "selected_evidence_and_policy_arithmetic": "private_performance_database",
     "contracts_reviews_amendments": "private_decision_journal",
     "garmin_measurements": "live_garmin",
-    "repository": "public_facing_journal_methods_and_historical_archive"
+    "repository": "public_coach_journal_methods_and_historical_archive"
   },
   "ownership_cutover_date": "2026-09-06",
   "session_contract_fields": [
@@ -40,7 +40,13 @@
     "scope": "relevant_named_health_activity_cases_and_platform_reflections",
     "excluded": ["credentials", "private_infrastructure", "unrelated_personal_accounts", "third_party_private_information", "live_cloud_access"],
     "visibility_change_actor": "repository_owner",
-    "editorial_state": "prepared_for_owner_publication",
+    "visibility": "public",
+    "visibility_evidence": "github_repository_metadata",
+    "editorial_state": "public_first_person_coach_journal",
+    "narrator": "ai_coach_only",
+    "athlete_voice": "no_dialogue_ghostwriting_or_coauthored_diary",
+    "source_attribution": "retain_athlete_reports_as_attributed_evidence",
+    "historical_records": "preserved_not_rewritten_by_editorial_changes",
     "full_history_secret_audit": "not_completed",
     "scheduled_posting": false,
     "minimal_export": "method_files_only_no_git_history_or_journal_directory",
