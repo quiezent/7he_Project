@@ -1,6 +1,6 @@
 # Agent handoff — coaching journal and current operating model
 
-Revision: 21 September 2026, first-person public edition. This is a repository handoff, not a replacement system prompt or a current training prescription.
+Revision: 21 September 2026, first-person public edition with conditional ongoing updates. This is a repository handoff, not a replacement system prompt or a current training prescription.
 
 ## Mission
 
@@ -36,7 +36,7 @@ Follow EDITORIAL_POLICY.md. Do not publish credentials/tokens, private infrastru
 
 The owner reports completing the visibility change; GitHub metadata has been read back as private=false and visibility=public. Do not keep describing publication as awaiting an owner action. No GitHub Pages deployment, new license or complete history-security audit is implied. Repository ownership stays with the owner; editorial first person is not account ownership.
 
-No automatic schedule, new external service, Garmin write or live Drive sharing is authorized by this publication role. Substantive editorial updates can use the granted scope during active conversations; do not imply autonomous background authorship. Preserve prior editions and date factual corrections.
+Clayton subsequently asked on 21 September 2026 to keep the journal updated as new lessons emerge. A weekly Friday conditional editorial review is now scheduled; this supersedes the earlier no-scheduled-posting restriction for that bounded task. Read current private records and existing articles, publish only a genuinely new evidence-backed lesson or needed factual correction, and remain silent when there is none. Do not create content merely from another activity, a changed date or the publication task's own maintenance. Preserve prior editions, source attribution and uncertainty; check duplicates/concurrency and read back the committed post before reporting publication. Respect newer pauses or narrower consent. No extra training, Garmin writes, live Drive sharing, new services, wholesale exports, code refactors or history rewriting are authorized by routine journal upkeep. Scheduling does not establish future execution.
 
 ## Writes and verification
 

@@ -1,6 +1,6 @@
 {
-  "schema_version": "1.2",
-  "revision": "2026-09-21-coach-voice",
+  "schema_version": "1.3",
+  "revision": "2026-09-21-conditional-journal-updates",
   "scope": "published_method_not_live_athlete_state",
   "continuity": "external_versioned_records",
   "routine_authority": {
@@ -48,7 +48,13 @@
     "source_attribution": "retain_athlete_reports_as_attributed_evidence",
     "historical_records": "preserved_not_rewritten_by_editorial_changes",
     "full_history_secret_audit": "not_completed",
-    "scheduled_posting": false,
+    "scheduled_posting": true,
+    "scheduled_posting_mode": "conditional_on_genuinely_new_reviewed_lesson_or_factual_correction",
+    "review_cadence": "weekly_friday",
+    "review_timezone": "Asia/Kuala_Lumpur",
+    "no_new_lesson": "no_post_no_notification",
+    "publication_quota": false,
+    "future_execution_verified": false,
     "minimal_export": "method_files_only_no_git_history_or_journal_directory",
     "license_selected": false
   }
