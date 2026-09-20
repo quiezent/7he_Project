@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "revision": "2026-09-21",
+  "scope": "public_method_not_live_athlete_state",
+  "continuity": "external_versioned_records",
+  "routine_authority": {
+    "durable_context": "private_core_memory",
+    "selected_evidence_and_policy_arithmetic": "private_performance_database",
+    "contracts_reviews_amendments": "private_decision_journal",
+    "garmin_measurements": "live_garmin",
+    "repository": "methods_and_optional_historical_specialist_tools"
+  },
+  "ownership_cutover_date": "2026-09-06",
+  "session_contract_fields": [
+    "decision_id", "version", "athlete_key", "created_at", "evidence_cutoff",
+    "session_date", "status", "purpose", "dose", "adaptation_hypothesis",
+    "execution_rules", "expected_response", "stop_rules", "review_fields"
+  ],
+  "evidence_distinctions": [
+    "measurement", "athlete_report", "direct_observation", "coaching_inference",
+    "candidate", "active_prescription", "actual_delivery", "reviewed_response"
+  ],
+  "invariants": [
+    "communicated_contract_equals_saved_contract_including_optional_work",
+    "future_evidence_does_not_rewrite_past_decisions",
+    "response_matches_activity_and_exact_next_local_calendar_day",
+    "missing_response_is_unknown_not_positive",
+    "mixed_response_retains_positive_and_unresolved_components",
+    "one_explicit_progression_lever",
+    "current_function_and_task_context_not_replaced_by_dashboard_labels",
+    "idempotent_ingestion_and_preserved_formula_ownership",
+    "material_writes_require_semantic_readback",
+    "candidate_and_calendar_availability_are_not_clearance",
+    "public_methods_do_not_include_private_athlete_records"
+  ],
+  "reference_code_scope": "offline_documentary_integrity_checks_only",
+  "legacy_cli_cloud_integration": "not_implemented_by_this_revision",
+  "publication": {
+    "whole_repository_clearance": "blocked_pending_privacy_remediation_and_administration",
+    "shareable_package": "explicit_allowlist_only_no_git_history",
+    "license_selected": false
+  }
+}

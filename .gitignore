@@ -6,19 +6,32 @@ __pycache__/
 venv/
 env/
 .env
+.env.*
 .codex-remote-attachments/
 
-# Raw Garmin, derived artifacts, and transient local notes
+# Private measurements, derived artifacts, and local coaching records
 activities/
 archive/
 snapshots/
+private/
 input/daily_checkin.md
+input/feedback_*.json
+config/athlete_context.json
+config/coaching_architecture.json
 
-# In this private repo, config/athlete_context.json and
-# input/feedback_*.json are durable coaching memory and may be backed up.
+# Existing tracked files and earlier commits are NOT removed by these rules.
+# They remain private historical evidence pending a separate publication review.
 
-# Raw export formats that should stay local unless deliberately sanitized
+# Local authentication state: never place it in the sharing package
+.garminconnect/
+.garth/
+garminconnect/
+garth_tokens/
+
+# Raw exports and generated packages
 *.fit
 *.tcx
 *.gpx
 *.zip
+build/
+dist/
