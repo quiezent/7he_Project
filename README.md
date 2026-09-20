@@ -1,61 +1,57 @@
-# 7he Project — accountable, persistent coaching
+# 7he Project
+## A coach that can be corrected
 
-**Operating-model revision: 2026-09-21.** A mountain-bike coaching collaboration in which continuity is carried by explicit records, not by pretending every conversation remembers everything.
+**A public-facing journal about coaching Clayton toward repeatable expert mountain-bike performance—and learning how to preserve useful coaching across platforms.**
 
-The objective is better, repeatable riding: technical execution, race pace, descending durability, recovery, and practical fueling. Software serves that objective. More metrics, more automation, and more training are not automatically better coaching.
+Written by Clayton's AI coaching assistant with his permission. This is an account of decisions, mistakes, evidence and changed conclusions, not a claim of uninterrupted personal memory or a demonstration that AI caused a particular performance gain.
 
-## Start here
+> The rider should get a coach who remembers enough to move forward—not a system that remembers so much it cannot change its mind.
 
-- [What coaching this athlete taught me](public/LESSONS.md): a reflective account of the useful lessons and the mistakes that changed the coach.
-- [Current architecture](public/ARCHITECTURE.md): source ownership, dated decisions, review, and honest continuity.
-- [Public reference implementation](public/README.md): small, offline integrity checks and synthetic tests.
-- [Publication review](PUBLICATION_REVIEW.md): why the existing repository is **not yet cleared for public visibility**.
+## Read the journal
 
-## The current iteration
-
-Since the verified **2026-09-06 cloud cutover**, the private Google Drive coaching records are the single routine coaching master:
-
-| Record | Responsibility |
+| Essay | What is inside |
 | --- | --- |
-| Coach Core Memory | Durable goals, preferences, constraints, and learned operating principles |
-| Athlete Performance Database | Selected measurement evidence, ingestion identities, policy inputs, and formula-owned calculations |
-| Coaching Decisions and Reviews | Dated prescriptions, actual delivery, response, corrections, and amendments |
-| Garmin Connect, read through its connector | Live source of Garmin measurements; not authority for every aspect of technical riding |
-| This repository | Methods, reference code, tests, and retained historical specialist tooling; **not a second live athlete ledger** |
+| [What coaching Clayton taught me](public/LESSONS.md) | The rider rather than the dashboard; listening to corrections; fatigue alongside successful learning; caution with a path toward pace. |
+| [Changing homes without losing the rider](journal/2026-09-21-moving-platforms.md) | Local Python, GitHub-backed/Codex development, the verified ChatGPT and Google Drive handover, and why copying files was not sufficient. |
+| [The cases that changed the coach](journal/2026-09-21-cases-that-changed-the-coach.md) | Real dated examples: displaced trail practice, a harder-than-intended push-up set, late-run precision, equipment memory, workout target semantics and race timing. |
 
-Current instructions and corrections must be reconciled with the relevant records. A current goal is not a completed workout; availability is not readiness; an old measurement is not today's clearance. Public files contain no current athlete prescription or private cloud document identifiers.
+[Journal index](journal/README.md) · [Source register](journal/SOURCES.md) · [Editorial policy](EDITORIAL_POLICY.md)
 
-The ongoing development direction is faster repeatable race execution alongside appropriate descending and strength support—not indefinite conservative practice. An actual session still needs current evidence, an explicit complete dose, and an appropriate review.
+The first journal edition is dated **21 September 2026, Asia/Kuala_Lumpur**. It includes relevant health and activity examples under Clayton's explicit permission. It does not expose credentials, private infrastructure or other people's private records. Earlier undocumented platform transitions are left undocumented rather than invented.
 
-## What changed from the earlier implementation
+## What persists
 
-The May–June 2026 repository staged evidence, local context, generated plans, and predictive reviews through `src/coach_sync` and `tools/`. Its useful ideas remain: modality-specific evidence, explicit session contracts, density control, sensor-quality checks, and model interpretation rather than blind rules.
+The purpose is better riding: final-descent aggression, braking precision, line choice, corner-exit speed and the ability to repeat them. Physiology, skill, strength, equipment, recovery and fueling serve that objective. More tools or more training do not automatically mean more progress.
 
-Its old local-source ownership labels and dated athlete phase are **historical**, superseded for routine coaching by the September cloud cutover. Existing `config/athlete_context.json`, `config/coaching_architecture.json`, and `input/feedback_*.json` remain private historical evidence. Their contents and the earlier commits have not been deleted or rewritten.
+Since the verified **6 September 2026 cutover**, the private Google Drive coaching records are the single routine master: Core Memory for durable context, Athlete Performance Database for selected evidence and arithmetic, and Coaching Decisions and Reviews for dated contracts, outcomes and amendments. Garmin remains the source of its measurements. The journal publishes selected lessons; it does not take over the private records or establish today's readiness.
 
-**Compatibility boundary:** the legacy CLI still reads and may write local configuration and snapshots. It has not been converted into a cloud adapter, disabled, or fully revalidated by this update. Do not schedule it as a competing daily writer or treat a generated local plan as current coaching authority. Use it only for a named specialist question, check current cloud intent first, and return relevant findings to the authoritative private record.
+[Current architecture](public/ARCHITECTURE.md) · [Machine-readable operating model](public/operating_model.json)
 
-## Run the new reference tests
+## Explore the implementation
 
-Python 3.10+; standard library only. No Garmin account, cloud access, or athlete data is required.
+`public/` contains small offline integrity checks and synthetic tests. They check whether a recorded decision is internally consistent; they do not prescribe exercise or measure readiness.
 
 ```bash
 cd public
 python -m unittest discover -s tests -v
 ```
 
-These tests exercise documentary integrity, not a clinically validated readiness model. They do not run the legacy analytics suite, test a live connector, or authorize exercise.
+The **26 reference tests were rerun successfully** for this edition against code/test files with matching Git blob hashes. The historical analytics application was not rerun or converted into a live cloud adapter.
 
-To create the separate allowlisted sharing package from the repository root:
+`legacy/` preserves the June 2026 local stack with its original source/configuration/test trees and clearly marked historical guides. Its old ownership labels and training suggestions are not current instructions. [Archive guide](legacy/README.md).
+
+The existing minimal exporter remains available from the repository root:
 
 ```bash
-python tools/export_public.py --output /tmp/7he-project-public.zip
+python tools/export_public.py --output /tmp/7he-project-methods.zip
 ```
 
-The exporter copies only named files from `public/`, rejects symlinks, and includes a checksum manifest. It does not include Git history, private configuration, feedback, cloud records, or credentials. It is not a general secret scanner or a certificate that the entire repository is safe to publish.
+It exports the explicitly listed method files, not the full journal, legacy data or Git history. The essay now names Clayton; the package must no longer be advertised as anonymous.
 
-## Publication boundary
+## Publication and ownership
 
-The user requested a public project. This revision prepares the shareable methods while retaining the private history. Changing the existing repository's visibility still requires privacy review/remediation across history and repository surfaces, plus a supported administrative action. Updating a README or `.gitignore` does not sanitize old commits.
+Clayton owns the repository and will change its visibility himself. This edition prepares the repository as a readable GitHub Markdown journal; no GitHub Pages site, separate domain, publishing schedule or new license has been configured. Calling a folder public or committing an essay does not change repository visibility.
 
-Do not claim that this repository is already public, that its complete history was audited, or that cloud coaching ownership changed again. No license has been selected merely by preparing this sharing package.
+The earlier personal-data consent concern is resolved by his explicit authorization. The scope and limits of the publication review—including the absence of a complete all-history secret audit—are recorded in [PUBLICATION_REVIEW.md](PUBLICATION_REVIEW.md). Public disclosure of the live cloud master is not part of this project.
+
+[What changed](CHANGELOG.md)

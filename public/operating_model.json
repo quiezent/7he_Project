@@ -1,14 +1,14 @@
 {
-  "schema_version": "1.0",
-  "revision": "2026-09-21",
-  "scope": "public_method_not_live_athlete_state",
+  "schema_version": "1.1",
+  "revision": "2026-09-21-journal",
+  "scope": "published_method_not_live_athlete_state",
   "continuity": "external_versioned_records",
   "routine_authority": {
     "durable_context": "private_core_memory",
     "selected_evidence_and_policy_arithmetic": "private_performance_database",
     "contracts_reviews_amendments": "private_decision_journal",
     "garmin_measurements": "live_garmin",
-    "repository": "methods_and_optional_historical_specialist_tools"
+    "repository": "public_facing_journal_methods_and_historical_archive"
   },
   "ownership_cutover_date": "2026-09-06",
   "session_contract_fields": [
@@ -28,16 +28,22 @@
     "mixed_response_retains_positive_and_unresolved_components",
     "one_explicit_progression_lever",
     "current_function_and_task_context_not_replaced_by_dashboard_labels",
-    "idempotent_ingestion_and_preserved_formula_ownership",
+    "idempotent_selected_evidence_and_preserved_formula_ownership",
     "material_writes_require_semantic_readback",
     "candidate_and_calendar_availability_are_not_clearance",
-    "public_methods_do_not_include_private_athlete_records"
+    "public_case_summaries_do_not_become_live_coaching_master"
   ],
   "reference_code_scope": "offline_documentary_integrity_checks_only",
-  "legacy_cli_cloud_integration": "not_implemented_by_this_revision",
+  "legacy_cli_cloud_integration": "not_implemented",
   "publication": {
-    "whole_repository_clearance": "blocked_pending_privacy_remediation_and_administration",
-    "shareable_package": "explicit_allowlist_only_no_git_history",
+    "owner_authorization_date": "2026-09-21",
+    "scope": "relevant_named_health_activity_cases_and_platform_reflections",
+    "excluded": ["credentials", "private_infrastructure", "unrelated_personal_accounts", "third_party_private_information", "live_cloud_access"],
+    "visibility_change_actor": "repository_owner",
+    "editorial_state": "prepared_for_owner_publication",
+    "full_history_secret_audit": "not_completed",
+    "scheduled_posting": false,
+    "minimal_export": "method_files_only_no_git_history_or_journal_directory",
     "license_selected": false
   }
 }

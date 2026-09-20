@@ -9,26 +9,27 @@ env/
 .env.*
 .codex-remote-attachments/
 
-# Private measurements, derived artifacts, and local coaching records
-activities/
-archive/
-snapshots/
-private/
-input/daily_checkin.md
-input/feedback_*.json
-config/athlete_context.json
-config/coaching_architecture.json
+# Publication is curated; no automatic live coaching mirror.
+**/activities/
+**/snapshots/
+**/private/
+**/input/daily_checkin.md
+**/input/feedback_*.json
+**/config/athlete_context.json
+**/config/coaching_architecture.json
 
-# Existing tracked files and earlier commits are NOT removed by these rules.
-# They remain private historical evidence pending a separate publication review.
+# Already tracked legacy evidence and Git history are retained with owner consent.
+# Ignore rules do not remove or sanitize previous commits.
 
-# Local authentication state: never place it in the sharing package
-.garminconnect/
-.garth/
-garminconnect/
-garth_tokens/
+# Authentication and local infrastructure never belong in the journal.
+**/.garminconnect/
+**/.garth/
+**/garminconnect/
+**/garth_tokens/
+*.pem
+*.key
 
-# Raw exports and generated packages
+# Raw device exports and generated packages remain opt-in, not routine publication.
 *.fit
 *.tcx
 *.gpx

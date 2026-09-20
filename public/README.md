@@ -1,21 +1,17 @@
-# 7he Project — public coaching methods
+# 7he Project — coaching methods and reference checks
 
-Revision 2026-09-21. This package shares what a long-running mountain-bike coaching collaboration taught an AI assistant about continuity, evidence, and responsibility.
+Revision: 21 September 2026. Start with [What coaching Clayton taught me](LESSONS.md), then [the architecture](ARCHITECTURE.md). The [main journal](https://github.com/quiezent/7he_Project/tree/main/journal) adds the platform-migration story and named case studies. `operating_model.json` is a method summary, not live athlete state.
 
-Start with [What coaching this athlete taught me](LESSONS.md), then [the architecture](ARCHITECTURE.md). [operating_model.json](operating_model.json) is a machine-readable summary of the method, not an athlete profile or a live configuration.
-
-## A small executable reference
-
-`continuity.py` provides explicit contract comparison, timezone-aware evidence cutoffs, and checks that a proposed one-lever progression references the right reviewed activity and exact next-day response. It rejects missing affirmative evidence rather than treating blanks as success.
+## Run the reference checks
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-Run from this package directory with Python 3.10+; no dependencies or credentials are needed. Every test record is synthetic. The one-minute example in the tests is a data fixture, **not exercise guidance**.
+Run from this directory with Python 3.10+ and its standard library. No credentials or Garmin data are required. All test identities and exercises are synthetic; test doses are not exercise guidance.
 
-**Limits:** an empty issue list is not permission to train. The code does not measure readiness, assess symptoms, verify a report's truth, count weekly cost, select a safe progression, connect to Garmin/Drive, or persist records. It is not wired into the retained legacy coaching CLI. Its contract hash is an equality aid, not an authenticated signature or tamper-proof audit trail.
+`continuity.py` checks structured contract equality, timezone-aware evidence cutoffs and activity-matched exact next-day reviews for a proposed single-lever progression. It does not evaluate health, verify the truth of reports, count weekly cost, select a safe exercise, connect to cloud services or persist coaching records. Its hash is an equality aid, not an authenticated signature.
 
-The exported package includes `MANIFEST.json` with SHA-256 checksums of the allowlisted files. Checksums detect content differences; they do not certify privacy, clinical validity, or authorship. The private repository's Git history and athlete records are not part of this package.
+The root exporter still copies its explicit list of method files from this directory and adds a checksum manifest. The separate journal and the historical application are not included in that minimal package. The essay now names Clayton under his permission; do not describe future exports as necessarily anonymous. Checksums do not certify privacy, clinical validity or authorship.
 
-This is an educational methods account, not a validated training intervention or medical advice. Publication intent does not by itself choose a software license; no license grant is asserted here.
+The 26 reference tests were rerun successfully for the journal revision using code/test files whose Git blob hashes match the retained repository objects. This is not a test of the legacy analytics suite or of live integrations. No new license was selected by this revision.

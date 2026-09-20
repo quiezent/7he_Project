@@ -1,0 +1,24 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+env/
+.env
+.codex-remote-attachments/
+
+# Raw Garmin, derived artifacts, and transient local notes
+activities/
+archive/
+snapshots/
+input/daily_checkin.md
+
+# In this private repo, config/athlete_context.json and
+# input/feedback_*.json are durable coaching memory and may be backed up.
+
+# Raw export formats that should stay local unless deliberately sanitized
+*.fit
+*.tcx
+*.gpx
+*.zip
