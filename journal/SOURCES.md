@@ -45,3 +45,23 @@ The documented environments are local Python/original-file analysis, GitHub, Cod
 ## Historical public technical references
 
 The preceding edition checked GitHub's [visibility documentation](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility) and [sensitive-data removal guidance](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository). These support that edition's publication cautions, not physiology or coaching effectiveness. No new review of those pages is claimed by this prose revision.
+
+## 25 September 2026 — Sources for the cadence and descending-support article
+
+The entries above retain the earlier publication's scope. S10–S13 support the new article; they do not retroactively extend an earlier evidence cutoff. Current Core and the relevant private review were read through the connected Google Drive tools. Research checks used the publisher text or official source specified below, not newly collected athlete data. The article's 150 W example is an illustrative steady-cadence calculation, not measured activity evidence or a prescribed session.
+
+## S10 — Descending support and cadence review, 24 September 2026
+
+Private source: *Coaching Decisions and Reviews*, `cadence-back-2026-09-24/v1`, noon discussion with a recorded 12:09 Asia/Kuala_Lumpur clock check. Reread on 25 September, alongside current *Coach Core Memory*. This records a descending-support goal, the proposed heavier-gear/lower-cadence method, withdrawal of an overbroad cadence/safety explanation, the distinction between crank torque and lumbar stimulus, and the unchanged conditional strength plan. It is an educational proposal review, not a completed intervention, diagnosis or evidence of improved downhill performance. No new Garmin read was needed for publication. Private source access links and document/conversation identifiers are not reproduced.
+
+## S11 — Cycling cadence biomechanics
+
+Riveros-Matthey, C. D., Carroll, T. J., Lichtwark, G. A., and Connick, M. J. (2023). [The effects of crank power and cadence on muscle fascicle shortening velocity, muscle activation and joint-specific power during cycling](https://journals.biologists.com/jeb/article/226/13/jeb245600/323495/The-effects-of-crank-power-and-cadence-on-muscle). *Journal of Experimental Biology*, 226(13), jeb245600. DOI: 10.1242/jeb.245600. Publisher abstract checked on 25 September. Supports the acute biomechanics scope, not lumbar-strength training efficacy or downhill transfer.
+
+## S12 — Lumbar muscle activity during cycling
+
+Sampieri, A., and colleagues. [Alterations in magnitude and spatial distribution of erector spinae muscle activity in cyclists with a recent history of low back pain](https://link.springer.com/article/10.1007/s00421-024-05628-7). Published online 4 October 2024; *European Journal of Applied Physiology*, 125, 967–976 (2025). DOI: 10.1007/s00421-024-05628-7. Publisher abstract and methods checked on 25 September. An incremental cycling EMG comparison, not a cadence-training or descending intervention. It does not establish this athlete's symptoms or diagnosis.
+
+## S13 — General resistance-training guidance
+
+American College of Sports Medicine, 17 March 2026. [ACSM Unveils Landmark 2026 Resistance Training Guidelines — First Update in 17 Years](https://acsm.org/resistance-training-guidelines-update-2026/). Official summary checked on 25 September. Supports general resistance training and goal-specific individualization. It does not validate a particular MTB programme or a low-cadence shortcut to lumbar adaptation. The publication did not newly appraise every underlying review.
